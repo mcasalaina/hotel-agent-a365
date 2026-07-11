@@ -78,7 +78,7 @@ Phase 3 adds `invocations_ws` version `1.0.0` to both `azure.yaml` and `src/hote
 - Knowledge sources: one `hotel-*-ks` source per index
 - Knowledge base: `hotel-foundryiq`
 - Source archive: 95 Markdown blobs in `hotel-docs`
-- Hosted Agent: `hotel-servicing-agent`, active version 3
+- Hosted Agent: `hotel-servicing-agent`, active version 4
 - Agent Search access: **Search Index Data Reader**
 
 The live verification covers direct Search counts, answer synthesis with citations, dated notices,

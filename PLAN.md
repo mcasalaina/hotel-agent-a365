@@ -35,8 +35,8 @@ Use generic technical names, with a short uniqueness suffix only where Azure req
 | Resource group | `rg-hotel-agent-a365` |
 | Foundry Hosted Agent | `hotel-servicing-agent` |
 | Foundry IQ knowledge base | `hotel-foundryiq` |
-| Search connection | `hotel-search` |
-| Search service | `hotel-search-<suffix>` unless the project's default Search service is reused |
+| Search connection | Existing project connection `3iqssearchaycabass7vbek` |
+| Search service | Existing `3iqs-search-aycabas` |
 | Search indexes | `hotel-properties-index`, `hotel-policies-index`, `hotel-dining-local-index`, `hotel-operations-index` |
 | Blob container | `hotel-docs` |
 | Fabric workspace | `HotelAgent.Workspace` |
@@ -310,8 +310,8 @@ Supply validated few-shot SQL for lakehouse questions and measure-oriented examp
 
 ### 5.7 Foundry IQ
 
-1. The target project currently has a project-managed-identity Search connection to `3iqs-search-aycabas`, but that service is in East US while the Foundry project is in East US 2. Do not reuse it for this solution.
-2. Create one generic Azure AI Search resource in East US 2, connect it to the project as `hotel-search`, and keep every hotel index and knowledge base there. Preserve unrelated existing indexes and connections.
+1. Reuse the target project's project-managed-identity Search connection to `3iqs-search-aycabas`. Although the Search service is in East US and the Foundry project is in East US 2, live indexing, knowledge-base synthesis, citations, and Hosted Agent retrieval have passed.
+2. Keep every hotel index and `hotel-foundryiq` on that one existing Search service. Preserve unrelated existing indexes, knowledge bases, and connections.
 3. Create four indexes and knowledge sources on that one service:
    - property profiles;
    - guest policies and service procedures;

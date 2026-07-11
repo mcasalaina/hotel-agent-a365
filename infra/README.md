@@ -1,5 +1,10 @@
 # Supporting Azure infrastructure
 
+This directory is an optional dedicated-resource fallback and is not the active deployment path.
+The live development deployment successfully reuses the existing project Search and storage
+resources, while `azure.yaml` uses the `microsoft.foundry` provider. Do not deploy this Bicep
+unless the architecture is deliberately changed back to dedicated supporting resources.
+
 `main.bicep` is a subscription-scope deployment that:
 
 - creates `rg-hotel-agent-a365`;

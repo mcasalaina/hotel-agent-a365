@@ -9,7 +9,7 @@
       "value": "${AZURE_LOCATION}"
     },
     "supportResourceGroupName": {
-      "value": "${AZURE_RESOURCE_GROUP}"
+      "value": "rg-hotel-agent-a365"
     },
     "deploymentPrincipalId": {
       "value": "${AZURE_PRINCIPAL_ID}"
