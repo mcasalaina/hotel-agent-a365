@@ -8,6 +8,10 @@ name: hotel-agent-a365
 metadata:
   template: hotel-agent-a365
 
+infra:
+  provider: bicep
+  path: infra
+
 services:
   ai-project:
     host: azure.ai.project

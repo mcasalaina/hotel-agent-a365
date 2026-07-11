@@ -33,11 +33,14 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     problems: list[ConfigurationProblem] = []
 
     services = _mapping(azure.get("services"))
+    infrastructure = _mapping(azure.get("infra"))
     project = _mapping(services.get("ai-project"))
     agent = _mapping(services.get(EXPECTED_AGENT_NAME))
     template = _mapping(manifest.get("template"))
 
     _expect(problems, "azure.name", azure.get("name"), "hotel-agent-a365")
+    _expect(problems, "infra.provider", infrastructure.get("provider"), "bicep")
+    _expect(problems, "infra.path", infrastructure.get("path"), "infra")
     _expect(problems, "services.ai-project.host", project.get("host"), "azure.ai.project")
     _expect(
         problems,
@@ -102,6 +105,19 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         env.get("AZURE_AI_MODEL_DEPLOYMENT_NAME"),
         EXPECTED_MODEL,
     )
+    for infrastructure_file in (
+        "infra/main.bicep",
+        "infra/main.parameters.json",
+        "infra/modules/supporting-resources.bicep",
+        "infra/modules/foundry-connection.bicep",
+    ):
+        if not (root / infrastructure_file).is_file():
+            problems.append(
+                ConfigurationProblem(
+                    infrastructure_file,
+                    "required infrastructure file does not exist",
+                )
+            )
     evaluation_dataset = _nested(evaluation, "dataset", "local_uri")
     if not isinstance(evaluation_dataset, str) or not (root / evaluation_dataset).is_file():
         problems.append(
