@@ -223,7 +223,7 @@ Validation gates:
 
 ### 5.3 One Fabric workspace and two lakehouses
 
-1. Create `HotelAgent.Workspace` on an F2-or-higher capacity with:
+1. Create `HotelAgent.Workspace` on the active East US 2 F16 capacity `cap3iqs5ea837a6` (`24f6590d-413b-4d9f-9c2b-601d753eda94`) with:
    - `HotelOperations` for properties, room types, rooms, outlets, associates, amenities, physical/sellable inventory, rates, maintenance requests, and work orders.
    - `HotelGuestServices` for guests, preferences, reservations, stays, room assignments, restaurant reservations/checks, folios, payments, adjustments, disputes, special requests, service cases, confirmations, idempotency, and customer-facing audit events.
 2. Upload generated source files to the appropriate OneLake location and materialize every serving table as Delta.
@@ -310,8 +310,8 @@ Supply validated few-shot SQL for lakehouse questions and measure-oriented examp
 
 ### 5.7 Foundry IQ
 
-1. Discover the target project's default AI Search connection.
-2. If none exists, create one generic Azure AI Search resource, connect it to the project as the default Search connection, and keep every hotel index and knowledge base there.
+1. The target project currently has a project-managed-identity Search connection to `3iqs-search-aycabas`, but that service is in East US while the Foundry project is in East US 2. Do not reuse it for this solution.
+2. Create one generic Azure AI Search resource in East US 2, connect it to the project as `hotel-search`, and keep every hotel index and knowledge base there. Preserve unrelated existing indexes and connections.
 3. Create four indexes and knowledge sources on that one service:
    - property profiles;
    - guest policies and service procedures;

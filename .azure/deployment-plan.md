@@ -19,7 +19,7 @@ See `../PLAN.md` for the complete three-phase implementation plan, property rost
   - `gpt-5.4-mini`
   - `text-embedding-3-small`
 - New generic Azure resource group: `rg-hotel-agent-a365`
-- New or project-default generic Azure AI Search service with four indexes and one Foundry IQ knowledge base.
+- New generic East US 2 Azure AI Search service with four indexes and one Foundry IQ knowledge base. The project's existing Search connection targets an East US service and will not be reused.
 - New generic storage account/container for knowledge documents.
 - Containerized Foundry Hosted Agent `hotel-servicing-agent`.
 - Generic Agent 365 host/web resources needed by the approved publish path.
@@ -33,6 +33,8 @@ One Fabric workspace, `HotelAgent.Workspace`, with two authoritative lakehouses:
 - `HotelGuestServices`: guests, reservations, stays, dining reservations, folios, disputes, special requests, confirmations, idempotency records, and customer-facing audit events.
 
 The Fabric data agent connects directly to both lakehouses to demonstrate cross-source unification. A Direct Lake semantic model uses limited source-controlled OneLake shortcuts from `HotelGuestServices` to required `HotelOperations` tables; no third lakehouse or Azure SQL database is created.
+
+Deploy the workspace on the existing active East US 2 F16 capacity `cap3iqs5ea837a6` (`24f6590d-413b-4d9f-9c2b-601d753eda94`).
 
 ## Delivery recipe
 
@@ -83,3 +85,4 @@ When implementation artifacts are complete:
 - 2026-07-11: Repository/application bootstrap started. No cloud resources have been created or modified yet.
 - 2026-07-11: Shared repository skeleton, Hosted Agent container scaffolding, safe configuration examples, technical naming guard, and baseline developer checks prepared. Status remains In Progress pending later implementation workstreams and validation.
 - 2026-07-11: Bootstrap validation passed (Ruff, mypy, pytest, configuration/naming checks, dependency check, and shell syntax). Domain content and deterministic data generation started in an isolated child worktree.
+- 2026-07-11: Read-only environment discovery found no subscription-scope policy assignments or resource-group locks, confirmed an active East US 2 F16 Fabric capacity, and identified the existing project Search connection as East US rather than East US 2. Plan updated to use a new generic East US 2 Search service.
