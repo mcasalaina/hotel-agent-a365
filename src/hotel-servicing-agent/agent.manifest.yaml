@@ -15,6 +15,32 @@ template:
   environment_variables:
     - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
       value: "{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}"
+    - name: AZURE_SEARCH_ENDPOINT
+      value: "{{AZURE_SEARCH_ENDPOINT}}"
+    - name: FOUNDRY_IQ_KNOWLEDGE_BASE_NAME
+      value: "{{FOUNDRY_IQ_KNOWLEDGE_BASE_NAME}}"
+    - name: FABRIC_DATA_AGENT_MCP_URL
+      value: "{{FABRIC_DATA_AGENT_MCP_URL}}"
+    - name: AGENT365_TENANT_ID
+      value: "{{AGENT365_TENANT_ID}}"
+    - name: AGENT365_BLUEPRINT_CLIENT_ID
+      value: "{{AGENT365_BLUEPRINT_CLIENT_ID}}"
+    - name: AGENT365_INSTANCE_CLIENT_ID
+      value: "{{AGENT365_INSTANCE_CLIENT_ID}}"
+    - name: WORK_IQ_COPILOT_MCP_URL
+      value: "{{WORK_IQ_COPILOT_MCP_URL}}"
+    - name: WORK_IQ_COPILOT_MCP_AUDIENCE
+      value: "{{WORK_IQ_COPILOT_MCP_AUDIENCE}}"
+    - name: WORK_IQ_MAIL_MCP_URL
+      value: "{{WORK_IQ_MAIL_MCP_URL}}"
+    - name: WORK_IQ_MAIL_MCP_AUDIENCE
+      value: "{{WORK_IQ_MAIL_MCP_AUDIENCE}}"
+    - name: WORK_IQ_TEAMS_MCP_URL
+      value: "{{WORK_IQ_TEAMS_MCP_URL}}"
+    - name: WORK_IQ_TEAMS_MCP_AUDIENCE
+      value: "{{WORK_IQ_TEAMS_MCP_AUDIENCE}}"
+    - name: AGENT_INSTRUCTIONS_PATH
+      value: agent-instructions.md
 resources:
   - kind: model
     id: gpt-5.4-mini

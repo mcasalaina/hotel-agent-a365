@@ -14,6 +14,10 @@ class Settings:
     search_endpoint: str
     knowledge_base_name: str
     fabric_data_agent_mcp_url: str
+    agent365_tenant_id: str
+    agent365_blueprint_client_id: str
+    agent365_instance_client_id: str
+    work_iq_servers: tuple[tuple[str, str, str], ...]
     instructions: str
 
     @classmethod
@@ -25,6 +29,18 @@ class Settings:
         search_endpoint = _required_environment_variable("AZURE_SEARCH_ENDPOINT")
         knowledge_base_name = _required_environment_variable("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME")
         fabric_data_agent_mcp_url = _required_environment_variable("FABRIC_DATA_AGENT_MCP_URL")
+        work_iq_servers = tuple(
+            (
+                name,
+                _required_environment_variable(f"WORK_IQ_{prefix}_MCP_URL"),
+                _required_environment_variable(f"WORK_IQ_{prefix}_MCP_AUDIENCE"),
+            )
+            for name, prefix in (
+                ("work-iq-copilot", "COPILOT"),
+                ("work-iq-mail", "MAIL"),
+                ("work-iq-teams", "TEAMS"),
+            )
+        )
         instructions_path = Path(
             os.getenv("AGENT_INSTRUCTIONS_PATH", "../../agent-instructions.md")
         )
@@ -36,6 +52,14 @@ class Settings:
             search_endpoint=search_endpoint,
             knowledge_base_name=knowledge_base_name,
             fabric_data_agent_mcp_url=fabric_data_agent_mcp_url,
+            agent365_tenant_id=_required_environment_variable("AGENT365_TENANT_ID"),
+            agent365_blueprint_client_id=_required_environment_variable(
+                "AGENT365_BLUEPRINT_CLIENT_ID"
+            ),
+            agent365_instance_client_id=_required_environment_variable(
+                "AGENT365_INSTANCE_CLIENT_ID"
+            ),
+            work_iq_servers=work_iq_servers,
             instructions=instructions_path.read_text(encoding="utf-8"),
         )
 

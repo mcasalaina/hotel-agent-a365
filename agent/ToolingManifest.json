@@ -1,0 +1,25 @@
+{
+  "mcpServers": [
+    {
+      "mcpServerName": "work-iq-copilot",
+      "mcpServerUniqueName": "mcp_M365Copilot",
+      "url": "https://agent365.svc.cloud.microsoft/agents/servers/mcp_M365Copilot",
+      "scope": "Tools.ListInvoke.All",
+      "audience": "ab7c82de-7946-4454-ac28-70249d17c95e"
+    },
+    {
+      "mcpServerName": "work-iq-mail",
+      "mcpServerUniqueName": "mcp_MailTools",
+      "url": "https://agent365.svc.cloud.microsoft/agents/servers/mcp_MailTools",
+      "scope": "Tools.ListInvoke.All",
+      "audience": "16b1878d-62c7-4009-aa25-68989d63bbad"
+    },
+    {
+      "mcpServerName": "work-iq-teams",
+      "mcpServerUniqueName": "mcp_TeamsServer",
+      "url": "https://agent365.svc.cloud.microsoft/agents/servers/mcp_TeamsServer",
+      "scope": "Tools.ListInvoke.All",
+      "audience": "ce5029ee-c1d3-45c0-bdcc-efb5a4245687"
+    }
+  ]
+}

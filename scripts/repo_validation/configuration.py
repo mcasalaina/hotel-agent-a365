@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,6 +16,21 @@ EXPECTED_FABRIC_DATA_AGENT_MCP_URL = (
     "660ed238-54b7-42bd-8b1b-cf2ee47a11ba/dataagents/"
     "9990b87a-d2ef-4c23-b11d-ffd72905906c/agent"
 )
+EXPECTED_AGENT365_ENV = {
+    "AGENT365_TENANT_ID": "a9d9510e-7131-4355-8b7e-37e7b1e99862",
+    "AGENT365_BLUEPRINT_CLIENT_ID": "55698a0b-48c3-412e-ba56-373ebb35283d",
+    "AGENT365_INSTANCE_CLIENT_ID": "6b7f2f82-66cb-470b-b16a-f7775463b341",
+    "WORK_IQ_COPILOT_MCP_URL": (
+        "https://agent365.svc.cloud.microsoft/agents/servers/mcp_M365Copilot"
+    ),
+    "WORK_IQ_COPILOT_MCP_AUDIENCE": "ab7c82de-7946-4454-ac28-70249d17c95e",
+    "WORK_IQ_MAIL_MCP_URL": "https://agent365.svc.cloud.microsoft/agents/servers/mcp_MailTools",
+    "WORK_IQ_MAIL_MCP_AUDIENCE": "16b1878d-62c7-4009-aa25-68989d63bbad",
+    "WORK_IQ_TEAMS_MCP_URL": (
+        "https://agent365.svc.cloud.microsoft/agents/servers/mcp_TeamsServer"
+    ),
+    "WORK_IQ_TEAMS_MCP_AUDIENCE": "ce5029ee-c1d3-45c0-bdcc-efb5a4245687",
+}
 EXPECTED_PROJECT_ENDPOINT = (
     "https://4iq-foundry-project-resource.services.ai.azure.com/api/projects/4iq-foundry-project"
 )
@@ -35,6 +51,7 @@ class ConfigurationProblem:
 def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     azure = _load_yaml(root / "azure.yaml")
     manifest = _load_yaml(root / "src/hotel-servicing-agent/agent.manifest.yaml")
+    tooling_manifest = _load_json(root / "agent/ToolingManifest.json")
     evaluation = _load_yaml(root / "eval.yaml")
     env = _load_env(root / "config/azd.env.example")
     local_env = _load_env(root / ".env.template")
@@ -116,6 +133,13 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         environment_variables.get("FABRIC_DATA_AGENT_MCP_URL"),
         "${FABRIC_DATA_AGENT_MCP_URL}",
     )
+    for name in EXPECTED_AGENT365_ENV:
+        _expect(
+            problems,
+            f"agent.environmentVariables.{name}",
+            environment_variables.get(name),
+            f"${{{name}}}",
+        )
     if "FOUNDRY_PROJECT_ENDPOINT" in environment_variables:
         problems.append(
             ConfigurationProblem(
@@ -131,6 +155,26 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         "manifest.template.protocols",
         template.get("protocols"),
         EXPECTED_PROTOCOLS,
+    )
+    manifest_environment_variables = _named_values(template.get("environment_variables"))
+    for name in (
+        "AZURE_AI_MODEL_DEPLOYMENT_NAME",
+        "AZURE_SEARCH_ENDPOINT",
+        "FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
+        "FABRIC_DATA_AGENT_MCP_URL",
+        *EXPECTED_AGENT365_ENV,
+    ):
+        _expect(
+            problems,
+            f"manifest.template.environment_variables.{name}",
+            manifest_environment_variables.get(name),
+            f"{{{{{name}}}}}",
+        )
+    _expect(
+        problems,
+        "manifest.template.environment_variables.AGENT_INSTRUCTIONS_PATH",
+        manifest_environment_variables.get("AGENT_INSTRUCTIONS_PATH"),
+        "agent-instructions.md",
     )
     _expect(
         problems,
@@ -193,6 +237,37 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         local_env.get("FABRIC_DATA_AGENT_MCP_URL"),
         EXPECTED_FABRIC_DATA_AGENT_MCP_URL,
     )
+    for name, expected in EXPECTED_AGENT365_ENV.items():
+        _expect(problems, name, env.get(name), expected)
+        _expect(problems, f".env.{name}", local_env.get(name), expected)
+    _expect(
+        problems,
+        "ToolingManifest.mcpServers",
+        tooling_manifest.get("mcpServers"),
+        [
+            {
+                "mcpServerName": "work-iq-copilot",
+                "mcpServerUniqueName": "mcp_M365Copilot",
+                "url": EXPECTED_AGENT365_ENV["WORK_IQ_COPILOT_MCP_URL"],
+                "scope": "Tools.ListInvoke.All",
+                "audience": EXPECTED_AGENT365_ENV["WORK_IQ_COPILOT_MCP_AUDIENCE"],
+            },
+            {
+                "mcpServerName": "work-iq-mail",
+                "mcpServerUniqueName": "mcp_MailTools",
+                "url": EXPECTED_AGENT365_ENV["WORK_IQ_MAIL_MCP_URL"],
+                "scope": "Tools.ListInvoke.All",
+                "audience": EXPECTED_AGENT365_ENV["WORK_IQ_MAIL_MCP_AUDIENCE"],
+            },
+            {
+                "mcpServerName": "work-iq-teams",
+                "mcpServerUniqueName": "mcp_TeamsServer",
+                "url": EXPECTED_AGENT365_ENV["WORK_IQ_TEAMS_MCP_URL"],
+                "scope": "Tools.ListInvoke.All",
+                "audience": EXPECTED_AGENT365_ENV["WORK_IQ_TEAMS_MCP_AUDIENCE"],
+            },
+        ],
+    )
     evaluation_dataset = _nested(evaluation, "dataset", "local_uri")
     if not isinstance(evaluation_dataset, str) or not (root / evaluation_dataset).is_file():
         problems.append(
@@ -225,6 +300,11 @@ def _expect(
 
 def _load_yaml(path: Path) -> dict[str, Any]:
     value = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return _mapping(value)
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
     return _mapping(value)
 
 

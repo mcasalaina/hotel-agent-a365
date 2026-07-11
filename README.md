@@ -2,10 +2,9 @@
 
 This repository contains the source-controlled foundation for a fictional hotel guest-services demo built on Microsoft Foundry, Microsoft Fabric, Foundry IQ, Work IQ, and Agent 365.
 
-The current foundation includes a container-ready Python Hosted Agent, generic technical naming
-enforcement, deterministic fictional hotel source-data generation, a Foundry IQ Markdown source
-corpus, and local setup/verification code for the approved Search knowledge base. It does not
-create or deploy cloud resources unless an operator explicitly runs the setup or deployment steps.
+The current implementation includes the deployed Fabric data estate, Foundry IQ knowledge base,
+Python Hosted Agent, Agent 365 bot/publication artifacts, and a read-only Work IQ integration.
+Cloud-changing commands remain operator-invoked; local setup and validation never deploy implicitly.
 
 ## Developer setup
 
@@ -34,9 +33,10 @@ Build the root container parity image:
 make docker-build
 ```
 
-The Hosted Agent deploys from source with Foundry remote build and exposes the Responses protocol.
-The Dockerfile provides the equivalent local/container path. Phase 3 will add `invocations_ws` to
-the same agent and compose it over the shared `orchestration`, `tools`, and `state` packages.
+The Hosted Agent deploys from source with Foundry remote build and exposes the Responses protocol,
+plus the stable Agent 365 activity endpoint. The Dockerfile provides the equivalent local/container
+path. Phase 3 will add `invocations_ws` to the same agent and compose it over the shared
+`orchestration`, `tools`, and `state` packages.
 
 See `PLAN.md` for the approved architecture and `DEPLOYMENT.md` for the controlled deployment handoff.
 

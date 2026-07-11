@@ -78,7 +78,7 @@ Phase 3 adds `invocations_ws` version `1.0.0` to both `azure.yaml` and `src/hote
 - Knowledge sources: one `hotel-*-ks` source per index
 - Knowledge base: `hotel-foundryiq`
 - Source archive: 95 Markdown blobs in `hotel-docs`
-- Hosted Agent: `hotel-servicing-agent`, active version 8
+- Hosted Agent: `hotel-servicing-agent`, active version 10
 - Agent Search access: **Search Index Data Reader**
 - Fabric workspace: `HotelAgent.Workspace`
   (`660ed238-54b7-42bd-8b1b-cf2ee47a11ba`)
@@ -111,3 +111,46 @@ The Hosted Agent reaches the published Data Agent through
 runtime deliberately opens a direct MCP `ClientSession` only when the function tool is called;
 eager `MCPStreamableHTTPTool` initialization failed in the Hosted Agent environment with a
 cancellation-scope error.
+
+## Agent 365 and Work IQ
+
+- Foundry-managed blueprint: `hotel-servicing-agent-fefec`
+  - Client ID: `55698a0b-48c3-412e-ba56-373ebb35283d`
+  - Principal ID: `11004b7e-29c5-4406-a1bd-b5defdcaacd9`
+- Hosted Agent identity:
+  `6b7f2f82-66cb-470b-b16a-f7775463b341`
+- Azure Bot Service: `hotel-servicing-agent-bot`
+- Microsoft 365 publication title:
+  `T_5f1601d1-0ccc-13b2-6d7f-ec5730e45a91`
+- Stable endpoint protocols: `activity`, `responses`
+- Stable endpoint authorization: `Entra`, `BotServiceTenant`
+
+The runtime obtains an Identity Proxy Manager token for the blueprint, exchanges it for the
+Hosted Agent instance, and then requests one delegated `user_fic` token per Work IQ V2 audience.
+The Copilot, Mail, and Teams audiences and endpoints are source controlled in
+`agent/ToolingManifest.json`. The Hosted Agent remains read-only for Microsoft 365: it may search, summarize, and draft, but it
+must not send, post, delete, or modify content. Server-specific positive tool allowlists enforce
+this boundary; prompt instructions are not the security control.
+
+The blueprint has tenant-wide delegated `Tools.ListInvoke.All` grants and matching enumerated
+inheritable permissions for all three V2 Work IQ resources. The Hosted Agent identity has the
+`Agent365.Observability.OtelWrite` application role. These are separate requirements: OAuth consent
+alone does not make a scope inheritable by future agentic users, and observability export fails with
+HTTP 403 when the instance role is absent.
+
+An ordinary version 10 Responses invocation passed with cited HTL-001 pool hours. A direct Foundry
+Work IQ probe reached the three-hop exchange and failed with `AADSTS7002200` because a direct Azure
+caller does not have an Agent 365 user federated credential. This is expected and is not an
+authoritative Work IQ test. Complete Work IQ validation from a real Teams DM after an M365
+administrator publishes the pending request in **Microsoft 365 admin center > Agents > All agents
+> Requests**. The Teams invocation must then cover Mail, Teams, and cross-M365 reads and confirm
+that mutation attempts remain blocked.
+
+The current `a365 query-entra` commands cannot resolve a Foundry-managed blueprint by the CLI's
+conventional `<agent-name> Blueprint` display name. Audit this deployment by the live blueprint
+client/principal IDs through Microsoft Graph instead of creating a duplicate `a365 setup`
+blueprint.
+
+The Bot Service must keep `publicNetworkAccess` enabled for the Teams channel. Disabling it
+unconfigures channels other than Direct Line, even when the messaging endpoint itself is hosted by
+Foundry.

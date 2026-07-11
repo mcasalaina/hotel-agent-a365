@@ -164,11 +164,14 @@ Live implementation status on 2026-07-11:
   ontology, and published Data Agent.
 - Published Data Agent lakehouse schemas must be synchronized through
   `HotelDataAgentRuntimePublish`; definition-only imports leave the lakehouse elements unavailable.
-- Deployed Hosted Agent version 8 with on-demand Fabric MCP and Foundry IQ tools. Isolated
-  retrieval tests and the combined reservation-to-property-knowledge handoff pass, including exact
-  `property_id` propagation and citations.
-- Phase 1 remains open for mutation flows, Work IQ, remote Foundry evaluations, and the remaining
-  acceptance scenarios.
+- Deployed Hosted Agent version 10 with on-demand Fabric MCP, Foundry IQ, and read-only Work IQ
+  tools. Isolated retrieval tests and the combined reservation-to-property-knowledge handoff pass,
+  including exact `property_id` propagation and citations.
+- Published the existing Foundry-managed blueprint to Agent 365 and deployed the Bot Service/Teams
+  channel. Work IQ reaches the three-hop token exchange; a real Teams DM remains required to create
+  and validate the agentic-user federated credential.
+- Phase 1 remains open for mutation flows, a Teams-authenticated Work IQ test, remote Foundry
+  evaluations, and the remaining acceptance scenarios.
 
 ### 5.1 Bootstrap and configuration
 
@@ -413,6 +416,19 @@ Phase 2 starts only after the Phase 1 gate passes.
 4. Publish to Microsoft 365 Admin Center, configure the blueprint as API Based in Teams Developer Portal, and set the notification URL to the Hosted Agent's `activityprotocol` endpoint or the documented A365 messaging endpoint selected by the live publish flow.
 5. Create and approve the agent instance, create the generic agent user, assign manager, usage location, Teams/Agent 365/Microsoft 365 licenses, and a writable Exchange mailbox when mail mutation is part of the demo.
 
+Live Phase 2 status on 2026-07-11:
+
+- Reused blueprint `hotel-servicing-agent-fefec`; no competing blueprint was created.
+- Deployed `hotel-servicing-agent-bot`, enabled its Teams channel, and published Microsoft 365 title
+  `T_5f1601d1-0ccc-13b2-6d7f-ec5730e45a91`.
+- Added V2 Copilot, Mail, and Teams tenant-wide delegated grants plus matching enumerated
+  inheritable permissions for `Tools.ListInvoke.All`.
+- Granted the Hosted Agent identity `Agent365.Observability.OtelWrite`.
+- Deployed Hosted Agent version 10 with per-user context propagation, three-hop Work IQ token
+  exchange, and positive read-only MCP tool allowlists.
+- Remaining manual gate: an M365 administrator must publish the pending request to an approved
+  audience, after which the authoritative real-Teams Work IQ and observability tests can run.
+
 ### 6.2 Permission matrix and known fixes
 
 Automate discovery and verification, but retain explicit admin/manual gates where the bank deployment proved automation unreliable.
@@ -457,6 +473,15 @@ Document symptom, diagnostic, fix, propagation interval, and verification for:
 - Fabric `User is not authorized`: manually add the agent identity to workspace access and retest as that identity.
 - Data agent new source unavailable: wait for SQL endpoint schema, delete/re-add zero-table source, select tables, and call management deploy.
 - Work IQ reads succeed but send fails: V2 MCP audience, Exchange license, admin consent, tenant mutation policy, propagation, restart.
+- Work IQ `AADSTS7002200` from a direct Foundry invocation: the Azure caller has no matching Agent
+  365 user federated credential; validate through a real Teams DM after admin approval.
+- Work IQ consent exists but `user_fic` still fails in Teams: verify each V2 resource has both an
+  OAuth2 permission grant and an `inheritablePermissions` entry on the blueprint application.
+- Agent 365 telemetry exporter returns HTTP 403: assign `Agent365.Observability.OtelWrite`
+  (`8f71190c-00c8-461d-a63b-f74abde9ba52`) to the Hosted Agent identity, then allow propagation.
+- `a365 query-entra` cannot find the blueprint: Foundry-managed blueprint display names do not
+  follow the CLI's `<agent-name> Blueprint` convention; audit by live client/principal ID and do not
+  run `a365 setup blueprint`.
 - App Service import/start failure: include all A365/Agents dependencies and compatible OpenTelemetry pins.
 - Stateless Responses 400: persist assistant text/history, not raw SDK response objects.
 - Hosted Agent cold start or `session_not_ready`: inspect session logs, model name, identity permissions, and allocate at least 1 CPU/2 GiB.

@@ -119,3 +119,20 @@ When implementation artifacts are complete:
   `HTL-001` from Fabric to Foundry IQ and returned the cited `06:00-22:00` pool hours. The
   structured-data tool now requires exact property IDs in every property result to make the handoff
   deterministic.
+- 2026-07-11: Reused the Foundry-managed blueprint, deployed Azure Bot Service
+  `hotel-servicing-agent-bot`, and published Microsoft 365 title
+  `T_5f1601d1-0ccc-13b2-6d7f-ec5730e45a91`. The stable endpoint exposes `activity` and `responses`
+  with `BotServiceTenant` authorization.
+- 2026-07-11: Granted the blueprint tenant-wide delegated and inheritable
+  `Tools.ListInvoke.All` access for the V2 Copilot, Mail, and Teams Work IQ resources. Granted the
+  Hosted Agent identity `Agent365.Observability.OtelWrite`.
+- 2026-07-11: Deployed active Hosted Agent version 9 with the read-only Work IQ tool. Local checks
+  pass, ordinary live retrieval remains healthy, and a direct Work IQ probe reaches `user_fic`.
+  Authoritative Work IQ validation is blocked on M365 admin publication and a real Teams agentic
+  user; direct Foundry callers correctly fail with `AADSTS7002200` because they have no matching
+  user federated credential.
+- 2026-07-11: Superseded version 9 with active version 10 after restricting Copilot, Mail, and Teams
+  MCP servers to positive read-only tool allowlists and adding partial-initialization cleanup.
+  Re-enabled Bot Service public network access because disabling it unconfigures Teams channels.
+  The live Teams channel remains enabled, stable endpoint traffic routes 100% to `@latest`, and the
+  cited HTL-001 regression passes.

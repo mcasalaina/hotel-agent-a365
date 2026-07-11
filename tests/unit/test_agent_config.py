@@ -20,6 +20,15 @@ def test_settings_load_required_values(
         "FABRIC_DATA_AGENT_MCP_URL",
         "https://api.fabric.microsoft.com/v1/mcp/workspaces/workspace/dataagents/agent/agent",
     )
+    monkeypatch.setenv("AGENT365_TENANT_ID", "tenant-id")
+    monkeypatch.setenv("AGENT365_BLUEPRINT_CLIENT_ID", "blueprint-id")
+    monkeypatch.setenv("AGENT365_INSTANCE_CLIENT_ID", "instance-id")
+    for prefix in ("COPILOT", "MAIL", "TEAMS"):
+        monkeypatch.setenv(
+            f"WORK_IQ_{prefix}_MCP_URL",
+            f"https://agent365.example.test/{prefix.lower()}",
+        )
+        monkeypatch.setenv(f"WORK_IQ_{prefix}_MCP_AUDIENCE", f"{prefix.lower()}-audience")
     monkeypatch.setenv("AGENT_INSTRUCTIONS_PATH", str(instructions))
 
     settings = Settings.from_environment()
@@ -29,6 +38,12 @@ def test_settings_load_required_values(
     assert settings.search_endpoint == "https://search.example.test"
     assert settings.knowledge_base_name == "hotel-foundryiq"
     assert settings.fabric_data_agent_mcp_url.endswith("/dataagents/agent/agent")
+    assert settings.agent365_blueprint_client_id == "blueprint-id"
+    assert settings.work_iq_servers[1] == (
+        "work-iq-mail",
+        "https://agent365.example.test/mail",
+        "mail-audience",
+    )
     assert settings.instructions == "Test instructions"
 
 
