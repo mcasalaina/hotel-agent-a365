@@ -1,0 +1,201 @@
+{
+  "workspace": {
+    "capacityId": "24f6590d-413b-4d9f-9c2b-601d753eda94",
+    "capacityRegion": "East US 2",
+    "description": "Fabric workspace for the hotel guest services demo foundation.",
+    "displayName": "HotelAgent.Workspace"
+  },
+  "lakehouses": [
+    {
+      "authoritativeTables": [
+        "properties",
+        "room_types",
+        "rooms",
+        "amenities",
+        "property_amenities",
+        "daily_inventory",
+        "daily_rates",
+        "outlets",
+        "associates",
+        "maintenance_requests",
+        "work_orders",
+        "rate_plans"
+      ],
+      "defaultSchema": "dbo",
+      "description": "Authoritative operations lakehouse for property, inventory, rates, outlets, associates, maintenance, and work orders.",
+      "displayName": "HotelOperations",
+      "enableSchemas": false,
+      "shortcuts": []
+    },
+    {
+      "authoritativeTables": [
+        "guests",
+        "guest_preferences",
+        "reservations",
+        "reservation_guests",
+        "stays",
+        "room_assignments",
+        "restaurant_reservations",
+        "restaurant_checks",
+        "folios",
+        "folio_transactions",
+        "payments",
+        "adjustments",
+        "billing_disputes",
+        "special_requests",
+        "service_cases",
+        "service_recovery",
+        "action_confirmations",
+        "idempotency_records",
+        "audit_events"
+      ],
+      "defaultSchema": "dbo",
+      "description": "Authoritative guest-services lakehouse for reservations, stays, dining, folios, disputes, requests, confirmations, idempotency, and audit events.",
+      "displayName": "HotelGuestServices",
+      "enableSchemas": false,
+      "shortcuts": [
+        {
+          "name": "ops_properties",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/properties"
+        },
+        {
+          "name": "ops_room_types",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/room_types"
+        },
+        {
+          "name": "ops_rate_plans",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/rate_plans"
+        },
+        {
+          "name": "ops_outlets",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/outlets"
+        },
+        {
+          "name": "ops_daily_inventory",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/daily_inventory"
+        },
+        {
+          "name": "ops_daily_rates",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/daily_rates"
+        },
+        {
+          "name": "ops_maintenance_requests",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/maintenance_requests"
+        },
+        {
+          "name": "ops_work_orders",
+          "path": "Tables",
+          "sourceLakehouse": "HotelOperations",
+          "sourcePath": "Tables/work_orders"
+        }
+      ]
+    }
+  ],
+  "notebooks": [
+    {
+      "contractKey": "HotelInitialLoad",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/initial_load.ipynb",
+      "description": "Initial load notebook scaffold for discovering generated inputs and materializing both authoritative lakehouses.",
+      "displayName": "HotelInitialLoad"
+    },
+    {
+      "contractKey": "HotelDeterministicReset",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/deterministic_reset.ipynb",
+      "description": "Deterministic reset notebook scaffold for restoring both lakehouses to the canonical demo baseline.",
+      "displayName": "HotelDeterministicReset"
+    },
+    {
+      "contractKey": "HotelValidation",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/validation.ipynb",
+      "description": "Validation notebook scaffold for data-quality gates, shortcut resolution checks, and load reconciliation.",
+      "displayName": "HotelValidation"
+    },
+    {
+      "contractKey": "HotelReservationAction",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/reservation_action.ipynb",
+      "description": "Reservation mutation notebook scaffold with typed parameters, confirmation IDs, and idempotency keys.",
+      "displayName": "HotelReservationAction"
+    },
+    {
+      "contractKey": "HotelRestaurantAction",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/restaurant_action.ipynb",
+      "description": "Restaurant mutation notebook scaffold with typed parameters, confirmation IDs, and idempotency keys.",
+      "displayName": "HotelRestaurantAction"
+    },
+    {
+      "contractKey": "HotelBillingDisputeAction",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/billing_dispute_action.ipynb",
+      "description": "Billing dispute notebook scaffold with optimistic concurrency and immutable audit-event requirements.",
+      "displayName": "HotelBillingDisputeAction"
+    },
+    {
+      "contractKey": "HotelServiceRequestAction",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/service_request_action.ipynb",
+      "description": "Service-request mutation notebook scaffold for guest-facing requests and cross-lakehouse maintenance sagas.",
+      "displayName": "HotelServiceRequestAction"
+    },
+    {
+      "contractKey": "HotelAggregateRefresh",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/aggregate_refresh.ipynb",
+      "description": "Aggregate refresh notebook scaffold for governed summary facts and shortcut-backed semantic-model readiness.",
+      "displayName": "HotelAggregateRefresh"
+    },
+    {
+      "contractKey": "HotelDataAgentRuntimePublish",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/data_agent_runtime_publish.ipynb",
+      "description": "Fabric runtime publish notebook scaffold for the data agent management-plane publish sequence.",
+      "displayName": "HotelDataAgentRuntimePublish"
+    }
+  ],
+  "blueprints": {
+    "dataAgent": {
+      "blockingReason": "Wait for generated schema handoff before publishing the runtime data agent sources and validated few-shot SQL.",
+      "deployable": false,
+      "displayName": "HotelOperationsAgent",
+      "path": "fabric/data-agent/draft/agent.blueprint.json"
+    },
+    "ontology": {
+      "blockingReason": "Wait for generated schema handoff before binding entity keys, value types, and relationship columns into a true Ontology definition.",
+      "deployable": false,
+      "displayName": "HotelOperationsOntology",
+      "path": "fabric/ontology/blueprint.json"
+    },
+    "report": {
+      "blockingReason": "Wait for semantic-model tables and measures before authoring the full PBIR layout and visuals.",
+      "deployable": false,
+      "displayName": "HotelOperationsReport",
+      "path": "fabric/report/blueprint.json"
+    },
+    "semanticModel": {
+      "blockingReason": "Wait for generated schema handoff before authoring TMDL tables, relationships, and measures.",
+      "deployable": false,
+      "displayName": "HotelOperationsModel",
+      "path": "fabric/semantic-model/blueprint.json"
+    }
+  },
+  "contractFile": "fabric/notebooks/contracts.json"
+}
+

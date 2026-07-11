@@ -1,0 +1,30 @@
+{
+  "blockedBy": [
+    "generated-schema-handoff"
+  ],
+  "deployable": false,
+  "description": "Blueprint for the true Fabric Ontology item that will bind relationship paths spanning both authoritative lakehouses.",
+  "displayName": "HotelOperationsOntology",
+  "entityTypes": [
+    "Property",
+    "Room",
+    "RoomType",
+    "Guest",
+    "Reservation",
+    "Stay",
+    "Outlet",
+    "Folio",
+    "FolioTransaction",
+    "SpecialRequest",
+    "MaintenanceRequest",
+    "WorkOrder",
+    "Associate"
+  ],
+  "relationshipPaths": [
+    "Guest -> Reservation -> Stay -> Room -> Property",
+    "Stay -> Folio -> FolioTransaction -> BillingDispute",
+    "Stay -> SpecialRequest",
+    "Room -> MaintenanceRequest -> WorkOrder -> Associate"
+  ]
+}
+

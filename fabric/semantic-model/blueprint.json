@@ -1,0 +1,41 @@
+{
+  "blockedBy": [
+    "generated-schema-handoff"
+  ],
+  "deployable": false,
+  "description": "Blueprint for the Direct Lake semantic model that will bind to HotelGuestServices plus validated ops_ shortcuts from HotelOperations.",
+  "displayName": "HotelOperationsModel",
+  "requiredMeasures": [
+    "Occupancy Rate",
+    "ADR",
+    "RevPAR",
+    "TRevPAR",
+    "GOPPAR",
+    "NRevPAR",
+    "ALOS",
+    "CPOR",
+    "Booking Pace",
+    "Pickup",
+    "Cancellation Rate",
+    "No Show Rate",
+    "Channel Mix",
+    "Room Revenue",
+    "Food and Beverage Revenue",
+    "Service Recovery Cost",
+    "Dispute Rate",
+    "Maintenance Response Time",
+    "Guest Spend"
+  ],
+  "requiredShortcutTables": [
+    "ops_properties",
+    "ops_room_types",
+    "ops_rate_plans",
+    "ops_outlets",
+    "ops_daily_inventory",
+    "ops_daily_rates",
+    "ops_maintenance_requests",
+    "ops_work_orders"
+  ],
+  "sourceLakehouse": "HotelGuestServices"
+}
+

@@ -1,0 +1,293 @@
+{
+  "HotelAggregateRefresh": {
+    "parameters": [
+      {
+        "description": "Correlation identifier for the refresh request.",
+        "name": "correlation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Refresh scope for downstream aggregates.",
+        "name": "refresh_scope",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "guest_services",
+          "operations_shortcuts",
+          "all"
+        ]
+      },
+      {
+        "description": "Force a full rebuild instead of an incremental refresh.",
+        "name": "force_full_rebuild",
+        "required": true,
+        "type": "Boolean"
+      }
+    ]
+  },
+  "HotelBillingDisputeAction": {
+    "parameters": [
+      {
+        "description": "Requested dispute action.",
+        "name": "action",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "open",
+          "update",
+          "resolve"
+        ]
+      },
+      {
+        "description": "Explicit confirmation identifier supplied by the Hosted Agent.",
+        "name": "confirmation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Idempotency key for replay-safe execution.",
+        "name": "idempotency_key",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Optimistic concurrency record version expected by the caller.",
+        "name": "expected_record_version",
+        "required": true,
+        "type": "Integer"
+      },
+      {
+        "description": "UTC timestamp of the write request.",
+        "name": "request_timestamp_utc",
+        "required": true,
+        "type": "DateTime"
+      }
+    ]
+  },
+  "HotelDataAgentRuntimePublish": {
+    "parameters": [
+      {
+        "description": "Existing data-agent item identifier.",
+        "name": "data_agent_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Capacity identifier for workload-specific publish management APIs.",
+        "name": "capacity_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Publish mode.",
+        "name": "publish_mode",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "deploy",
+          "validate_only"
+        ]
+      }
+    ]
+  },
+  "HotelDeterministicReset": {
+    "parameters": [
+      {
+        "description": "Correlation identifier for the reset.",
+        "name": "correlation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Reset scope for authoritative lakehouses.",
+        "name": "reset_scope",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "guest_services",
+          "operations",
+          "all"
+        ]
+      },
+      {
+        "description": "Whether to reload sources after deleting materialized tables.",
+        "name": "reload_after_reset",
+        "required": true,
+        "type": "Boolean"
+      }
+    ]
+  },
+  "HotelInitialLoad": {
+    "parameters": [
+      {
+        "description": "Correlation identifier for the load operation.",
+        "name": "correlation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Repository-relative or OneLake-accessible root that contains generated source files.",
+        "name": "source_root",
+        "required": true,
+        "type": "Text"
+      },
+      {
+        "description": "Load mode for the lakehouse bootstrap.",
+        "name": "load_mode",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "full",
+          "incremental"
+        ]
+      },
+      {
+        "description": "Reset both lakehouses before performing the load.",
+        "name": "reset_before_load",
+        "required": true,
+        "type": "Boolean"
+      }
+    ]
+  },
+  "HotelReservationAction": {
+    "parameters": [
+      {
+        "description": "Requested reservation mutation.",
+        "name": "action",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "create",
+          "change",
+          "cancel"
+        ]
+      },
+      {
+        "description": "Explicit confirmation identifier supplied by the Hosted Agent.",
+        "name": "confirmation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Idempotency key for replay-safe execution.",
+        "name": "idempotency_key",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Optimistic concurrency record version expected by the caller.",
+        "name": "expected_record_version",
+        "required": false,
+        "type": "Integer"
+      },
+      {
+        "description": "UTC timestamp of the write request.",
+        "name": "request_timestamp_utc",
+        "required": true,
+        "type": "DateTime"
+      }
+    ]
+  },
+  "HotelRestaurantAction": {
+    "parameters": [
+      {
+        "description": "Requested restaurant reservation mutation.",
+        "name": "action",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "create",
+          "change",
+          "cancel"
+        ]
+      },
+      {
+        "description": "Explicit confirmation identifier supplied by the Hosted Agent.",
+        "name": "confirmation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Idempotency key for replay-safe execution.",
+        "name": "idempotency_key",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "UTC timestamp of the write request.",
+        "name": "request_timestamp_utc",
+        "required": true,
+        "type": "DateTime"
+      }
+    ]
+  },
+  "HotelServiceRequestAction": {
+    "parameters": [
+      {
+        "description": "Requested service or maintenance mutation.",
+        "name": "action",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "create",
+          "update",
+          "resolve"
+        ]
+      },
+      {
+        "description": "Explicit confirmation identifier supplied by the Hosted Agent.",
+        "name": "confirmation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Idempotency key for replay-safe execution.",
+        "name": "idempotency_key",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Optimistic concurrency record version expected by the caller.",
+        "name": "expected_record_version",
+        "required": false,
+        "type": "Integer"
+      },
+      {
+        "description": "UTC timestamp of the write request.",
+        "name": "request_timestamp_utc",
+        "required": true,
+        "type": "DateTime"
+      }
+    ]
+  },
+  "HotelValidation": {
+    "parameters": [
+      {
+        "description": "Correlation identifier for the validation run.",
+        "name": "correlation_id",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "description": "Validation scope.",
+        "name": "validation_scope",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "source_inputs",
+          "lakehouse_tables",
+          "shortcuts",
+          "all"
+        ]
+      },
+      {
+        "description": "Fail the run when warnings are discovered.",
+        "name": "fail_on_warning",
+        "required": true,
+        "type": "Boolean"
+      }
+    ]
+  }
+}
+

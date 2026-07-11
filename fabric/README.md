@@ -1,3 +1,12 @@
 # Microsoft Fabric artifacts
 
-This directory reserves source-controlled definitions for two lakehouses, notebooks, the Direct Lake semantic model, the PBIR report, the ontology, and the published data agent. No Fabric item definition is created by the bootstrap.
+This directory now contains the source-controlled Phase 1 foundation for Microsoft Fabric:
+
+- `topology.json` is the canonical workspace, lakehouse, shortcut, and notebook inventory.
+- `notebooks/` contains deployable notebook definitions plus typed parameter contracts.
+- `semantic-model/`, `report/`, `ontology/`, and `data-agent/` contain schema-safe blueprints for
+  later artifacts that depend on the generated-schema handoff.
+
+Deployment automation lives in `scripts/fabric/` and uses Fabric REST APIs plus item-definition
+payloads. The planner supports local validation, remote discovery, dry-run planning, idempotent
+create-or-update behavior, LRO polling, and gitignored deployment-state output.

@@ -1,0 +1,18 @@
+{
+  "blockedBy": [
+    "semantic-model-authoring"
+  ],
+  "definitionFile": "fabric/report/definition.pbir",
+  "deployable": false,
+  "description": "Blueprint for the PBIR report that will be bound to the HotelOperationsModel semantic model once tables and measures exist.",
+  "displayName": "HotelOperationsReport",
+  "pages": [
+    "Executive and property performance",
+    "Booking pace, demand, and channel mix",
+    "Guest value and spend",
+    "Front-desk and stay operations",
+    "Dining and HoReCa performance",
+    "Requests, maintenance, disputes, and service recovery"
+  ]
+}
+

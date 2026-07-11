@@ -1,0 +1,25 @@
+{
+  "sources": [
+    {
+      "authority": "Authoritative for property, room, inventory, rate, outlet, associate, maintenance, and work-order data plus all write paths for those domains.",
+      "displayName": "HotelOperations",
+      "type": "Lakehouse"
+    },
+    {
+      "authority": "Authoritative for guests, reservations, stays, dining, folios, disputes, special requests, confirmations, idempotency records, and audit events.",
+      "displayName": "HotelGuestServices",
+      "type": "Lakehouse"
+    },
+    {
+      "authority": "Authoritative for governed cross-domain analytical measures after semantic-model handoff is complete.",
+      "displayName": "HotelOperationsModel",
+      "type": "SemanticModel"
+    },
+    {
+      "authority": "Authoritative for relationship traversal once ontology bindings are materialized and graph data is loaded.",
+      "displayName": "HotelOperationsOntology",
+      "type": "Ontology"
+    }
+  ]
+}
+

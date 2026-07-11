@@ -1,0 +1,12 @@
+{
+  "blockedBy": [
+    "generated-schema-handoff",
+    "validated-few-shot-queries"
+  ],
+  "deployable": false,
+  "description": "Draft data-agent blueprint that captures source boundaries, routing guidance, and publication prerequisites without editing published runtime artifacts directly.",
+  "displayName": "HotelOperationsAgent",
+  "instructionFile": "fabric/data-agent/draft/instructions.md",
+  "sourceFile": "fabric/data-agent/draft/sources.json"
+}
+
