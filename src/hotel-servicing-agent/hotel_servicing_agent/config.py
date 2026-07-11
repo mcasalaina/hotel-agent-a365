@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 class Settings:
     project_endpoint: str
     model_deployment: str
+    search_endpoint: str
+    knowledge_base_name: str
     instructions: str
 
     @classmethod
@@ -19,6 +21,8 @@ class Settings:
         load_dotenv(dotenv_path=dotenv_path or None)
         project_endpoint = _required_environment_variable("FOUNDRY_PROJECT_ENDPOINT")
         model_deployment = _required_environment_variable("AZURE_AI_MODEL_DEPLOYMENT_NAME")
+        search_endpoint = _required_environment_variable("AZURE_SEARCH_ENDPOINT")
+        knowledge_base_name = _required_environment_variable("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME")
         instructions_path = Path(
             os.getenv("AGENT_INSTRUCTIONS_PATH", "../../agent-instructions.md")
         )
@@ -27,6 +31,8 @@ class Settings:
         return cls(
             project_endpoint=project_endpoint,
             model_deployment=model_deployment,
+            search_endpoint=search_endpoint,
+            knowledge_base_name=knowledge_base_name,
             instructions=instructions_path.read_text(encoding="utf-8"),
         )
 

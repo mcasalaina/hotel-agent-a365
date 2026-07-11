@@ -30,7 +30,6 @@ agent/a365.config.json
 # Generated and packaged artifacts
 data/generated/*
 !data/generated/README.md
-foundryiq-docs/**/*.generated.*
 manifest/*.zip
 *.zip
 docker-logs/

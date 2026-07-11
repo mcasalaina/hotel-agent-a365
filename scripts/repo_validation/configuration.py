@@ -8,6 +8,8 @@ import yaml
 
 EXPECTED_AGENT_NAME = "hotel-servicing-agent"
 EXPECTED_MODEL = "gpt-5.4-mini"
+EXPECTED_SEARCH_ENDPOINT = "https://3iqs-search-aycabas.search.windows.net"
+EXPECTED_KNOWLEDGE_BASE = "hotel-foundryiq"
 EXPECTED_PROJECT_ENDPOINT = (
     "https://4iq-foundry-project-resource.services.ai.azure.com/api/projects/4iq-foundry-project"
 )
@@ -30,6 +32,7 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     manifest = _load_yaml(root / "src/hotel-servicing-agent/agent.manifest.yaml")
     evaluation = _load_yaml(root / "eval.yaml")
     env = _load_env(root / "config/azd.env.example")
+    local_env = _load_env(root / ".env.template")
     problems: list[ConfigurationProblem] = []
 
     services = _mapping(azure.get("services"))
@@ -37,22 +40,41 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     project = _mapping(services.get("ai-project"))
     agent = _mapping(services.get(EXPECTED_AGENT_NAME))
     template = _mapping(manifest.get("template"))
+    environment_variables = _named_values(agent.get("environmentVariables"))
 
     _expect(problems, "azure.name", azure.get("name"), "hotel-agent-a365")
-    _expect(problems, "infra.provider", infrastructure.get("provider"), "bicep")
-    _expect(problems, "infra.path", infrastructure.get("path"), "infra")
+    _expect(problems, "infra.provider", infrastructure.get("provider"), "microsoft.foundry")
     _expect(problems, "services.ai-project.host", project.get("host"), "azure.ai.project")
     _expect(
         problems,
-        "services.ai-project.endpoint",
-        project.get("endpoint"),
-        "${AZURE_AI_PROJECT_ENDPOINT}",
+        "services.ai-project.deployments[0].name",
+        _nested_sequence(project, "deployments", 0, "name"),
+        EXPECTED_MODEL,
     )
     _expect(problems, "agent.host", agent.get("host"), "azure.ai.agent")
     _expect(problems, "agent.kind", agent.get("kind"), "hosted")
     _expect(problems, "agent.name", agent.get("name"), EXPECTED_AGENT_NAME)
-    _expect(problems, "agent.language", agent.get("language"), "docker")
+    _expect(problems, "agent.project", agent.get("project"), "src/hotel-servicing-agent")
+    _expect(problems, "agent.language", agent.get("language"), "python")
     _expect(problems, "agent.protocols", agent.get("protocols"), EXPECTED_PROTOCOLS)
+    _expect(
+        problems,
+        "agent.codeConfiguration.runtime",
+        _nested(agent, "codeConfiguration", "runtime"),
+        "python_3_13",
+    )
+    _expect(
+        problems,
+        "agent.codeConfiguration.entryPoint",
+        _nested(agent, "codeConfiguration", "entryPoint"),
+        "main.py",
+    )
+    _expect(
+        problems,
+        "agent.codeConfiguration.dependencyResolution",
+        _nested(agent, "codeConfiguration", "dependencyResolution"),
+        "remote_build",
+    )
     _expect(
         problems,
         "agent.container.resources.cpu",
@@ -67,10 +89,29 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     )
     _expect(
         problems,
-        "agent.env.AZURE_AI_MODEL_DEPLOYMENT_NAME",
-        _nested(agent, "env", "AZURE_AI_MODEL_DEPLOYMENT_NAME"),
+        "agent.environmentVariables.AZURE_AI_MODEL_DEPLOYMENT_NAME",
+        environment_variables.get("AZURE_AI_MODEL_DEPLOYMENT_NAME"),
         "${AZURE_AI_MODEL_DEPLOYMENT_NAME}",
     )
+    _expect(
+        problems,
+        "agent.environmentVariables.AZURE_SEARCH_ENDPOINT",
+        environment_variables.get("AZURE_SEARCH_ENDPOINT"),
+        "${AZURE_SEARCH_ENDPOINT}",
+    )
+    _expect(
+        problems,
+        "agent.environmentVariables.FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
+        environment_variables.get("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME"),
+        "${FOUNDRY_IQ_KNOWLEDGE_BASE_NAME}",
+    )
+    if "FOUNDRY_PROJECT_ENDPOINT" in environment_variables:
+        problems.append(
+            ConfigurationProblem(
+                "agent.environmentVariables.FOUNDRY_PROJECT_ENDPOINT",
+                "Foundry injects this value; it must not be configured in azure.yaml",
+            )
+        )
 
     _expect(problems, "manifest.template.name", template.get("name"), EXPECTED_AGENT_NAME)
     _expect(problems, "manifest.template.kind", template.get("kind"), "hosted")
@@ -105,25 +146,45 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         env.get("AZURE_AI_MODEL_DEPLOYMENT_NAME"),
         EXPECTED_MODEL,
     )
-    for infrastructure_file in (
-        "infra/main.bicep",
-        "infra/main.parameters.json",
-        "infra/modules/supporting-resources.bicep",
-        "infra/modules/foundry-connection.bicep",
-    ):
-        if not (root / infrastructure_file).is_file():
-            problems.append(
-                ConfigurationProblem(
-                    infrastructure_file,
-                    "required infrastructure file does not exist",
-                )
-            )
+    _expect(
+        problems,
+        "AZURE_SEARCH_ENDPOINT",
+        env.get("AZURE_SEARCH_ENDPOINT"),
+        EXPECTED_SEARCH_ENDPOINT,
+    )
+    _expect(
+        problems,
+        "FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
+        env.get("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME"),
+        EXPECTED_KNOWLEDGE_BASE,
+    )
+    _expect(
+        problems,
+        ".env.AZURE_SEARCH_ENDPOINT",
+        local_env.get("AZURE_SEARCH_ENDPOINT"),
+        EXPECTED_SEARCH_ENDPOINT,
+    )
+    _expect(
+        problems,
+        ".env.FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
+        local_env.get("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME"),
+        EXPECTED_KNOWLEDGE_BASE,
+    )
     evaluation_dataset = _nested(evaluation, "dataset", "local_uri")
     if not isinstance(evaluation_dataset, str) or not (root / evaluation_dataset).is_file():
         problems.append(
             ConfigurationProblem(
                 "eval.dataset.local_uri",
                 f"dataset file does not exist: {evaluation_dataset!r}",
+            )
+        )
+    deployed_instructions = root / "src/hotel-servicing-agent/agent-instructions.md"
+    root_instructions = root / "agent-instructions.md"
+    if deployed_instructions.read_bytes() != root_instructions.read_bytes():
+        problems.append(
+            ConfigurationProblem(
+                "agent.instructions",
+                "root and deployed agent instruction files must stay identical",
             )
         )
     return problems
@@ -159,6 +220,16 @@ def _load_env(path: Path) -> dict[str, str]:
 
 def _mapping(value: object) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
+
+
+def _named_values(value: object) -> dict[str, object]:
+    if not isinstance(value, list):
+        return {}
+    return {
+        item["name"]: item.get("value")
+        for item in value
+        if isinstance(item, dict) and isinstance(item.get("name"), str)
+    }
 
 
 def _nested(value: dict[str, Any], *keys: str) -> object:

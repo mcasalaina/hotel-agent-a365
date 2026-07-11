@@ -18,9 +18,9 @@ See `../PLAN.md` for the complete three-phase implementation plan, property rost
 - Existing model deployments:
   - `gpt-5.4-mini`
   - `text-embedding-3-small`
-- New generic Azure resource group: `rg-hotel-agent-a365`
-- New generic East US 2 Azure AI Search service with four indexes and one Foundry IQ knowledge base. The project's existing Search connection targets an East US service and will not be reused.
-- New generic storage account/container for knowledge documents.
+- Existing resource group: `rg-aycabas-3iqs`
+- Existing Azure AI Search service with four hotel indexes and one Foundry IQ knowledge base.
+- Existing storage account with the generic `hotel-docs` container for knowledge documents.
 - Containerized Foundry Hosted Agent `hotel-servicing-agent`.
 - Generic Agent 365 host/web resources needed by the approved publish path.
 - Existing Application Insights associated with the target Foundry resource for tracing.
@@ -86,4 +86,9 @@ When implementation artifacts are complete:
 - 2026-07-11: Shared repository skeleton, Hosted Agent container scaffolding, safe configuration examples, technical naming guard, and baseline developer checks prepared. Status remains In Progress pending later implementation workstreams and validation.
 - 2026-07-11: Bootstrap validation passed (Ruff, mypy, pytest, configuration/naming checks, dependency check, and shell syntax). Domain content and deterministic data generation started in an isolated child worktree.
 - 2026-07-11: Read-only environment discovery found no subscription-scope policy assignments or resource-group locks, confirmed an active East US 2 F16 Fabric capacity, and identified the existing project Search connection as East US rather than East US 2. Plan updated to use a new generic East US 2 Search service.
-- 2026-07-11: Prepared subscription-scope Bicep for the generic supporting resource group, East US 2 Search and storage resources, managed-identity RBAC, private document container, and `hotel-search` connection in the existing Foundry project. No deployment was executed.
+- 2026-07-11: Prepared subscription-scope Bicep for a possible dedicated East US 2 Search/storage deployment, but did not execute it. This path was superseded after live Foundry IQ validation showed the project's existing Search and storage resources satisfy the Phase 1 requirements.
+- 2026-07-11: Generated and validated 658,611 deterministic hotel rows, stable demo fixtures, and 95 customer-facing Foundry IQ source documents.
+- 2026-07-11: Archived 95 source documents in `hotel-docs`; created four Search indexes, four knowledge sources, and `hotel-foundryiq` in the existing Search service. Direct counts and citation-backed answer synthesis passed.
+- 2026-07-11: Deployed `hotel-servicing-agent` from source through the Foundry REST code-agent API after azd was found authenticated to an expired tenant. Version 3 is active; its instance identity has Search Index Data Reader.
+- 2026-07-11: Live Responses checks passed for dated notices, chain policy, dining guidance, unsupported facts, and HTL-003 property isolation. Status remains In Progress because Fabric, Work IQ, Agent 365, and the full Phase 1 evaluation gate are not complete.
+- 2026-07-11: Added a five-case source-controlled Foundry evaluation seed. Remote suite creation remains blocked until azd is reauthenticated from the expired `CA M365 2606` tenant to the active project tenant.

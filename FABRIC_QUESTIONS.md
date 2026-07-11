@@ -10,4 +10,8 @@ Question sets will cover:
 - Relationship traversal through the ontology
 - Mutation previews, confirmations, idempotency, conflicts, and rereads
 
-Expected answers and source-routing assertions will be added after deterministic data and Fabric item definitions exist.
+The deterministic source-data fixtures now provide stable IDs for the future question
+set: `RES-DEMO-FAMILY`, `RES-DEMO-RATE-CHANGE`, `RES-DEMO-CANCEL-FLEX`,
+`RES-DEMO-CANCEL-NRF`, `RES-DEMO-FOLIO`, `SR-DEMO-PREARRIVAL`,
+`MR-DEMO-HVAC`, and `RR-DEMO-DINING`. Fabric definitions and query benchmarks remain
+out of scope for this workstream.

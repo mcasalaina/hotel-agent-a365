@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "date_range": {
+    "start": "2026-03-01",
+    "end": "2027-03-31"
+  },
+  "required_tables": [
+    "properties",
+    "room_types",
+    "rooms",
+    "outlets",
+    "amenities",
+    "property_amenities",
+    "guests",
+    "reservations",
+    "stays",
+    "restaurant_reservations",
+    "folios",
+    "folio_transactions",
+    "payments",
+    "billing_disputes",
+    "special_requests",
+    "maintenance_requests",
+    "work_orders",
+    "daily_inventory",
+    "daily_rates",
+    "property_daily_metrics",
+    "action_confirmations",
+    "idempotency_records",
+    "audit_events"
+  ],
+  "status_values": {
+    "reservation": [
+      "future",
+      "arriving",
+      "departed",
+      "cancelled",
+      "no_show",
+      "completed",
+      "in_house"
+    ],
+    "stay": [
+      "completed",
+      "in_house"
+    ]
+  },
+  "payment_policy": {
+    "card_mask_pattern": "**** **** **** 1234",
+    "forbidden_columns": [
+      "card_number",
+      "cvv",
+      "pan"
+    ]
+  }
+}

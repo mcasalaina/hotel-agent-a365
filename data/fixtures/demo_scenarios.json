@@ -1,0 +1,58 @@
+{
+  "fixture_version": 1,
+  "scenarios": [
+    {
+      "key": "property_discovery",
+      "property_id": "HTL-001",
+      "description": "Compare waterfront amenities and ferry access."
+    },
+    {
+      "key": "family_accessibility",
+      "property_id": "HTL-004",
+      "reservation_id": "RES-DEMO-FAMILY",
+      "description": "Multi-room family booking with accessibility needs."
+    },
+    {
+      "key": "rate_change",
+      "property_id": "HTL-001",
+      "reservation_id": "RES-DEMO-RATE-CHANGE",
+      "description": "Date and rate change with a changed cancellation policy."
+    },
+    {
+      "key": "cancellable",
+      "property_id": "HTL-002",
+      "reservation_id": "RES-DEMO-CANCEL-FLEX",
+      "description": "Cancellable flexible reservation."
+    },
+    {
+      "key": "nonrefundable",
+      "property_id": "HTL-003",
+      "reservation_id": "RES-DEMO-CANCEL-NRF",
+      "description": "Nonrefundable reservation."
+    },
+    {
+      "key": "folio_dispute",
+      "property_id": "HTL-005",
+      "reservation_id": "RES-DEMO-FOLIO",
+      "description": "Completed stay with a reproducible minibar or parking dispute."
+    },
+    {
+      "key": "prearrival_request",
+      "property_id": "HTL-004",
+      "request_id": "SR-DEMO-PREARRIVAL",
+      "description": "Pre-arrival allergy, crib, and late-arrival request."
+    },
+    {
+      "key": "maintenance",
+      "property_id": "HTL-004",
+      "request_id": "MR-DEMO-HVAC",
+      "description": "In-stay HVAC maintenance request."
+    },
+    {
+      "key": "restaurant",
+      "property_id": "HTL-004",
+      "reservation_id": "RR-DEMO-DINING",
+      "description": "Restaurant reservation that can be created and changed."
+    }
+  ]
+}

@@ -1,13 +1,14 @@
-name: hotel-agent-bootstrap
+name: hotel-servicing-smoke
 agent:
   name: hotel-servicing-agent
+  version: "3"
 dataset:
-  local_uri: tests/fixtures/evaluation/bootstrap.jsonl
+  local_uri: tests/fixtures/evaluation/hotel_servicing_smoke.jsonl
 evaluators: []
 options:
   eval_model: gpt-5.4-mini
   pass_threshold: 1.0
-max_samples: 1
+max_samples: 5
 generation_instruction: >
-  Replace this bootstrap intent with the approved smoke, regression, coverage,
-  tool-routing, groundedness, citation, confirmation, and sensitive-data suite.
+  Evaluate property isolation, date-aware operations notices, chain policy grounding,
+  dining guidance, citation behavior, and honest handling of unsupported facts.

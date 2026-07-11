@@ -3,16 +3,23 @@ from __future__ import annotations
 from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
 from agent_framework_foundry_hosting import ResponsesHostServer
-from azure.identity import DefaultAzureCredential
 
 from hotel_servicing_agent.config import Settings
+from hotel_servicing_agent.credentials import select_azure_credential
+from hotel_servicing_agent.tools import FoundryIQTool
 
 
 def create_agent(settings: Settings) -> Agent:
+    credential = select_azure_credential()
     client = FoundryChatClient(
         project_endpoint=settings.project_endpoint,
         model=settings.model_deployment,
-        credential=DefaultAzureCredential(),
+        credential=credential,
+    )
+    knowledge_tool = FoundryIQTool(
+        search_endpoint=settings.search_endpoint,
+        knowledge_base_name=settings.knowledge_base_name,
+        credential=credential,
     )
     return Agent(
         client=client,
@@ -20,6 +27,7 @@ def create_agent(settings: Settings) -> Agent:
         description="Guest-services orchestration for a fictional hotel chain.",
         instructions=settings.instructions,
         default_options={"store": False},
+        tools=[knowledge_tool.as_function_tool()],
     )
 
 
