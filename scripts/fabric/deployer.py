@@ -10,6 +10,7 @@ from fabric.discovery import SourceDiscoveryResult, discover_source_files
 from fabric.payloads import (
     build_artifact_create_body,
     build_artifact_definition,
+    build_lakehouse_creation_body,
     build_lakehouse_payload,
     build_notebook_payload,
     build_workspace_payload,
@@ -133,19 +134,36 @@ class FabricDeployer:
             existing = current_items.get(("Lakehouse", lakehouse.display_name))
             payload = build_lakehouse_payload(lakehouse, workspace_id, lakehouse_ids)
             if existing is None:
-                created = self._client.create_lakehouse(workspace_id, payload)
+                created = self._client.create_lakehouse(
+                    workspace_id,
+                    build_lakehouse_creation_body(payload),
+                )
+                if lakehouse.shortcuts:
+                    self._client.update_item_definition(
+                        workspace_id,
+                        str(created["id"]),
+                        payload["definition"],
+                    )
                 current_items[("Lakehouse", lakehouse.display_name)] = created
                 lakehouse_ids[lakehouse.display_name] = str(created["id"])
                 append_operation(state, "create", "Lakehouse", lakehouse.display_name, "created")
                 record_item(state, "Lakehouse", lakehouse.display_name, str(created["id"]))
             else:
-                updated = self._client.update_item_definition(
-                    workspace_id,
-                    str(existing["id"]),
-                    payload["definition"],
-                )
+                updated: dict[str, Any] = {}
+                if lakehouse.shortcuts:
+                    updated = self._client.update_item_definition(
+                        workspace_id,
+                        str(existing["id"]),
+                        payload["definition"],
+                    )
                 lakehouse_ids[lakehouse.display_name] = str(existing["id"])
-                append_operation(state, "update", "Lakehouse", lakehouse.display_name, "updated")
+                append_operation(
+                    state,
+                    "update" if lakehouse.shortcuts else "reuse",
+                    "Lakehouse",
+                    lakehouse.display_name,
+                    "updated" if lakehouse.shortcuts else "reused",
+                )
                 record_item(
                     state,
                     "Lakehouse",

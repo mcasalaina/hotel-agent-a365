@@ -45,6 +45,8 @@ services:
         value: ${AZURE_SEARCH_ENDPOINT}
       - name: FOUNDRY_IQ_KNOWLEDGE_BASE_NAME
         value: ${FOUNDRY_IQ_KNOWLEDGE_BASE_NAME}
+      - name: FABRIC_DATA_AGENT_MCP_URL
+        value: ${FABRIC_DATA_AGENT_MCP_URL}
       - name: AGENT_INSTRUCTIONS_PATH
         value: agent-instructions.md
     container:

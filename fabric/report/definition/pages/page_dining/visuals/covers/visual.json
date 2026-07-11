@@ -41,10 +41,10 @@
                       "Entity": "Restaurant Daily"
                     }
                   },
-                  "Property": "Covers"
+                  "Property": "Restaurant Covers"
                 }
               },
-              "queryRef": "Restaurant Daily.Covers"
+              "queryRef": "Restaurant Daily.Restaurant Covers"
             }
           ]
         }

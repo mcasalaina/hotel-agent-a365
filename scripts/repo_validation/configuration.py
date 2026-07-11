@@ -10,6 +10,11 @@ EXPECTED_AGENT_NAME = "hotel-servicing-agent"
 EXPECTED_MODEL = "gpt-5.4-mini"
 EXPECTED_SEARCH_ENDPOINT = "https://3iqs-search-aycabas.search.windows.net"
 EXPECTED_KNOWLEDGE_BASE = "hotel-foundryiq"
+EXPECTED_FABRIC_DATA_AGENT_MCP_URL = (
+    "https://api.fabric.microsoft.com/v1/mcp/workspaces/"
+    "660ed238-54b7-42bd-8b1b-cf2ee47a11ba/dataagents/"
+    "9990b87a-d2ef-4c23-b11d-ffd72905906c/agent"
+)
 EXPECTED_PROJECT_ENDPOINT = (
     "https://4iq-foundry-project-resource.services.ai.azure.com/api/projects/4iq-foundry-project"
 )
@@ -105,6 +110,12 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         environment_variables.get("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME"),
         "${FOUNDRY_IQ_KNOWLEDGE_BASE_NAME}",
     )
+    _expect(
+        problems,
+        "agent.environmentVariables.FABRIC_DATA_AGENT_MCP_URL",
+        environment_variables.get("FABRIC_DATA_AGENT_MCP_URL"),
+        "${FABRIC_DATA_AGENT_MCP_URL}",
+    )
     if "FOUNDRY_PROJECT_ENDPOINT" in environment_variables:
         problems.append(
             ConfigurationProblem(
@@ -160,6 +171,12 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     )
     _expect(
         problems,
+        "FABRIC_DATA_AGENT_MCP_URL",
+        env.get("FABRIC_DATA_AGENT_MCP_URL"),
+        EXPECTED_FABRIC_DATA_AGENT_MCP_URL,
+    )
+    _expect(
+        problems,
         ".env.AZURE_SEARCH_ENDPOINT",
         local_env.get("AZURE_SEARCH_ENDPOINT"),
         EXPECTED_SEARCH_ENDPOINT,
@@ -169,6 +186,12 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         ".env.FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
         local_env.get("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME"),
         EXPECTED_KNOWLEDGE_BASE,
+    )
+    _expect(
+        problems,
+        ".env.FABRIC_DATA_AGENT_MCP_URL",
+        local_env.get("FABRIC_DATA_AGENT_MCP_URL"),
+        EXPECTED_FABRIC_DATA_AGENT_MCP_URL,
     )
     evaluation_dataset = _nested(evaluation, "dataset", "local_uri")
     if not isinstance(evaluation_dataset, str) or not (root / evaluation_dataset).is_file():

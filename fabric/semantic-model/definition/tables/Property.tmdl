@@ -1,38 +1,38 @@
 table Property
 
-column 'Property Id'
-	dataType: string
-	isHidden
-	summarizeBy: none
-	sourceColumn: property_id
+	column 'Property Id'
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: property_id
 
-column 'Property Name'
-	dataType: string
-	sourceColumn: name
+	column 'Property Name'
+		dataType: string
+		sourceColumn: name
 
-column Region
-	dataType: string
-	sourceColumn: region
+	column Region
+		dataType: string
+		sourceColumn: region
 
-column City
-	dataType: string
-	sourceColumn: city
+	column City
+		dataType: string
+		sourceColumn: city
 
-column Country
-	dataType: string
-	sourceColumn: country
+	column Country
+		dataType: string
+		sourceColumn: country
 
-column Currency
-	dataType: string
-	sourceColumn: currency
+	column Currency
+		dataType: string
+		sourceColumn: currency
 
-column 'Tax Rate'
-	dataType: decimal
-	formatString: 0.0000
-	sourceColumn: tax_rate
+	column 'Tax Rate'
+		dataType: decimal
+		formatString: 0.0000
+		sourceColumn: tax_rate
 
-partition Property = entity
-	mode: directLake
-	source
-		entityName: ops_properties
-		expressionSource: DL_HotelGuestServices
+	partition Property = entity
+		mode: directLake
+		source
+			entityName: ops_properties
+			expressionSource: DL_HotelGuestServices

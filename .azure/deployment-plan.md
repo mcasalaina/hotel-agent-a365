@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress - repository and application preparation
+In Progress - Phase 1 foundation deployed; mutation, Work IQ, evaluation, and Agent 365 gates remain
 
 ## Canonical product plan
 
@@ -94,3 +94,28 @@ When implementation artifacts are complete:
 - 2026-07-11: Added a five-case source-controlled Foundry evaluation seed. Remote suite creation remains blocked until azd is reauthenticated from the expired `CA M365 2606` tenant to the active project tenant.
 - 2026-07-11: Integrated and revalidated the data, corpus, Foundry IQ, and Hosted Agent work. Full generation produced 658,611 rows and 95 documents; all 36 local tests passed; live indexes contain 20 property, 15 policy, 20 dining/local, and 40 operations documents; a version 4 Responses invocation returned the expected HTL-001 pool hours with two approved citations.
 - 2026-07-11: Prepared the Fabric topology, typed notebook contracts, dry-run-first REST deployment tooling, and schema-gated semantic-model, report, ontology, and data-agent blueprints. No Fabric workspace or items have been deployed yet.
+- 2026-07-11: Deployed Fabric workspace `HotelAgent.Workspace`
+  (`660ed238-54b7-42bd-8b1b-cf2ee47a11ba`) with authoritative lakehouses
+  `HotelOperations` (`cdbf3424-785f-4121-b930-5d887e549b01`) and
+  `HotelGuestServices` (`2d0890bf-5b05-4bc0-b47f-1af1935820ff`). Loaded and validated all
+  source tables and six reporting aggregates.
+- 2026-07-11: Deployed and refreshed `HotelOperationsModel`
+  (`9890681b-e022-44cf-92f1-ef8bbdaddab7`), `HotelOperationsReport`
+  (`b93b57a9-d23f-45e4-b80b-247c5f2642d7`), and `HotelOperationsOntology`
+  (`6b854a1e-b051-4a43-bdab-99cf45a170c5`). Corrected the
+  `StayAssignedRoom` source/target contextualization during live ontology validation.
+- 2026-07-11: Deployed and published `HotelOperationsAgent`
+  (`9990b87a-d2ef-4c23-b11d-ffd72905906c`). Definition-only lakehouse elements remained
+  `NotAvailable`; the supported repair is to re-register both lakehouse sources, synchronize and
+  select their live schemas with `fabric-data-agent-sdk==0.1.26a0`, apply descriptions/examples,
+  and publish. `HotelDataAgentRuntimePublish` now automates that sequence. MCP tests passed for
+  operations-only, guest-services-only, and cross-lakehouse questions.
+- 2026-07-11: Granted the Hosted Agent principal
+  `6b7f2f82-66cb-470b-b16a-f7775463b341` Fabric workspace Viewer access. Replaced the eager Agent
+  Framework MCP transport, which failed during Hosted Agent initialization, with an on-demand
+  function wrapper over the proven MCP `ClientSession` path.
+- 2026-07-11: Deployed active Hosted Agent version 8. Isolated Foundry IQ, Fabric reservation, and
+  cross-lakehouse tests passed. The combined `RES-DEMO-RATE-CHANGE` test automatically propagated
+  `HTL-001` from Fabric to Foundry IQ and returned the cited `06:00-22:00` pool hours. The
+  structured-data tool now requires exact property IDs in every property result to make the handoff
+  deterministic.

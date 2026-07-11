@@ -157,6 +157,19 @@ Secrets, generated agent configuration, tokens, deployment packages, large gener
 
 Phase 1 is not complete until every component passes its isolated tests and the canonical end-to-end scenarios pass.
 
+Live implementation status on 2026-07-11:
+
+- Generated and validated 658,611 structured rows and 95 knowledge documents.
+- Deployed and validated both Fabric lakehouses, six aggregate tables, the semantic model, report,
+  ontology, and published Data Agent.
+- Published Data Agent lakehouse schemas must be synchronized through
+  `HotelDataAgentRuntimePublish`; definition-only imports leave the lakehouse elements unavailable.
+- Deployed Hosted Agent version 8 with on-demand Fabric MCP and Foundry IQ tools. Isolated
+  retrieval tests and the combined reservation-to-property-knowledge handoff pass, including exact
+  `property_id` propagation and citations.
+- Phase 1 remains open for mutation flows, Work IQ, remote Foundry evaluations, and the remaining
+  acceptance scenarios.
+
 ### 5.1 Bootstrap and configuration
 
 1. Initialize the repository and Python/TypeScript projects.

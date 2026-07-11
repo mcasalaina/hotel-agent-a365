@@ -33,4 +33,7 @@ Apply live changes only when you are ready:
 .venv/bin/python scripts/fabric/cli.py apply   --config scripts/fabric/config.example.json   --execute
 ```
 
-The CLI never publishes the Data Agent runtime. After a successful apply, run the `HotelDataAgentRuntimePublish` notebook explicitly.
+The CLI never publishes the Data Agent runtime. After a successful apply, run the
+`HotelDataAgentRuntimePublish` notebook explicitly. The notebook synchronizes both live lakehouse
+schemas with `fabric-data-agent-sdk`, selects their governed tables, reapplies instructions and
+few-shot queries, and publishes the resulting staging configuration.

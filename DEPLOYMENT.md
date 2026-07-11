@@ -78,8 +78,36 @@ Phase 3 adds `invocations_ws` version `1.0.0` to both `azure.yaml` and `src/hote
 - Knowledge sources: one `hotel-*-ks` source per index
 - Knowledge base: `hotel-foundryiq`
 - Source archive: 95 Markdown blobs in `hotel-docs`
-- Hosted Agent: `hotel-servicing-agent`, active version 4
+- Hosted Agent: `hotel-servicing-agent`, active version 8
 - Agent Search access: **Search Index Data Reader**
+- Fabric workspace: `HotelAgent.Workspace`
+  (`660ed238-54b7-42bd-8b1b-cf2ee47a11ba`)
+- Fabric lakehouses: `HotelOperations` (`cdbf3424-785f-4121-b930-5d887e549b01`) and
+  `HotelGuestServices` (`2d0890bf-5b05-4bc0-b47f-1af1935820ff`)
+- Fabric semantic model: `HotelOperationsModel`
+  (`9890681b-e022-44cf-92f1-ef8bbdaddab7`)
+- Fabric report: `HotelOperationsReport` (`b93b57a9-d23f-45e4-b80b-247c5f2642d7`)
+- Fabric ontology: `HotelOperationsOntology`
+  (`6b854a1e-b051-4a43-bdab-99cf45a170c5`)
+- Fabric data agent: `HotelOperationsAgent`
+  (`9990b87a-d2ef-4c23-b11d-ffd72905906c`)
+- Agent Fabric access: workspace **Viewer**
 
 The live verification covers direct Search counts, answer synthesis with citations, dated notices,
-chain policy grounding, dining guidance, unsupported-fact handling, and property isolation.
+chain policy grounding, dining guidance, unsupported-fact handling, property isolation,
+operations-only and guest-services-only Fabric queries, cross-lakehouse synthesis, and an integrated
+Fabric-to-Foundry-IQ property-ID handoff.
+
+## Fabric Data Agent publication
+
+Deploying the source-controlled draft definition is not sufficient to make imported lakehouse
+elements queryable. Run `HotelDataAgentRuntimePublish` after applying the draft. It uses
+`fabric-data-agent-sdk==0.1.26a0` to remove and re-add both lakehouse sources, synchronize the live
+SQL schemas, select the governed tables, apply source descriptions and examples, and publish.
+Calling `staging/publish` directly can leave handcrafted lakehouse elements in `NotAvailable`.
+
+The Hosted Agent reaches the published Data Agent through
+`FABRIC_DATA_AGENT_MCP_URL`. Grant its instance principal Fabric workspace Viewer access. The
+runtime deliberately opens a direct MCP `ClientSession` only when the function tool is called;
+eager `MCPStreamableHTTPTool` initialization failed in the Hosted Agent environment with a
+cancellation-scope error.

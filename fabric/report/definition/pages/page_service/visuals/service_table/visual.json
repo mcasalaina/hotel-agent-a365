@@ -37,10 +37,10 @@
                       "Entity": "Disputes Daily"
                     }
                   },
-                  "Property": "Open Disputes"
+                  "Property": "Open Dispute Count"
                 }
               },
-              "queryRef": "Disputes Daily.Open Disputes"
+              "queryRef": "Disputes Daily.Open Dispute Count"
             },
             {
               "field": {
@@ -50,10 +50,10 @@
                       "Entity": "Requests Daily"
                     }
                   },
-                  "Property": "Pending Reconciliation Requests"
+                  "Property": "Pending Reconciliation Request Count"
                 }
               },
-              "queryRef": "Requests Daily.Pending Reconciliation Requests"
+              "queryRef": "Requests Daily.Pending Reconciliation Request Count"
             }
           ]
         }

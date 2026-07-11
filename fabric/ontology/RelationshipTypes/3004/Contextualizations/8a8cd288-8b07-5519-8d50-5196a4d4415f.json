@@ -9,14 +9,14 @@
   },
   "sourceKeyRefBindings": [
     {
-      "sourceColumnName": "room_id",
-      "targetPropertyId": "2101"
+      "sourceColumnName": "stay_id",
+      "targetPropertyId": "2401"
     }
   ],
   "targetKeyRefBindings": [
     {
-      "sourceColumnName": "stay_id",
-      "targetPropertyId": "2401"
+      "sourceColumnName": "room_id",
+      "targetPropertyId": "2101"
     }
   ]
 }

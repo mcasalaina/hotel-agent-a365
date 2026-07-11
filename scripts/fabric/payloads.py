@@ -39,7 +39,7 @@ def build_lakehouse_payload(
     lakehouse_ids: dict[str, str],
 ) -> dict[str, Any]:
     parts = [
-        _definition_part("lakehouse.metadata.json", {"defaultSchema": lakehouse.default_schema}),
+        _definition_part("lakehouse.metadata.json", {}),
         _definition_part(".platform", _platform_payload("Lakehouse", lakehouse.display_name)),
     ]
     shortcut_definitions = _build_shortcut_definitions(
@@ -58,6 +58,16 @@ def build_lakehouse_payload(
             "parts": parts,
         },
     }
+
+
+def build_lakehouse_creation_body(payload: dict[str, Any]) -> dict[str, Any]:
+    body = {
+        "displayName": payload["displayName"],
+        "description": payload["description"],
+    }
+    if payload["creationPayload"].get("enableSchemas") is True:
+        body["creationPayload"] = payload["creationPayload"]
+    return body
 
 
 def build_notebook_payload(
@@ -115,10 +125,10 @@ def build_artifact_definition(
             _platform_payload(artifact.item_type, artifact.display_name),
         )
     )
-    return {
-        "format": artifact.definition_format,
-        "parts": parts,
-    }
+    definition: dict[str, Any] = {"parts": parts}
+    if artifact.item_type not in {"Ontology", "DataAgent"}:
+        definition["format"] = artifact.definition_format
+    return definition
 
 
 def build_artifact_create_body(

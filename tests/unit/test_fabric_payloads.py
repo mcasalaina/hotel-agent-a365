@@ -15,6 +15,7 @@ from fabric.artifacts import (
 )
 from fabric.payloads import (
     build_artifact_definition,
+    build_lakehouse_creation_body,
     build_lakehouse_payload,
     build_notebook_job_request,
     build_notebook_payload,
@@ -54,6 +55,11 @@ def test_build_lakehouse_payload_includes_shortcuts() -> None:
     ]
     shortcut_payload = json.loads(base64.b64decode(parts[1]["payload"]).decode("utf-8"))
     assert shortcut_payload[0]["target"]["oneLake"]["itemId"] == "operations-id"
+    creation_body = build_lakehouse_creation_body(payload)
+    assert "definition" not in creation_body
+    assert "creationPayload" not in creation_body
+    payload["creationPayload"]["enableSchemas"] = True
+    assert build_lakehouse_creation_body(payload)["creationPayload"] == {"enableSchemas": True}
 
 
 def test_build_notebook_payload_injects_default_lakehouse_metadata(tmp_path: Path) -> None:
@@ -123,6 +129,27 @@ def test_build_artifact_definition_substitutes_placeholders(tmp_path: Path) -> N
     )
     assert report["name"] == "workspace-id"
     assert ".platform" in parts
+
+
+def test_build_specialized_artifact_definition_omits_format(tmp_path: Path) -> None:
+    root = tmp_path / "ontology"
+    root.mkdir()
+    (root / "definition.json").write_text("{}", encoding="utf-8")
+    artifact = ArtifactSpec(
+        display_name="HotelOperationsOntology",
+        manifest_path=root / "blueprint.json",
+        deployable=True,
+        blocking_reason=None,
+        item_type="Ontology",
+        definition_format="JSON",
+        definition_root=root,
+        include_paths=("definition.json",),
+        description="desc",
+    )
+
+    definition = build_artifact_definition(artifact, {})
+
+    assert "format" not in definition
 
 
 def test_build_notebook_job_request_validates_types() -> None:

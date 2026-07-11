@@ -41,10 +41,10 @@
                       "Entity": "Property KPI Daily"
                     }
                   },
-                  "Property": "Completed Stays"
+                  "Property": "Completed Stay Count"
                 }
               },
-              "queryRef": "Property KPI Daily.Completed Stays"
+              "queryRef": "Property KPI Daily.Completed Stay Count"
             }
           ]
         }

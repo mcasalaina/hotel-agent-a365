@@ -50,10 +50,10 @@
                       "Entity": "Requests Daily"
                     }
                   },
-                  "Property": "Open Requests"
+                  "Property": "Open Request Count"
                 }
               },
-              "queryRef": "Requests Daily.Open Requests"
+              "queryRef": "Requests Daily.Open Request Count"
             }
           ]
         }

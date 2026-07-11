@@ -1,60 +1,60 @@
 table 'Disputes Daily'
 
-/// Total disputes opened for the reporting grain.
-measure Disputes = SUM('Disputes Daily'[Total Disputes])
-	formatString: #,##0
+	/// Total disputes opened for the reporting grain.
+	measure Disputes = SUM('Disputes Daily'[Total Disputes])
+		formatString: #,##0
 
-/// Open disputes still awaiting closure.
-measure 'Open Disputes' = SUM('Disputes Daily'[Open Disputes])
-	formatString: #,##0
+	/// Open disputes still awaiting closure.
+	measure 'Open Dispute Count' = SUM('Disputes Daily'[Open Disputes])
+		formatString: #,##0
 
-/// Total disputed amount.
-measure 'Dispute Amount' = SUM('Disputes Daily'[Dispute Amount])
-	formatString: $#,##0.00
+	/// Total disputed amount.
+	measure 'Total Dispute Amount' = SUM('Disputes Daily'[Dispute Amount])
+		formatString: $#,##0.00
 
-/// Dispute rate compared with completed stays.
-measure 'Dispute Rate' = DIVIDE([Disputes], 'Property KPI Daily'[Completed Stays])
-	formatString: 0.00%
+	/// Dispute rate compared with completed stays.
+	measure 'Dispute Rate' = DIVIDE([Disputes], SUM('Property KPI Daily'[Completed Stays]))
+		formatString: 0.00%
 
-column 'Property Id'
-	dataType: string
-	isHidden
-	summarizeBy: none
-	sourceColumn: property_id
+	column 'Property Id'
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: property_id
 
-column 'Service Date'
-	dataType: dateTime
-	summarizeBy: none
-	sourceColumn: service_date
+	column 'Service Date'
+		dataType: dateTime
+		summarizeBy: none
+		sourceColumn: service_date
 
-column 'Dispute Type'
-	dataType: string
-	sourceColumn: dispute_type
+	column 'Dispute Type'
+		dataType: string
+		sourceColumn: dispute_type
 
-column 'Total Disputes'
-	dataType: int64
-	isHidden
-	sourceColumn: total_disputes
+	column 'Total Disputes'
+		dataType: int64
+		isHidden
+		sourceColumn: total_disputes
 
-column 'Open Disputes'
-	dataType: int64
-	isHidden
-	sourceColumn: open_disputes
+	column 'Open Disputes'
+		dataType: int64
+		isHidden
+		sourceColumn: open_disputes
 
-column 'Under Review Disputes'
-	dataType: int64
-	sourceColumn: under_review_disputes
+	column 'Under Review Disputes'
+		dataType: int64
+		sourceColumn: under_review_disputes
 
-column 'Resolved Disputes'
-	dataType: int64
-	sourceColumn: resolved_disputes
+	column 'Resolved Disputes'
+		dataType: int64
+		sourceColumn: resolved_disputes
 
-column 'Dispute Amount'
-	dataType: decimal
-	sourceColumn: dispute_amount
+	column 'Dispute Amount'
+		dataType: decimal
+		sourceColumn: dispute_amount
 
-partition 'Disputes Daily' = entity
-	mode: directLake
-	source
-		entityName: agg_disputes_daily
-		expressionSource: DL_HotelGuestServices
+	partition 'Disputes Daily' = entity
+		mode: directLake
+		source
+			entityName: agg_disputes_daily
+			expressionSource: DL_HotelGuestServices

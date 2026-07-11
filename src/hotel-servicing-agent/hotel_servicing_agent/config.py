@@ -13,6 +13,7 @@ class Settings:
     model_deployment: str
     search_endpoint: str
     knowledge_base_name: str
+    fabric_data_agent_mcp_url: str
     instructions: str
 
     @classmethod
@@ -23,6 +24,7 @@ class Settings:
         model_deployment = _required_environment_variable("AZURE_AI_MODEL_DEPLOYMENT_NAME")
         search_endpoint = _required_environment_variable("AZURE_SEARCH_ENDPOINT")
         knowledge_base_name = _required_environment_variable("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME")
+        fabric_data_agent_mcp_url = _required_environment_variable("FABRIC_DATA_AGENT_MCP_URL")
         instructions_path = Path(
             os.getenv("AGENT_INSTRUCTIONS_PATH", "../../agent-instructions.md")
         )
@@ -33,6 +35,7 @@ class Settings:
             model_deployment=model_deployment,
             search_endpoint=search_endpoint,
             knowledge_base_name=knowledge_base_name,
+            fabric_data_agent_mcp_url=fabric_data_agent_mcp_url,
             instructions=instructions_path.read_text(encoding="utf-8"),
         )
 

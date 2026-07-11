@@ -28,6 +28,22 @@ def test_repository_notebook_code_cells_compile() -> None:
                 compile("".join(cell.get("source", [])), str(notebook_path), "exec")
 
 
+def test_data_agent_publish_resynchronizes_lakehouse_schemas() -> None:
+    notebook_path = REPOSITORY_ROOT / "fabric" / "notebooks" / "data_agent_runtime_publish.ipynb"
+    notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
+    source = "\n".join(
+        "".join(cell.get("source", []))
+        for cell in notebook.get("cells", [])
+        if cell.get("cell_type") == "code"
+    )
+
+    assert "FabricDataAgentManagement" in source
+    assert "management.delete_staging_datasource" in source
+    assert "management.add_staging_datasource" in source
+    assert "management.publish_staging" in source
+    assert 'base + "/staging/publish"' not in source
+
+
 def test_validation_rejects_non_ops_shortcuts(tmp_path: Path) -> None:
     (tmp_path / "fabric" / "semantic-model" / "definition" / "tables").mkdir(parents=True)
     (tmp_path / "fabric" / "report" / "definition" / "pages").mkdir(parents=True)

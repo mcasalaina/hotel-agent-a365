@@ -1,31 +1,31 @@
 table Outlet
 
-column 'Outlet Id'
-	dataType: string
-	isHidden
-	summarizeBy: none
-	sourceColumn: outlet_id
+	column 'Outlet Id'
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: outlet_id
 
-column 'Property Id'
-	dataType: string
-	isHidden
-	summarizeBy: none
-	sourceColumn: property_id
+	column 'Property Id'
+		dataType: string
+		isHidden
+		summarizeBy: none
+		sourceColumn: property_id
 
-column 'Outlet Name'
-	dataType: string
-	sourceColumn: name
+	column 'Outlet Name'
+		dataType: string
+		sourceColumn: name
 
-column 'Outlet Type'
-	dataType: string
-	sourceColumn: outlet_type
+	column 'Outlet Type'
+		dataType: string
+		sourceColumn: outlet_type
 
-column Capacity
-	dataType: int64
-	sourceColumn: capacity
+	column Capacity
+		dataType: int64
+		sourceColumn: capacity
 
-partition Outlet = entity
-	mode: directLake
-	source
-		entityName: ops_outlets
-		expressionSource: DL_HotelGuestServices
+	partition Outlet = entity
+		mode: directLake
+		source
+			entityName: ops_outlets
+			expressionSource: DL_HotelGuestServices
