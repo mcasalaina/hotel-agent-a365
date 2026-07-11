@@ -1,0 +1,15 @@
+{
+  "$schema": "1.0.0",
+  "fewShots": [
+    {
+      "id": "8e911e13-d7eb-56cc-b24d-f6e26ef491be",
+      "question": "What are OCC and ADR by property?",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Property'[Property Name], \"OCC\", [OCC], \"ADR\", [ADR])"
+    },
+    {
+      "id": "a6983eba-cfb6-55ae-83a1-07f9b49d8514",
+      "question": "How are cancellation rate and no-show rate trending by day?",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Date'[Date], \"Cancellation Rate\", [Cancellation Rate], \"No Show Rate\", [No Show Rate])"
+    }
+  ]
+}

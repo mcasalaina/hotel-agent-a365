@@ -1,0 +1,31 @@
+{
+  "id": "676253b3-da7d-5734-b174-426ebafd05a8",
+  "dataBindingConfiguration": {
+    "dataBindingType": "NonTimeSeries",
+    "propertyBindings": [
+      {
+        "sourceColumnName": "outlet_id",
+        "targetPropertyId": "2501"
+      },
+      {
+        "sourceColumnName": "property_id",
+        "targetPropertyId": "2502"
+      },
+      {
+        "sourceColumnName": "name",
+        "targetPropertyId": "2503"
+      },
+      {
+        "sourceColumnName": "outlet_type",
+        "targetPropertyId": "2504"
+      }
+    ],
+    "sourceTableProperties": {
+      "sourceType": "LakehouseTable",
+      "workspaceId": "{{WORKSPACE_ID}}",
+      "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
+      "sourceTableName": "outlets",
+      "sourceSchema": "dbo"
+    }
+  }
+}

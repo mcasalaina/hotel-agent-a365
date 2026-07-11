@@ -1,0 +1,22 @@
+{
+  "id": "88664868-3c22-5411-872f-8af18fabef19",
+  "dataBindingTable": {
+    "workspaceId": "{{WORKSPACE_ID}}",
+    "itemId": "{{HOTEL_GUEST_SERVICES_LAKEHOUSE_ID}}",
+    "sourceTableName": "special_requests",
+    "sourceSchema": "dbo",
+    "sourceType": "LakehouseTable"
+  },
+  "sourceKeyRefBindings": [
+    {
+      "sourceColumnName": "reservation_id",
+      "targetPropertyId": "2301"
+    }
+  ],
+  "targetKeyRefBindings": [
+    {
+      "sourceColumnName": "special_request_id",
+      "targetPropertyId": "2701"
+    }
+  ]
+}

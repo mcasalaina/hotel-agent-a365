@@ -1,0 +1,12 @@
+{
+  "namespace": "usertypes",
+  "id": "3008",
+  "name": "MaintenanceRequestTracksWorkOrder",
+  "namespaceType": "Custom",
+  "source": {
+    "entityTypeId": "1009"
+  },
+  "target": {
+    "entityTypeId": "1010"
+  }
+}

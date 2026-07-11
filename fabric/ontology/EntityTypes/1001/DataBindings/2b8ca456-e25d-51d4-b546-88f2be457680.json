@@ -1,0 +1,35 @@
+{
+  "id": "2b8ca456-e25d-51d4-b546-88f2be457680",
+  "dataBindingConfiguration": {
+    "dataBindingType": "NonTimeSeries",
+    "propertyBindings": [
+      {
+        "sourceColumnName": "property_id",
+        "targetPropertyId": "2001"
+      },
+      {
+        "sourceColumnName": "name",
+        "targetPropertyId": "2002"
+      },
+      {
+        "sourceColumnName": "region",
+        "targetPropertyId": "2003"
+      },
+      {
+        "sourceColumnName": "city",
+        "targetPropertyId": "2004"
+      },
+      {
+        "sourceColumnName": "currency",
+        "targetPropertyId": "2005"
+      }
+    ],
+    "sourceTableProperties": {
+      "sourceType": "LakehouseTable",
+      "workspaceId": "{{WORKSPACE_ID}}",
+      "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
+      "sourceTableName": "properties",
+      "sourceSchema": "dbo"
+    }
+  }
+}

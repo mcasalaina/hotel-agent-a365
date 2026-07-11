@@ -1,0 +1,64 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "service_table",
+  "position": {
+    "x": 680,
+    "y": 20,
+    "z": 0,
+    "height": 600,
+    "width": 540,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Disputes Daily"
+                    }
+                  },
+                  "Property": "Dispute Type"
+                }
+              },
+              "queryRef": "Disputes Daily.Dispute Type",
+              "active": true
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Disputes Daily"
+                    }
+                  },
+                  "Property": "Open Disputes"
+                }
+              },
+              "queryRef": "Disputes Daily.Open Disputes"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Requests Daily"
+                    }
+                  },
+                  "Property": "Pending Reconciliation Requests"
+                }
+              },
+              "queryRef": "Requests Daily.Pending Reconciliation Requests"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

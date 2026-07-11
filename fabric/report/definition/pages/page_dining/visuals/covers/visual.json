@@ -1,0 +1,55 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "covers",
+  "position": {
+    "x": 20,
+    "y": 360,
+    "z": 0,
+    "height": 320,
+    "width": 620,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Outlet"
+                    }
+                  },
+                  "Property": "Outlet Name"
+                }
+              },
+              "queryRef": "Outlet.Outlet Name",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Restaurant Daily"
+                    }
+                  },
+                  "Property": "Covers"
+                }
+              },
+              "queryRef": "Restaurant Daily.Covers"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

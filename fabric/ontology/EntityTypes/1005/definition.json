@@ -1,0 +1,49 @@
+{
+  "id": "1005",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "Stay",
+  "entityIdParts": [
+    "2401"
+  ],
+  "displayNamePropertyId": "2401",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2401",
+      "name": "StayId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2402",
+      "name": "ReservationId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2403",
+      "name": "PropertyId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2404",
+      "name": "RoomId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2405",
+      "name": "Status",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    }
+  ]
+}

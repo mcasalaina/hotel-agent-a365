@@ -1,0 +1,49 @@
+{
+  "id": "1004",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "Reservation",
+  "entityIdParts": [
+    "2301"
+  ],
+  "displayNamePropertyId": "2301",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2301",
+      "name": "ReservationId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2302",
+      "name": "GuestId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2303",
+      "name": "PropertyId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2304",
+      "name": "CheckIn",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "DateTime"
+    },
+    {
+      "id": "2305",
+      "name": "Status",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    }
+  ]
+}

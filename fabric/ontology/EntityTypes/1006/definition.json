@@ -1,0 +1,42 @@
+{
+  "id": "1006",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "Outlet",
+  "entityIdParts": [
+    "2501"
+  ],
+  "displayNamePropertyId": "2503",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2501",
+      "name": "OutletId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2502",
+      "name": "PropertyId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2503",
+      "name": "OutletName",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2504",
+      "name": "OutletType",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    }
+  ]
+}

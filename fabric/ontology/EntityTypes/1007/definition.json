@@ -1,0 +1,49 @@
+{
+  "id": "1007",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "Folio",
+  "entityIdParts": [
+    "2601"
+  ],
+  "displayNamePropertyId": "2601",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2601",
+      "name": "FolioId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2602",
+      "name": "StayId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2603",
+      "name": "PropertyId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2604",
+      "name": "Currency",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2605",
+      "name": "Balance",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "Double"
+    }
+  ]
+}

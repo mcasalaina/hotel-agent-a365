@@ -1,0 +1,15 @@
+{
+  "$schema": "1.0.0",
+  "fewShots": [
+    {
+      "id": "d41a60f3-cc4c-5d6c-8323-6939882abb70",
+      "question": "Trace a guest stay from reservation to room and property.",
+      "query": "MATCH (g:Guest)-[:GuestBookedReservation]->(r:Reservation)-[:ReservationResultedInStay]->(s:Stay)-[:StayAssignedRoom]->(rm:Room)-[:PropertyHasRoom]->(p:Property) WHERE g.GuestId = 'GST-DEMO-FAMILY' RETURN g, r, s, rm, p;"
+    },
+    {
+      "id": "386b8095-3d2a-530c-9a97-c97bb032fac9",
+      "question": "Show maintenance work connected to a stay.",
+      "query": "MATCH (s:Stay)-[:StayTriggeredMaintenanceRequest]->(m:MaintenanceRequest)-[:MaintenanceRequestTracksWorkOrder]->(w:WorkOrder) WHERE s.StayId = 'STY-DEMO-HVAC' RETURN s, m, w;"
+    }
+  ]
+}

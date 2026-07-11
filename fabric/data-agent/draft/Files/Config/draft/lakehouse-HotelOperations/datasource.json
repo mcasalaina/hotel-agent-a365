@@ -1,0 +1,153 @@
+{
+  "$schema": "1.0.0",
+  "artifactId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
+  "workspaceId": "{{WORKSPACE_ID}}",
+  "displayName": "HotelOperations",
+  "type": "lakehouse_tables",
+  "userDescription": "Authoritative source for properties, rooms, outlets, property_daily_metrics, maintenance_requests, and work_orders.",
+  "dataSourceInstructions": "Use HotelOperations for authoritative operational reads. Do not answer guest folio or reservation questions from this source.",
+  "elements": [
+    {
+      "id": "e744a377-2268-5ea1-9024-93984ccafd32",
+      "display_name": "dbo",
+      "type": "lakehouse_tables.schema",
+      "is_selected": true,
+      "children": [
+        {
+          "id": "cffbaa4b-a3c4-57e6-b750-5db5bfcd02bd",
+          "display_name": "properties",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "b820cc7f-9344-5a5d-ad5f-55f1f786c01f",
+              "display_name": "property_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "9800573c-66c9-52b6-b676-bc90fa5d98d2",
+              "display_name": "name",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "32e92e01-42d6-5dd1-91bc-e619cba3d67f",
+              "display_name": "region",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "76be8a5c-3e94-5c57-8de4-c78e881a9d08",
+              "display_name": "city",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "4f91f33a-bf5d-591f-8363-29366f209e63",
+              "display_name": "currency",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            }
+          ]
+        },
+        {
+          "id": "0b1a90f2-e666-51f7-9633-0c2ec4e4ae81",
+          "display_name": "property_daily_metrics",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "3a1599d6-2375-52d8-a6ac-94997aacb17a",
+              "display_name": "service_date",
+              "type": "lakehouse_tables.column",
+              "data_type": "date"
+            },
+            {
+              "id": "d8f7548b-942e-5492-a314-f12aeae738cb",
+              "display_name": "sellable_rooms",
+              "type": "lakehouse_tables.column",
+              "data_type": "int"
+            },
+            {
+              "id": "1b8be77d-5712-5a0f-95c6-2e304b9d943a",
+              "display_name": "occupied_rooms",
+              "type": "lakehouse_tables.column",
+              "data_type": "int"
+            },
+            {
+              "id": "a0d1e356-0a6e-5c0c-9298-7c9069bb94c1",
+              "display_name": "room_revenue",
+              "type": "lakehouse_tables.column",
+              "data_type": "decimal"
+            }
+          ]
+        },
+        {
+          "id": "ddb05c26-f4f3-5a46-9e3e-22fac4a51a2b",
+          "display_name": "maintenance_requests",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "c7c5a4f5-9398-5873-8fb5-392dd604acce",
+              "display_name": "maintenance_request_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "e0a968bc-a251-5fbf-be27-18600742abfc",
+              "display_name": "property_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "78f76d4c-1441-503e-8034-bbe3a6c0c50e",
+              "display_name": "status",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "d8ceda55-0e36-5383-bca9-01c7fc650dcc",
+              "display_name": "reported_at",
+              "type": "lakehouse_tables.column",
+              "data_type": "timestamp"
+            }
+          ]
+        },
+        {
+          "id": "5f915b1e-f7f2-53ad-9f13-33c905a43171",
+          "display_name": "work_orders",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "6c8c2134-9359-5783-8a6a-ab51cd349420",
+              "display_name": "work_order_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "8540f169-f657-594e-b400-7336595bcae2",
+              "display_name": "maintenance_request_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "800e416a-f826-5c7a-9774-41fcbde8ed5d",
+              "display_name": "priority",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "9ea89621-59b0-5adb-a3a1-c1e889d64e23",
+              "display_name": "opened_at",
+              "type": "lakehouse_tables.column",
+              "data_type": "timestamp"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

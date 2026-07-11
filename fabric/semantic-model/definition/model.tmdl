@@ -1,0 +1,26 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+
+	expression 'DL_HotelGuestServices' =
+		let
+			Source = AzureStorage.DataLake("https://onelake.dfs.fabric.microsoft.com/{{WORKSPACE_ID}}/{{HOTEL_GUEST_SERVICES_LAKEHOUSE_ID}}", [HierarchicalNavigation=true])
+		in
+			Source
+
+	expression 'DL_HotelOperations' =
+		let
+			Source = AzureStorage.DataLake("https://onelake.dfs.fabric.microsoft.com/{{WORKSPACE_ID}}/{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}", [HierarchicalNavigation=true])
+		in
+			Source
+
+ref table Date
+ref table Property
+ref table Outlet
+ref table 'Property KPI Daily'
+ref table 'Booking Pace Daily'
+ref table 'Restaurant Daily'
+ref table 'Disputes Daily'
+ref table 'Requests Daily'
+ref table 'Maintenance Response Daily'

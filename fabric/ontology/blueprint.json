@@ -1,30 +1,17 @@
 {
-  "blockedBy": [
-    "generated-schema-handoff"
-  ],
-  "deployable": false,
-  "description": "Blueprint for the true Fabric Ontology item that will bind relationship paths spanning both authoritative lakehouses.",
   "displayName": "HotelOperationsOntology",
-  "entityTypes": [
-    "Property",
-    "Room",
-    "RoomType",
-    "Guest",
-    "Reservation",
-    "Stay",
-    "Outlet",
-    "Folio",
-    "FolioTransaction",
-    "SpecialRequest",
-    "MaintenanceRequest",
-    "WorkOrder",
-    "Associate"
+  "description": "Deployable ontology spanning both authoritative lakehouses with valid entity keys, lakehouse bindings, and relationship contextualizations.",
+  "itemType": "Ontology",
+  "definitionFormat": "JSON",
+  "definitionRoot": "fabric/ontology",
+  "includePaths": [
+    "definition.json",
+    "EntityTypes/**",
+    "RelationshipTypes/**"
   ],
-  "relationshipPaths": [
-    "Guest -> Reservation -> Stay -> Room -> Property",
-    "Stay -> Folio -> FolioTransaction -> BillingDispute",
-    "Stay -> SpecialRequest",
-    "Room -> MaintenanceRequest -> WorkOrder -> Associate"
+  "deployable": true,
+  "dependencies": [
+    "lakehouse:HotelGuestServices",
+    "lakehouse:HotelOperations"
   ]
 }
-

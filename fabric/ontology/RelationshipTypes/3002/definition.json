@@ -1,0 +1,12 @@
+{
+  "namespace": "usertypes",
+  "id": "3002",
+  "name": "GuestBookedReservation",
+  "namespaceType": "Custom",
+  "source": {
+    "entityTypeId": "1003"
+  },
+  "target": {
+    "entityTypeId": "1004"
+  }
+}

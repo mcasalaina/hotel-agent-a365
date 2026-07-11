@@ -1,12 +1,12 @@
 # Microsoft Fabric artifacts
 
-This directory now contains the source-controlled Phase 1 foundation for Microsoft Fabric:
+This directory now contains source-controlled Phase 1 artifacts for the hotel demo workspace:
 
-- `topology.json` is the canonical workspace, lakehouse, shortcut, and notebook inventory.
-- `notebooks/` contains deployable notebook definitions plus typed parameter contracts.
-- `semantic-model/`, `report/`, `ontology/`, and `data-agent/` contain schema-safe blueprints for
-  later artifacts that depend on the generated-schema handoff.
+- `topology.json` defines the single workspace, exactly two lakehouses, limited `ops_` shortcuts, notebook inventory, and deployable downstream artifacts.
+- `notebooks/` contains executable Fabric notebooks for load/reset/validation, controlled mutations, aggregate refresh, and data-agent runtime publish.
+- `semantic-model/` contains a deployable Direct Lake TMDL definition for `HotelOperationsModel`.
+- `report/` contains a deployable PBIR project for `HotelOperationsReport`.
+- `ontology/` contains a deployable Ontology definition for `HotelOperationsOntology`.
+- `data-agent/` contains the deployable **draft** Data Agent definition for `HotelOperationsAgent`; runtime publication is intentionally separate.
 
-Deployment automation lives in `scripts/fabric/` and uses Fabric REST APIs plus item-definition
-payloads. The planner supports local validation, remote discovery, dry-run planning, idempotent
-create-or-update behavior, LRO polling, and gitignored deployment-state output.
+Known Phase 1 limitations are documented inline in the semantic-model blueprint and measure definitions. In particular, the committed CSV contract does not contain an explicit food-and-beverage revenue fact, so `Food and Beverage Revenue` and `TRevPAR` intentionally return `BLANK()` instead of inventing unsupported logic.

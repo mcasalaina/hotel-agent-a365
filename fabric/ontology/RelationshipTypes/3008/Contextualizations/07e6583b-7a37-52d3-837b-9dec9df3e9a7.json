@@ -1,0 +1,22 @@
+{
+  "id": "07e6583b-7a37-52d3-837b-9dec9df3e9a7",
+  "dataBindingTable": {
+    "workspaceId": "{{WORKSPACE_ID}}",
+    "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
+    "sourceTableName": "work_orders",
+    "sourceSchema": "dbo",
+    "sourceType": "LakehouseTable"
+  },
+  "sourceKeyRefBindings": [
+    {
+      "sourceColumnName": "maintenance_request_id",
+      "targetPropertyId": "2801"
+    }
+  ],
+  "targetKeyRefBindings": [
+    {
+      "sourceColumnName": "work_order_id",
+      "targetPropertyId": "2901"
+    }
+  ]
+}

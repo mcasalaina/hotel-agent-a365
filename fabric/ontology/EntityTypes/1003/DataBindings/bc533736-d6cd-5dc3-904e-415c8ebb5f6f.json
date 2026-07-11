@@ -1,0 +1,31 @@
+{
+  "id": "bc533736-d6cd-5dc3-904e-415c8ebb5f6f",
+  "dataBindingConfiguration": {
+    "dataBindingType": "NonTimeSeries",
+    "propertyBindings": [
+      {
+        "sourceColumnName": "guest_id",
+        "targetPropertyId": "2201"
+      },
+      {
+        "sourceColumnName": "first_name",
+        "targetPropertyId": "2202"
+      },
+      {
+        "sourceColumnName": "last_name",
+        "targetPropertyId": "2203"
+      },
+      {
+        "sourceColumnName": "country",
+        "targetPropertyId": "2204"
+      }
+    ],
+    "sourceTableProperties": {
+      "sourceType": "LakehouseTable",
+      "workspaceId": "{{WORKSPACE_ID}}",
+      "itemId": "{{HOTEL_GUEST_SERVICES_LAKEHOUSE_ID}}",
+      "sourceTableName": "guests",
+      "sourceSchema": "dbo"
+    }
+  }
+}

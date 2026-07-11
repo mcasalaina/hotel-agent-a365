@@ -1,0 +1,49 @@
+{
+  "id": "1002",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "Room",
+  "entityIdParts": [
+    "2101"
+  ],
+  "displayNamePropertyId": "2104",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2101",
+      "name": "RoomId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2102",
+      "name": "PropertyId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2103",
+      "name": "RoomTypeId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2104",
+      "name": "RoomNumber",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2105",
+      "name": "RoomStatus",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    }
+  ]
+}

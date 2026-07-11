@@ -1,0 +1,35 @@
+{
+  "id": "fb8e01d7-56c4-50ae-be0c-b87ecfe31c59",
+  "dataBindingConfiguration": {
+    "dataBindingType": "NonTimeSeries",
+    "propertyBindings": [
+      {
+        "sourceColumnName": "folio_id",
+        "targetPropertyId": "2601"
+      },
+      {
+        "sourceColumnName": "stay_id",
+        "targetPropertyId": "2602"
+      },
+      {
+        "sourceColumnName": "property_id",
+        "targetPropertyId": "2603"
+      },
+      {
+        "sourceColumnName": "currency",
+        "targetPropertyId": "2604"
+      },
+      {
+        "sourceColumnName": "balance",
+        "targetPropertyId": "2605"
+      }
+    ],
+    "sourceTableProperties": {
+      "sourceType": "LakehouseTable",
+      "workspaceId": "{{WORKSPACE_ID}}",
+      "itemId": "{{HOTEL_GUEST_SERVICES_LAKEHOUSE_ID}}",
+      "sourceTableName": "folios",
+      "sourceSchema": "dbo"
+    }
+  }
+}

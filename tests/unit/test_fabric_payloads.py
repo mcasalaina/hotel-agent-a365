@@ -7,12 +7,14 @@ from pathlib import Path
 
 import pytest
 from fabric.artifacts import (
+    ArtifactSpec,
     LakehouseSpec,
     NotebookParameterSpec,
     NotebookSpec,
     ShortcutSpec,
 )
 from fabric.payloads import (
+    build_artifact_definition,
     build_lakehouse_payload,
     build_notebook_job_request,
     build_notebook_payload,
@@ -54,7 +56,7 @@ def test_build_lakehouse_payload_includes_shortcuts() -> None:
     assert shortcut_payload[0]["target"]["oneLake"]["itemId"] == "operations-id"
 
 
-def test_build_notebook_payload_uses_expected_definition_part(tmp_path: Path) -> None:
+def test_build_notebook_payload_injects_default_lakehouse_metadata(tmp_path: Path) -> None:
     notebook_path = tmp_path / "example.ipynb"
     notebook_path.write_text(
         '{"cells":[],"metadata":{"language_info":{"name":"python"}},"nbformat":4,"nbformat_minor":5}',
@@ -68,11 +70,59 @@ def test_build_notebook_payload_uses_expected_definition_part(tmp_path: Path) ->
         default_lakehouse="HotelGuestServices",
     )
 
-    payload = build_notebook_payload(notebook)
+    payload = build_notebook_payload(
+        notebook,
+        workspace_id="workspace-id",
+        lakehouse_ids={"HotelGuestServices": "guest-lakehouse-id"},
+    )
 
-    assert payload["type"] == "Notebook"
-    assert payload["definition"]["format"] == "ipynb"
-    assert payload["definition"]["parts"][0]["path"] == "artifact.content.ipynb"
+    part = payload["definition"]["parts"][0]
+    assert part["path"] == "notebook-content.ipynb"
+    decoded = json.loads(base64.b64decode(part["payload"]).decode("utf-8"))
+    assert (
+        decoded["metadata"]["dependencies"]["lakehouse"]["default_lakehouse"]
+        == "guest-lakehouse-id"
+    )
+
+
+def test_build_artifact_definition_substitutes_placeholders(tmp_path: Path) -> None:
+    root = tmp_path / "report"
+    (root / "definition" / "pages").mkdir(parents=True)
+    (root / "definition.pbir").write_text(
+        '{"datasetReference":{"byConnection":{"connectionString":"semanticmodelid={{SEMANTICMODEL_ID}}"}}}',
+        encoding="utf-8",
+    )
+    (root / "definition" / "report.json").write_text(
+        '{"name":"{{WORKSPACE_ID}}"}',
+        encoding="utf-8",
+    )
+    artifact = ArtifactSpec(
+        display_name="HotelOperationsReport",
+        manifest_path=tmp_path / "blueprint.json",
+        deployable=True,
+        blocking_reason=None,
+        item_type="Report",
+        definition_format="PBIR",
+        definition_root=root,
+        include_paths=("definition.pbir", "definition/**"),
+        description="desc",
+    )
+
+    definition = build_artifact_definition(
+        artifact,
+        {"SEMANTICMODEL_ID": "model-id", "WORKSPACE_ID": "workspace-id"},
+    )
+
+    parts = {part["path"]: part for part in definition["parts"]}
+    pbir = json.loads(base64.b64decode(parts["definition.pbir"]["payload"]).decode("utf-8"))
+    report = json.loads(
+        base64.b64decode(parts["definition/report.json"]["payload"]).decode("utf-8")
+    )
+    assert (
+        pbir["datasetReference"]["byConnection"]["connectionString"] == "semanticmodelid=model-id"
+    )
+    assert report["name"] == "workspace-id"
+    assert ".platform" in parts
 
 
 def test_build_notebook_job_request_validates_types() -> None:

@@ -1,0 +1,51 @@
+relationship 'Property KPI Daily to Property'
+	fromColumn: 'Property KPI Daily'.'Property Id'
+	toColumn: Property.'Property Id'
+
+relationship 'Booking Pace Daily to Property'
+	fromColumn: 'Booking Pace Daily'.'Property Id'
+	toColumn: Property.'Property Id'
+
+relationship 'Restaurant Daily to Property'
+	fromColumn: 'Restaurant Daily'.'Property Id'
+	toColumn: Property.'Property Id'
+
+relationship 'Restaurant Daily to Outlet'
+	fromColumn: 'Restaurant Daily'.'Outlet Id'
+	toColumn: Outlet.'Outlet Id'
+
+relationship 'Disputes Daily to Property'
+	fromColumn: 'Disputes Daily'.'Property Id'
+	toColumn: Property.'Property Id'
+
+relationship 'Requests Daily to Property'
+	fromColumn: 'Requests Daily'.'Property Id'
+	toColumn: Property.'Property Id'
+
+relationship 'Maintenance Response Daily to Property'
+	fromColumn: 'Maintenance Response Daily'.'Property Id'
+	toColumn: Property.'Property Id'
+
+relationship 'Property KPI Daily to Date'
+	fromColumn: 'Property KPI Daily'.'Service Date'
+	toColumn: Date.Date
+
+relationship 'Booking Pace Daily to Date'
+	fromColumn: 'Booking Pace Daily'.'Service Date'
+	toColumn: Date.Date
+
+relationship 'Restaurant Daily to Date'
+	fromColumn: 'Restaurant Daily'.'Service Date'
+	toColumn: Date.Date
+
+relationship 'Disputes Daily to Date'
+	fromColumn: 'Disputes Daily'.'Service Date'
+	toColumn: Date.Date
+
+relationship 'Requests Daily to Date'
+	fromColumn: 'Requests Daily'.'Service Date'
+	toColumn: Date.Date
+
+relationship 'Maintenance Response Daily to Date'
+	fromColumn: 'Maintenance Response Daily'.'Service Date'
+	toColumn: Date.Date

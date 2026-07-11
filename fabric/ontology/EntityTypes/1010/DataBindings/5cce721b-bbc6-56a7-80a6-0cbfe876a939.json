@@ -1,0 +1,31 @@
+{
+  "id": "5cce721b-bbc6-56a7-80a6-0cbfe876a939",
+  "dataBindingConfiguration": {
+    "dataBindingType": "NonTimeSeries",
+    "propertyBindings": [
+      {
+        "sourceColumnName": "work_order_id",
+        "targetPropertyId": "2901"
+      },
+      {
+        "sourceColumnName": "maintenance_request_id",
+        "targetPropertyId": "2902"
+      },
+      {
+        "sourceColumnName": "priority",
+        "targetPropertyId": "2903"
+      },
+      {
+        "sourceColumnName": "status",
+        "targetPropertyId": "2904"
+      }
+    ],
+    "sourceTableProperties": {
+      "sourceType": "LakehouseTable",
+      "workspaceId": "{{WORKSPACE_ID}}",
+      "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
+      "sourceTableName": "work_orders",
+      "sourceSchema": "dbo"
+    }
+  }
+}

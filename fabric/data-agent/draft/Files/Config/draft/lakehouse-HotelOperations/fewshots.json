@@ -1,0 +1,15 @@
+{
+  "$schema": "1.0.0",
+  "fewShots": [
+    {
+      "id": "66f9ff3c-b82f-51cd-be0c-636979eca148",
+      "question": "Which properties in the Pacific region operate in USD?",
+      "query": "SELECT property_id, name, city, currency FROM properties WHERE region = 'Pacific' AND currency = 'USD';"
+    },
+    {
+      "id": "bc2bbce3-29a9-5682-9d4c-8a2fdc0ea071",
+      "question": "Which maintenance requests are still open for HTL-004?",
+      "query": "SELECT maintenance_request_id, room_id, request_type, status, reported_at FROM maintenance_requests WHERE property_id = 'HTL-004' AND status <> 'resolved';"
+    }
+  ]
+}

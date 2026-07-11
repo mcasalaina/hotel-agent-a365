@@ -1,17 +1,12 @@
-# Notebooks
+# Fabric notebooks
 
-This folder now contains source-controlled notebook scaffolds for:
+Notebook execution order for a fresh Phase 1 deployment:
 
-- initial load
-- deterministic reset
-- validation
-- reservation action
-- restaurant action
-- billing dispute action
-- service-request action
-- aggregate refresh
-- data-agent runtime publish
+1. `HotelInitialLoad`
+2. `HotelValidation`
+3. `HotelAggregateRefresh`
+4. `HotelValidation` (optional post-aggregate recheck)
+5. Mutation notebooks as needed
+6. `HotelDataAgentRuntimePublish` only after the Data Agent draft definition has been deployed
 
-Each notebook is an actual `ipynb` definition that can be deployed through the Fabric REST API.
-They intentionally fail loudly until the generated-schema handoff is complete. Typed parameter
-contracts live in `contracts.json` and are validated by `scripts/fabric/`.
+All notebooks use a tagged **parameters** cell so Fabric notebook jobs can inject runtime values. The deployer binds every notebook to `HotelGuestServices`; cross-lakehouse reads and writes are parameterized with workspace and lakehouse IDs instead of hardcoding tenant values.

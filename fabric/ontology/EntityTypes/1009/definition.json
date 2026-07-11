@@ -1,0 +1,49 @@
+{
+  "id": "1009",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "MaintenanceRequest",
+  "entityIdParts": [
+    "2801"
+  ],
+  "displayNamePropertyId": "2801",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2801",
+      "name": "MaintenanceRequestId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2802",
+      "name": "StayId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2803",
+      "name": "RoomId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2804",
+      "name": "RequestType",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2805",
+      "name": "Status",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    }
+  ]
+}

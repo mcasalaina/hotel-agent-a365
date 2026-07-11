@@ -1,0 +1,64 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "name": "requests_table",
+  "position": {
+    "x": 680,
+    "y": 20,
+    "z": 0,
+    "height": 660,
+    "width": 540,
+    "tabOrder": 0
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Requests Daily"
+                    }
+                  },
+                  "Property": "Request Type"
+                }
+              },
+              "queryRef": "Requests Daily.Request Type",
+              "active": true
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Requests Daily"
+                    }
+                  },
+                  "Property": "Requests"
+                }
+              },
+              "queryRef": "Requests Daily.Requests"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Requests Daily"
+                    }
+                  },
+                  "Property": "Open Requests"
+                }
+              },
+              "queryRef": "Requests Daily.Open Requests"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

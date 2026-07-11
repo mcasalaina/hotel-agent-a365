@@ -1,0 +1,52 @@
+table 'Restaurant Daily'
+
+/// Total restaurant reservations for the day.
+measure 'Restaurant Reservations' = SUM('Restaurant Daily'[Total Reservations])
+	formatString: #,##0
+
+/// Covers seated across all outlets.
+measure Covers = SUM('Restaurant Daily'[Covers])
+	formatString: #,##0
+
+column 'Property Id'
+	dataType: string
+	isHidden
+	summarizeBy: none
+	sourceColumn: property_id
+
+column 'Outlet Id'
+	dataType: string
+	isHidden
+	summarizeBy: none
+	sourceColumn: outlet_id
+
+column 'Service Date'
+	dataType: dateTime
+	summarizeBy: none
+	sourceColumn: service_date
+
+column 'Total Reservations'
+	dataType: int64
+	sourceColumn: total_reservations
+
+column 'Confirmed Reservations'
+	dataType: int64
+	sourceColumn: confirmed_reservations
+
+column 'Seated Reservations'
+	dataType: int64
+	sourceColumn: seated_reservations
+
+column 'Cancelled Reservations'
+	dataType: int64
+	sourceColumn: cancelled_reservations
+
+column Covers
+	dataType: int64
+	sourceColumn: covers
+
+partition 'Restaurant Daily' = entity
+	mode: directLake
+	source
+		entityName: agg_restaurant_daily
+		expressionSource: DL_HotelGuestServices

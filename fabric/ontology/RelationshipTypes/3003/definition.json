@@ -1,0 +1,12 @@
+{
+  "namespace": "usertypes",
+  "id": "3003",
+  "name": "ReservationResultedInStay",
+  "namespaceType": "Custom",
+  "source": {
+    "entityTypeId": "1004"
+  },
+  "target": {
+    "entityTypeId": "1005"
+  }
+}

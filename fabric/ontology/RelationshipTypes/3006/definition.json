@@ -1,0 +1,12 @@
+{
+  "namespace": "usertypes",
+  "id": "3006",
+  "name": "ReservationHasSpecialRequest",
+  "namespaceType": "Custom",
+  "source": {
+    "entityTypeId": "1004"
+  },
+  "target": {
+    "entityTypeId": "1008"
+  }
+}

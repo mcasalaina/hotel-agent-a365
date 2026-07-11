@@ -1,41 +1,20 @@
 {
-  "blockedBy": [
-    "generated-schema-handoff"
-  ],
-  "deployable": false,
-  "description": "Blueprint for the Direct Lake semantic model that will bind to HotelGuestServices plus validated ops_ shortcuts from HotelOperations.",
   "displayName": "HotelOperationsModel",
-  "requiredMeasures": [
-    "Occupancy Rate",
-    "ADR",
-    "RevPAR",
-    "TRevPAR",
-    "GOPPAR",
-    "NRevPAR",
-    "ALOS",
-    "CPOR",
-    "Booking Pace",
-    "Pickup",
-    "Cancellation Rate",
-    "No Show Rate",
-    "Channel Mix",
-    "Room Revenue",
-    "Food and Beverage Revenue",
-    "Service Recovery Cost",
-    "Dispute Rate",
-    "Maintenance Response Time",
-    "Guest Spend"
+  "description": "Deployable Direct Lake semantic model over HotelGuestServices aggregate tables plus limited HotelOperations shortcuts.",
+  "itemType": "SemanticModel",
+  "definitionFormat": "TMDL",
+  "definitionRoot": "fabric/semantic-model",
+  "includePaths": [
+    "definition.pbism",
+    "definition/**"
   ],
-  "requiredShortcutTables": [
-    "ops_properties",
-    "ops_room_types",
-    "ops_rate_plans",
-    "ops_outlets",
-    "ops_daily_inventory",
-    "ops_daily_rates",
-    "ops_maintenance_requests",
-    "ops_work_orders"
+  "deployable": true,
+  "dependencies": [
+    "lakehouse:HotelGuestServices",
+    "lakehouse:HotelOperations"
   ],
-  "sourceLakehouse": "HotelGuestServices"
+  "limitations": [
+    "Food and beverage revenue is not present in the committed CSV contract; the model returns BLANK() for Food and Beverage Revenue and TRevPAR.",
+    "GOPPAR, NRevPAR, CPOR, Booking Pace, and Pickup beyond the committed columns remain out of scope for Phase 1 and are not emitted as report measures."
+  ]
 }
-

@@ -1,0 +1,42 @@
+{
+  "id": "1008",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "SpecialRequest",
+  "entityIdParts": [
+    "2701"
+  ],
+  "displayNamePropertyId": "2701",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2701",
+      "name": "SpecialRequestId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2702",
+      "name": "ReservationId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2703",
+      "name": "RequestType",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2704",
+      "name": "Status",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    }
+  ]
+}

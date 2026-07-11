@@ -1,0 +1,35 @@
+{
+  "id": "470785ec-a378-5a2c-a74c-940e1e200165",
+  "dataBindingConfiguration": {
+    "dataBindingType": "NonTimeSeries",
+    "propertyBindings": [
+      {
+        "sourceColumnName": "stay_id",
+        "targetPropertyId": "2401"
+      },
+      {
+        "sourceColumnName": "reservation_id",
+        "targetPropertyId": "2402"
+      },
+      {
+        "sourceColumnName": "property_id",
+        "targetPropertyId": "2403"
+      },
+      {
+        "sourceColumnName": "room_id",
+        "targetPropertyId": "2404"
+      },
+      {
+        "sourceColumnName": "status",
+        "targetPropertyId": "2405"
+      }
+    ],
+    "sourceTableProperties": {
+      "sourceType": "LakehouseTable",
+      "workspaceId": "{{WORKSPACE_ID}}",
+      "itemId": "{{HOTEL_GUEST_SERVICES_LAKEHOUSE_ID}}",
+      "sourceTableName": "stays",
+      "sourceSchema": "dbo"
+    }
+  }
+}

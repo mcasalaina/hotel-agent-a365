@@ -1,51 +1,36 @@
 # Fabric deployment automation
 
-This package contains the source-controlled deployment planner for the Microsoft Fabric slice
-owned by this session:
+The deployment toolchain in this folder plans and applies the Phase 1 Fabric slice without writing committed state.
 
-- `fabric/topology.json` is the repository source of truth for the Fabric workspace,
-  authoritative lakehouses, shortcut set, notebook inventory, and blocked future-artifact
-  blueprints.
-- `fabric/notebooks/*.ipynb` are deployable notebook definitions with typed parameter contracts
-  in `fabric/notebooks/contracts.json`.
-- `scripts/fabric/cli.py` validates the topology, optionally discovers remote IDs, writes an
-  uncommitted deployment-state file, and can create-or-update the foundational lakehouse and
-  notebook artifacts through Fabric REST APIs.
+## Supported item order
 
-## Typical usage
+1. Workspace
+2. `HotelOperations` lakehouse
+3. `HotelGuestServices` lakehouse + limited `ops_` shortcuts
+4. All notebooks
+5. `HotelOperationsModel` semantic model
+6. `HotelOperationsReport` report
+7. `HotelOperationsOntology` ontology
+8. `HotelOperationsAgent` draft data agent
 
-Local validation only:
+## Commands
 
-```bash
-python3 scripts/fabric/cli.py validate
-```
-
-Dry-run plan with source discovery:
+Validate the local definitions:
 
 ```bash
-python3 scripts/fabric/cli.py plan \
-  --source-root data/generated \
-  --state scripts/fabric/deployment-state/fabric-state.json
+.venv/bin/python scripts/fabric/cli.py validate
 ```
 
-Remote plan that also discovers current workspace and item IDs:
+Produce a dry-run plan with local source discovery:
 
 ```bash
-python3 scripts/fabric/cli.py plan \
-  --config scripts/fabric/config.example.json \
-  --discover-remote
+.venv/bin/python scripts/fabric/cli.py plan   --source-root data/generated   --state scripts/fabric/deployment-state/fabric-state.json
 ```
 
-Apply when the generated-schema handoff is complete:
+Apply live changes only when you are ready:
 
 ```bash
-python3 scripts/fabric/cli.py apply \
-  --config scripts/fabric/config.example.json \
-  --execute
+.venv/bin/python scripts/fabric/cli.py apply   --config scripts/fabric/config.example.json   --execute
 ```
 
-Without `--execute`, the `apply` command performs remote discovery and writes a dry-run plan
-without creating or updating Fabric resources.
-
-The CLI never writes committed state. Remote discovery and apply results go to the
-gitignored `scripts/fabric/deployment-state/` folder.
+The CLI never publishes the Data Agent runtime. After a successful apply, run the `HotelDataAgentRuntimePublish` notebook explicitly.

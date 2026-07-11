@@ -1,0 +1,35 @@
+{
+  "id": "d0feac39-d1ac-50f0-9337-cf4988d47381",
+  "dataBindingConfiguration": {
+    "dataBindingType": "NonTimeSeries",
+    "propertyBindings": [
+      {
+        "sourceColumnName": "maintenance_request_id",
+        "targetPropertyId": "2801"
+      },
+      {
+        "sourceColumnName": "stay_id",
+        "targetPropertyId": "2802"
+      },
+      {
+        "sourceColumnName": "room_id",
+        "targetPropertyId": "2803"
+      },
+      {
+        "sourceColumnName": "request_type",
+        "targetPropertyId": "2804"
+      },
+      {
+        "sourceColumnName": "status",
+        "targetPropertyId": "2805"
+      }
+    ],
+    "sourceTableProperties": {
+      "sourceType": "LakehouseTable",
+      "workspaceId": "{{WORKSPACE_ID}}",
+      "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
+      "sourceTableName": "maintenance_requests",
+      "sourceSchema": "dbo"
+    }
+  }
+}

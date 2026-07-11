@@ -1,0 +1,95 @@
+{
+  "$schema": "1.0.0",
+  "artifactId": "{{SEMANTICMODEL_ID}}",
+  "workspaceId": "{{WORKSPACE_ID}}",
+  "displayName": "HotelOperationsModel",
+  "type": "semantic_model",
+  "userDescription": "Governed KPI source for OCC, ADR, RevPAR, ALOS, disputes, requests, and maintenance response metrics.",
+  "dataSourceInstructions": "Use the semantic model when the user asks for governed KPIs or cross-domain metrics. Prefer DAX examples to raw SQL when answering semantic-model questions.",
+  "elements": [
+    {
+      "id": "955ee9d7-c61a-5ed3-b226-2cbcf0392db9",
+      "display_name": "Property KPI Daily",
+      "type": "semantic_model.table",
+      "is_selected": true,
+      "children": [
+        {
+          "id": "73fede6b-1745-57ee-8750-1d17b2aa190a",
+          "display_name": "Service Date",
+          "type": "semantic_model.column",
+          "data_type": "datetime"
+        },
+        {
+          "id": "7a81c588-d9db-556a-a7c0-50e868ad6c53",
+          "display_name": "Room Revenue",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        },
+        {
+          "id": "b14aa707-4744-540d-b6d3-6d8ba65aa9c7",
+          "display_name": "OCC",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        },
+        {
+          "id": "323db67e-f7bb-5a08-aa6e-befbab8a14de",
+          "display_name": "ADR",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        },
+        {
+          "id": "a5ea7706-f71a-5b24-9502-0f0aa8b78c72",
+          "display_name": "RevPAR",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        },
+        {
+          "id": "60e3cd89-08d3-577f-aee0-fb1ac03cad41",
+          "display_name": "ALOS",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        }
+      ]
+    },
+    {
+      "id": "e1191cf1-3e76-5ff0-b0df-9b285856ff5e",
+      "display_name": "Booking Pace Daily",
+      "type": "semantic_model.table",
+      "is_selected": true,
+      "children": [
+        {
+          "id": "8347fd85-205c-5a3e-8801-b6d747521cfc",
+          "display_name": "Channel",
+          "type": "semantic_model.column",
+          "data_type": "string"
+        },
+        {
+          "id": "5997db52-75d7-5a52-8dfe-63f07401d160",
+          "display_name": "Cancellation Rate",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        },
+        {
+          "id": "2f983f33-1e04-51d5-b6c4-2860bc63195c",
+          "display_name": "No Show Rate",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        }
+      ]
+    },
+    {
+      "id": "54eda825-5200-5a15-b344-1f775fa14438",
+      "display_name": "Maintenance Response Daily",
+      "type": "semantic_model.table",
+      "is_selected": true,
+      "children": [
+        {
+          "id": "ef66f341-61bb-57e2-afb9-b961075ee9de",
+          "display_name": "Maintenance Response Hours",
+          "type": "semantic_model.measure",
+          "data_type": "decimal"
+        }
+      ]
+    }
+  ]
+}

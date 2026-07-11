@@ -4,10 +4,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fabric.artifacts import FabricTopology, NotebookParameterSpec
+from fabric.artifacts import ArtifactSpec, FabricTopology, NotebookParameterSpec
 from fabric.client import FabricRestClient
 from fabric.discovery import SourceDiscoveryResult, discover_source_files
 from fabric.payloads import (
+    build_artifact_create_body,
+    build_artifact_definition,
     build_lakehouse_payload,
     build_notebook_payload,
     build_workspace_payload,
@@ -72,6 +74,7 @@ class FabricDeployer:
         operations.extend(self._plan_workspace(workspace))
         operations.extend(self._plan_lakehouses(items))
         operations.extend(self._plan_notebooks(items))
+        operations.extend(self._plan_artifacts(items))
         operations.extend(self._plan_blocked_blueprints())
         state["pendingArtifacts"] = {
             name: blueprint.blocking_reason or ""
@@ -154,7 +157,7 @@ class FabricDeployer:
 
         for notebook in self._topology.notebooks:
             existing = current_items.get(("Notebook", notebook.display_name))
-            payload = build_notebook_payload(notebook)
+            payload = build_notebook_payload(notebook, workspace_id, lakehouse_ids)
             if existing is None:
                 created = self._client.create_item(workspace_id, payload)
                 current_items[("Notebook", notebook.display_name)] = created
@@ -169,6 +172,49 @@ class FabricDeployer:
                 append_operation(state, "update", "Notebook", notebook.display_name, "updated")
                 record_item(state, "Notebook", notebook.display_name, str(existing["id"]))
 
+        for artifact in self._ordered_artifacts():
+            if not artifact.deployable:
+                continue
+            existing = current_items.get((artifact.item_type, artifact.display_name))
+            definition = build_artifact_definition(
+                artifact,
+                self._template_values(workspace_id, lakehouse_ids, current_items),
+            )
+            specialized = artifact.item_type in {"Ontology", "DataAgent"}
+            body = build_artifact_create_body(
+                artifact,
+                definition,
+                specialized_endpoint=specialized,
+            )
+            if existing is None:
+                created = self._create_artifact(workspace_id, artifact, body)
+                current_items[(artifact.item_type, artifact.display_name)] = created
+                append_operation(
+                    state,
+                    "create",
+                    artifact.item_type,
+                    artifact.display_name,
+                    "created",
+                )
+                record_item(state, artifact.item_type, artifact.display_name, str(created["id"]))
+            else:
+                updated = self._update_artifact(
+                    workspace_id,
+                    artifact,
+                    str(existing["id"]),
+                    definition,
+                )
+                append_operation(
+                    state,
+                    "update",
+                    artifact.item_type,
+                    artifact.display_name,
+                    "updated",
+                )
+                record_item(state, artifact.item_type, artifact.display_name, str(existing["id"]))
+                if updated.get("id"):
+                    current_items[(artifact.item_type, artifact.display_name)] = updated
+
         if self._source_root is not None:
             state["sourceDiscovery"] = _source_state_payload(self.discover_sources())
         state["pendingArtifacts"] = {
@@ -180,9 +226,23 @@ class FabricDeployer:
         return state
 
     def discover_sources(self) -> SourceDiscoveryResult:
+        derived_tables = {
+            "reservation_guests",
+            "room_assignments",
+            "adjustments",
+            "action_sagas",
+            "rate_plans",
+            "action_confirmations",
+            "idempotency_records",
+            "audit_events",
+        }
         tables: list[str] = []
         for lakehouse in self._topology.lakehouses:
-            tables.extend(lakehouse.authoritative_tables)
+            tables.extend(
+                table
+                for table in lakehouse.authoritative_tables
+                if not table.startswith("agg_") and table not in derived_tables
+            )
         if self._source_root is None:
             raise RuntimeError("Source discovery requested without a source root.")
         return discover_source_files(self._source_root, tuple(sorted(set(tables))))
@@ -231,6 +291,15 @@ class FabricDeployer:
     def _ordered_lakehouses(self) -> tuple[Any, ...]:
         order = {"HotelOperations": 0, "HotelGuestServices": 1}
         return tuple(sorted(self._topology.lakehouses, key=lambda item: order[item.display_name]))
+
+    def _ordered_artifacts(self) -> tuple[ArtifactSpec, ...]:
+        order = {"SemanticModel": 0, "Report": 1, "Ontology": 2, "DataAgent": 3}
+        return tuple(
+            sorted(
+                self._topology.blueprints.values(),
+                key=lambda item: order.get(item.item_type, 100),
+            )
+        )
 
     def _plan_workspace(self, workspace: dict[str, Any] | None) -> list[PlannedOperation]:
         if workspace is None:
@@ -288,6 +357,27 @@ class FabricDeployer:
             operations.append(PlannedOperation(action, "Notebook", notebook.display_name, detail))
         return operations
 
+    def _plan_artifacts(self, items: list[dict[str, Any]]) -> list[PlannedOperation]:
+        index = {(str(item.get("type")), str(item.get("displayName"))): item for item in items}
+        operations: list[PlannedOperation] = []
+        for artifact in self._ordered_artifacts():
+            if not artifact.deployable:
+                continue
+            existing = index.get((artifact.item_type, artifact.display_name))
+            action = "update" if existing is not None else "create"
+            detail = artifact.definition_format or "Definition"
+            if existing is not None:
+                detail = f"{detail}; item ID {existing.get('id')}"
+            operations.append(
+                PlannedOperation(
+                    action,
+                    artifact.item_type,
+                    artifact.display_name,
+                    detail,
+                )
+            )
+        return operations
+
     def _plan_blocked_blueprints(self) -> list[PlannedOperation]:
         return [
             PlannedOperation(
@@ -299,6 +389,61 @@ class FabricDeployer:
             for blueprint in self._topology.blueprints.values()
             if not blueprint.deployable
         ]
+
+    def _template_values(
+        self,
+        workspace_id: str,
+        lakehouse_ids: dict[str, str],
+        current_items: dict[tuple[str, str], dict[str, Any]],
+    ) -> dict[str, str]:
+        values = {
+            "WORKSPACE_ID": workspace_id,
+            "WORKSPACE_NAME": self._topology.workspace.display_name,
+            "HOTEL_OPERATIONS_LAKEHOUSE_ID": lakehouse_ids.get("HotelOperations", ""),
+            "HOTEL_GUEST_SERVICES_LAKEHOUSE_ID": lakehouse_ids.get("HotelGuestServices", ""),
+        }
+        semantic_model = current_items.get(("SemanticModel", "HotelOperationsModel"))
+        if semantic_model is not None:
+            values["SEMANTICMODEL_ID"] = str(semantic_model.get("id", ""))
+        ontology = current_items.get(("Ontology", "HotelOperationsOntology"))
+        if ontology is not None:
+            values["ONTOLOGY_ID"] = str(ontology.get("id", ""))
+        data_agent = current_items.get(("DataAgent", "HotelOperationsAgent"))
+        if data_agent is not None:
+            values["DATAAGENT_ID"] = str(data_agent.get("id", ""))
+        report = current_items.get(("Report", "HotelOperationsReport"))
+        if report is not None:
+            values["REPORT_ID"] = str(report.get("id", ""))
+        return values
+
+    def _create_artifact(
+        self,
+        workspace_id: str,
+        artifact: ArtifactSpec,
+        body: dict[str, Any],
+    ) -> dict[str, Any]:
+        if self._client is None:
+            raise RuntimeError("Fabric client is required for artifact creation.")
+        if artifact.item_type == "Ontology":
+            return self._client.create_ontology(workspace_id, body)
+        if artifact.item_type == "DataAgent":
+            return self._client.create_data_agent(workspace_id, body)
+        return self._client.create_item(workspace_id, body)
+
+    def _update_artifact(
+        self,
+        workspace_id: str,
+        artifact: ArtifactSpec,
+        item_id: str,
+        definition: dict[str, Any],
+    ) -> dict[str, Any]:
+        if self._client is None:
+            raise RuntimeError("Fabric client is required for artifact update.")
+        if artifact.item_type == "Ontology":
+            return self._client.update_ontology_definition(workspace_id, item_id, definition)
+        if artifact.item_type == "DataAgent":
+            return self._client.update_data_agent_definition(workspace_id, item_id, definition)
+        return self._client.update_item_definition(workspace_id, item_id, definition)
 
 
 def _source_state_payload(discovery: SourceDiscoveryResult) -> dict[str, Any]:

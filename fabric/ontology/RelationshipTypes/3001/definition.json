@@ -1,0 +1,12 @@
+{
+  "namespace": "usertypes",
+  "id": "3001",
+  "name": "PropertyHasRoom",
+  "namespaceType": "Custom",
+  "source": {
+    "entityTypeId": "1001"
+  },
+  "target": {
+    "entityTypeId": "1002"
+  }
+}

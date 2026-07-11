@@ -1,0 +1,15 @@
+{
+  "$schema": "1.0.0",
+  "fewShots": [
+    {
+      "id": "418d22c8-d6fa-5065-8436-3daca6cfbbfc",
+      "question": "Show future reservations arriving at HTL-004.",
+      "query": "SELECT reservation_id, guest_id, check_in, check_out, status, channel FROM reservations WHERE property_id = 'HTL-004' AND status = 'future' ORDER BY check_in;"
+    },
+    {
+      "id": "5e53074c-509e-5afc-b8c1-a7ab01d35fa1",
+      "question": "List open action sagas that still require reconciliation.",
+      "query": "SELECT saga_id, action_type, confirmation_id, state, pending_reconciliation FROM action_sagas WHERE pending_reconciliation = true;"
+    }
+  ]
+}

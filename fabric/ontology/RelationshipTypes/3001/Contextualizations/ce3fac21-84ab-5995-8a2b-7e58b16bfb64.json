@@ -1,0 +1,22 @@
+{
+  "id": "ce3fac21-84ab-5995-8a2b-7e58b16bfb64",
+  "dataBindingTable": {
+    "workspaceId": "{{WORKSPACE_ID}}",
+    "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
+    "sourceTableName": "rooms",
+    "sourceSchema": "dbo",
+    "sourceType": "LakehouseTable"
+  },
+  "sourceKeyRefBindings": [
+    {
+      "sourceColumnName": "property_id",
+      "targetPropertyId": "2001"
+    }
+  ],
+  "targetKeyRefBindings": [
+    {
+      "sourceColumnName": "room_id",
+      "targetPropertyId": "2101"
+    }
+  ]
+}

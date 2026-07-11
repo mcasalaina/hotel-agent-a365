@@ -1,0 +1,12 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/pagesMetadata/1.0.0/schema.json",
+  "pageOrder": [
+    "page_exec",
+    "page_booking",
+    "page_guest",
+    "page_frontdesk",
+    "page_dining",
+    "page_service"
+  ],
+  "activePageName": "page_exec"
+}

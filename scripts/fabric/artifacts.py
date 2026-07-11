@@ -44,11 +44,54 @@ class NotebookSpec:
 
 
 @dataclass(frozen=True, slots=True)
-class ArtifactBlueprint:
+class ArtifactSpec:
     display_name: str
-    path: Path
+    manifest_path: Path
     deployable: bool
     blocking_reason: str | None
+    item_type: str
+    definition_format: str | None
+    definition_root: Path
+    include_paths: tuple[str, ...]
+    description: str
+    dependencies: tuple[str, ...] = ()
+    publish_strategy: str | None = None
+
+    @classmethod
+    def from_manifest(
+        cls,
+        manifest_path: Path,
+        repository_root: Path,
+        display_name: str,
+        deployable: bool,
+        blocking_reason: str | None,
+    ) -> ArtifactSpec:
+        if not manifest_path.is_file():
+            return cls(
+                display_name=display_name,
+                manifest_path=manifest_path,
+                deployable=deployable,
+                blocking_reason=blocking_reason,
+                item_type="",
+                definition_format=None,
+                definition_root=manifest_path.parent,
+                include_paths=(),
+                description="",
+            )
+        raw = json.loads(manifest_path.read_text(encoding="utf-8"))
+        return cls(
+            display_name=_string(raw, "displayName"),
+            manifest_path=manifest_path,
+            deployable=_bool(raw.get("deployable")) if "deployable" in raw else deployable,
+            blocking_reason=blocking_reason,
+            item_type=_string(raw, "itemType"),
+            definition_format=_optional_string(raw.get("definitionFormat")),
+            definition_root=_resolve_path(repository_root, _string(raw, "definitionRoot")),
+            include_paths=tuple(_string_list(raw.get("includePaths"))),
+            description=_string(raw, "description"),
+            dependencies=tuple(_string_list(raw.get("dependencies"))),
+            publish_strategy=_optional_string(raw.get("publishStrategy")),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,7 +110,7 @@ class FabricTopology:
     workspace: WorkspaceSpec
     lakehouses: tuple[LakehouseSpec, ...]
     notebooks: tuple[NotebookSpec, ...]
-    blueprints: dict[str, ArtifactBlueprint]
+    blueprints: dict[str, ArtifactSpec]
     contract_file: Path
 
     @classmethod
@@ -114,11 +157,12 @@ class FabricTopology:
             for item in notebooks_raw
         )
         blueprints = {
-            name: ArtifactBlueprint(
-                display_name=_string(item, "displayName"),
-                path=_resolve_path(repository_root, _string(item, "path")),
-                deployable=_bool(item.get("deployable")),
-                blocking_reason=_optional_string(item.get("blockingReason")),
+            name: ArtifactSpec.from_manifest(
+                _resolve_path(repository_root, _string(item, "path")),
+                repository_root,
+                _string(item, "displayName"),
+                _bool(item.get("deployable")),
+                _optional_string(item.get("blockingReason")),
             )
             for name, item in blueprints_raw.items()
             if isinstance(item, dict)

@@ -1,0 +1,51 @@
+table 'Maintenance Response Daily'
+
+/// Average time from maintenance request report to work-order open, in minutes.
+measure 'Maintenance Response Minutes' = AVERAGE('Maintenance Response Daily'[Average Response Minutes])
+	formatString: #,##0.00
+
+/// Average time from maintenance request report to work-order open, in hours.
+measure 'Maintenance Response Hours' = DIVIDE([Maintenance Response Minutes], 60)
+	formatString: #,##0.00
+
+column 'Property Id'
+	dataType: string
+	isHidden
+	summarizeBy: none
+	sourceColumn: property_id
+
+column 'Service Date'
+	dataType: dateTime
+	summarizeBy: none
+	sourceColumn: service_date
+
+column 'Request Type'
+	dataType: string
+	sourceColumn: request_type
+
+column 'Total Requests'
+	dataType: int64
+	sourceColumn: total_requests
+
+column 'Average Response Minutes'
+	dataType: decimal
+	isHidden
+	sourceColumn: avg_response_minutes
+
+column 'Open Requests'
+	dataType: int64
+	sourceColumn: open_requests
+
+column 'In Progress Requests'
+	dataType: int64
+	sourceColumn: in_progress_requests
+
+column 'Resolved Requests'
+	dataType: int64
+	sourceColumn: resolved_requests
+
+partition 'Maintenance Response Daily' = entity
+	mode: directLake
+	source
+		entityName: agg_maintenance_response_daily
+		expressionSource: DL_HotelGuestServices

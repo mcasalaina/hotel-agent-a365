@@ -1,0 +1,22 @@
+{
+  "id": "7789f914-473f-5501-9bb6-d5e74b2667c9",
+  "dataBindingTable": {
+    "workspaceId": "{{WORKSPACE_ID}}",
+    "itemId": "{{HOTEL_GUEST_SERVICES_LAKEHOUSE_ID}}",
+    "sourceTableName": "folios",
+    "sourceSchema": "dbo",
+    "sourceType": "LakehouseTable"
+  },
+  "sourceKeyRefBindings": [
+    {
+      "sourceColumnName": "stay_id",
+      "targetPropertyId": "2401"
+    }
+  ],
+  "targetKeyRefBindings": [
+    {
+      "sourceColumnName": "folio_id",
+      "targetPropertyId": "2601"
+    }
+  ]
+}

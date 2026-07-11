@@ -1,0 +1,12 @@
+{
+  "namespace": "usertypes",
+  "id": "3007",
+  "name": "StayTriggeredMaintenanceRequest",
+  "namespaceType": "Custom",
+  "source": {
+    "entityTypeId": "1005"
+  },
+  "target": {
+    "entityTypeId": "1009"
+  }
+}

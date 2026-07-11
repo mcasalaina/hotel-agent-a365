@@ -129,6 +129,24 @@ class FabricRestClient:
         )
         return self._resolve_lro_result("POST", response)
 
+    def create_ontology(self, workspace_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        response = self.request_json(
+            "POST",
+            f"/workspaces/{workspace_id}/ontologies",
+            body,
+            expected_statuses={201, 202},
+        )
+        return self._resolve_lro_result("POST", response)
+
+    def create_data_agent(self, workspace_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        response = self.request_json(
+            "POST",
+            f"/workspaces/{workspace_id}/dataAgents",
+            body,
+            expected_statuses={201, 202},
+        )
+        return self._resolve_lro_result("POST", response)
+
     def update_item_definition(
         self,
         workspace_id: str,
@@ -138,6 +156,34 @@ class FabricRestClient:
         response = self.request_json(
             "POST",
             f"/workspaces/{workspace_id}/items/{item_id}/updateDefinition?updateMetadata=true",
+            {"definition": definition},
+            expected_statuses={200, 202},
+        )
+        return self._resolve_lro_result("POST", response)
+
+    def update_ontology_definition(
+        self,
+        workspace_id: str,
+        ontology_id: str,
+        definition: dict[str, Any],
+    ) -> dict[str, Any]:
+        response = self.request_json(
+            "POST",
+            f"/workspaces/{workspace_id}/ontologies/{ontology_id}/updateDefinition?updateMetadata=true",
+            {"definition": definition},
+            expected_statuses={200, 202},
+        )
+        return self._resolve_lro_result("POST", response)
+
+    def update_data_agent_definition(
+        self,
+        workspace_id: str,
+        data_agent_id: str,
+        definition: dict[str, Any],
+    ) -> dict[str, Any]:
+        response = self.request_json(
+            "POST",
+            f"/workspaces/{workspace_id}/dataAgents/{data_agent_id}/updateDefinition?updateMetadata=true",
             {"definition": definition},
             expected_statuses={200, 202},
         )

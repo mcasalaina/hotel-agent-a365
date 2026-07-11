@@ -1,0 +1,173 @@
+{
+  "$schema": "1.0.0",
+  "artifactId": "{{HOTEL_GUEST_SERVICES_LAKEHOUSE_ID}}",
+  "workspaceId": "{{WORKSPACE_ID}}",
+  "displayName": "HotelGuestServices",
+  "type": "lakehouse_tables",
+  "userDescription": "Authoritative source for guest, reservation, folio, dining, dispute, request, action_saga, and curated aggregate tables.",
+  "dataSourceInstructions": "Use HotelGuestServices for authoritative guest-facing reads and for all aggregate fact tables consumed by the report and semantic model.",
+  "elements": [
+    {
+      "id": "1c6a79fd-1cac-5f57-b323-5f67fe226da8",
+      "display_name": "dbo",
+      "type": "lakehouse_tables.schema",
+      "is_selected": true,
+      "children": [
+        {
+          "id": "ce88b5b6-a0b6-5f94-8bd1-b737a7f7b7e5",
+          "display_name": "reservations",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "76f42bb0-c308-57e5-b86f-7217dcc4dd35",
+              "display_name": "reservation_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "2e86acce-948e-5da1-833d-5f0812a2032b",
+              "display_name": "property_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "c3c41622-e6ad-543f-abb9-39c37a2389e0",
+              "display_name": "check_in",
+              "type": "lakehouse_tables.column",
+              "data_type": "date"
+            },
+            {
+              "id": "242f9244-4f21-512e-9777-ecd74f7b5e8b",
+              "display_name": "status",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "8c5f6bb3-ef8e-5e6d-964e-9faed3daade3",
+              "display_name": "channel",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            }
+          ]
+        },
+        {
+          "id": "c444477e-e12f-5094-ba93-610d560f0602",
+          "display_name": "folios",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "4bc4b4d9-6087-5bba-bf3b-5001b53b112a",
+              "display_name": "folio_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "f4e93031-4d72-5630-89cd-6b5ed0cb930e",
+              "display_name": "property_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "fed91e7e-59c6-591f-a1f2-5582e98bd39b",
+              "display_name": "balance",
+              "type": "lakehouse_tables.column",
+              "data_type": "decimal"
+            }
+          ]
+        },
+        {
+          "id": "9c2401d4-34b6-5571-930b-e198b8a7f279",
+          "display_name": "billing_disputes",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "4e94a120-a1f7-56eb-97b1-013c73ea0890",
+              "display_name": "billing_dispute_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "33adf719-1c35-551e-b22c-8cc027788f54",
+              "display_name": "folio_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "fa47d959-a954-5b89-a684-4fe55c36d350",
+              "display_name": "status",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "02c56b16-afaf-5c9a-b62c-8288b330b254",
+              "display_name": "amount",
+              "type": "lakehouse_tables.column",
+              "data_type": "decimal"
+            }
+          ]
+        },
+        {
+          "id": "fbfd88b6-9295-5ef2-b372-bc702c28991a",
+          "display_name": "agg_property_kpis_daily",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "48c107c3-72f3-5356-9641-eea7a463a424",
+              "display_name": "service_date",
+              "type": "lakehouse_tables.column",
+              "data_type": "date"
+            },
+            {
+              "id": "75bc8574-26c4-5978-b2dd-49e7dfc56f56",
+              "display_name": "occupied_rooms",
+              "type": "lakehouse_tables.column",
+              "data_type": "int"
+            },
+            {
+              "id": "778e4138-b42b-5d4c-abaf-c75bc1b97d58",
+              "display_name": "sellable_rooms",
+              "type": "lakehouse_tables.column",
+              "data_type": "int"
+            },
+            {
+              "id": "c9d191b2-8a09-5a97-be16-ee74862a4621",
+              "display_name": "room_revenue",
+              "type": "lakehouse_tables.column",
+              "data_type": "decimal"
+            }
+          ]
+        },
+        {
+          "id": "0400e845-c8d7-5ae6-80b9-a7aa5820f17d",
+          "display_name": "action_sagas",
+          "type": "lakehouse_tables.table",
+          "is_selected": true,
+          "children": [
+            {
+              "id": "77503a05-64dc-546f-9bdc-eef25b19da98",
+              "display_name": "saga_id",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "1d064164-99d7-5dee-9fc8-c0afaca100eb",
+              "display_name": "state",
+              "type": "lakehouse_tables.column",
+              "data_type": "string"
+            },
+            {
+              "id": "b16adf2e-a511-58e5-8c4e-59ef0b9d38d7",
+              "display_name": "pending_reconciliation",
+              "type": "lakehouse_tables.column",
+              "data_type": "boolean"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

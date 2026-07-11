@@ -1,0 +1,59 @@
+{
+  "$schema": "1.0.0",
+  "artifactId": "{{ONTOLOGY_ID}}",
+  "workspaceId": "{{WORKSPACE_ID}}",
+  "displayName": "HotelOperationsOntology",
+  "type": "graph",
+  "userDescription": "Ontology source for path-traversal questions across property, guest, stay, folio, request, and maintenance entities.",
+  "dataSourceInstructions": "Use the ontology only for relationship traversal, adjacency, and lineage-style questions. Do not use it for arithmetic KPI answers when the semantic model is available.",
+  "elements": [
+    {
+      "id": "09176e73-9787-591a-9f14-8932f5a34c3d",
+      "display_name": "Property",
+      "type": "graph.nodeType",
+      "is_selected": true
+    },
+    {
+      "id": "dafd437d-52d9-5e4f-bbde-e17a6edaddd7",
+      "display_name": "Guest",
+      "type": "graph.nodeType",
+      "is_selected": true
+    },
+    {
+      "id": "7a0e5351-a575-538e-8cb5-50facce6d5b1",
+      "display_name": "Reservation",
+      "type": "graph.nodeType",
+      "is_selected": true
+    },
+    {
+      "id": "c45302b2-f164-5283-bbad-855727e720c6",
+      "display_name": "Stay",
+      "type": "graph.nodeType",
+      "is_selected": true
+    },
+    {
+      "id": "9e4f571b-8c39-53b0-8a09-1580503317b3",
+      "display_name": "MaintenanceRequest",
+      "type": "graph.nodeType",
+      "is_selected": true
+    },
+    {
+      "id": "5ae19cdd-2eac-5419-9cd6-8b80ca7b98e0",
+      "display_name": "GuestBookedReservation",
+      "type": "graph.edgeType",
+      "is_selected": true
+    },
+    {
+      "id": "eb09f81e-318f-5634-9d14-69d56bb68e85",
+      "display_name": "ReservationResultedInStay",
+      "type": "graph.edgeType",
+      "is_selected": true
+    },
+    {
+      "id": "1cecaa4d-8250-590c-8a91-b0c1bd355f42",
+      "display_name": "StayTriggeredMaintenanceRequest",
+      "type": "graph.edgeType",
+      "is_selected": true
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+table 'Requests Daily'
+
+/// Total guest service requests created for the reporting grain.
+measure Requests = SUM('Requests Daily'[Total Requests])
+	formatString: #,##0
+
+/// Open guest service requests still awaiting fulfillment.
+measure 'Open Requests' = SUM('Requests Daily'[Open Requests])
+	formatString: #,##0
+
+/// Requests that still need reconciliation with operations workflows.
+measure 'Pending Reconciliation Requests' = SUM('Requests Daily'[Pending Reconciliation Requests])
+	formatString: #,##0
+
+column 'Property Id'
+	dataType: string
+	isHidden
+	summarizeBy: none
+	sourceColumn: property_id
+
+column 'Service Date'
+	dataType: dateTime
+	summarizeBy: none
+	sourceColumn: service_date
+
+column 'Request Type'
+	dataType: string
+	sourceColumn: request_type
+
+column 'Total Requests'
+	dataType: int64
+	isHidden
+	sourceColumn: total_requests
+
+column 'Open Requests'
+	dataType: int64
+	isHidden
+	sourceColumn: open_requests
+
+column 'Confirmed Requests'
+	dataType: int64
+	sourceColumn: confirmed_requests
+
+column 'Fulfilled Requests'
+	dataType: int64
+	sourceColumn: fulfilled_requests
+
+column 'Pending Reconciliation Requests'
+	dataType: int64
+	isHidden
+	sourceColumn: pending_reconciliation_requests
+
+partition 'Requests Daily' = entity
+	mode: directLake
+	source
+		entityName: agg_requests_daily
+		expressionSource: DL_HotelGuestServices

@@ -1,0 +1,57 @@
+table 'Booking Pace Daily'
+
+/// Cancellation rate from daily reservation aggregates.
+measure 'Cancellation Rate' = DIVIDE(SUM('Booking Pace Daily'[Cancelled Bookings]), SUM('Booking Pace Daily'[Total Reservations]))
+	formatString: 0.00%
+
+/// No-show rate from daily reservation aggregates.
+measure 'No Show Rate' = DIVIDE(SUM('Booking Pace Daily'[No Show Bookings]), SUM('Booking Pace Daily'[Total Reservations]))
+	formatString: 0.00%
+
+column 'Property Id'
+	dataType: string
+	isHidden
+	summarizeBy: none
+	sourceColumn: property_id
+
+column 'Service Date'
+	dataType: dateTime
+	summarizeBy: none
+	sourceColumn: service_date
+
+column Channel
+	dataType: string
+	sourceColumn: channel
+
+column 'Total Reservations'
+	dataType: int64
+	isHidden
+	sourceColumn: total_reservations
+
+column 'Future Bookings'
+	dataType: int64
+	sourceColumn: future_bookings
+
+column 'Cancelled Bookings'
+	dataType: int64
+	isHidden
+	sourceColumn: cancelled_bookings
+
+column 'No Show Bookings'
+	dataType: int64
+	isHidden
+	sourceColumn: no_show_bookings
+
+column 'Booked Revenue'
+	dataType: decimal
+	sourceColumn: booked_revenue
+
+column Currency
+	dataType: string
+	sourceColumn: currency
+
+partition 'Booking Pace Daily' = entity
+	mode: directLake
+	source
+		entityName: agg_booking_pace_daily
+		expressionSource: DL_HotelGuestServices

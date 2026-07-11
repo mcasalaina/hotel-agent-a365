@@ -4,12 +4,21 @@ import base64
 import json
 import re
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from fabric import ZERO_UUID
-from fabric.artifacts import LakehouseSpec, NotebookParameterSpec, NotebookSpec, ShortcutSpec
+from fabric.artifacts import (
+    ArtifactSpec,
+    LakehouseSpec,
+    NotebookParameterSpec,
+    NotebookSpec,
+    ShortcutSpec,
+)
 
 ONTOLOGY_NAME_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,89}$")
+TEMPLATE_PATTERN = re.compile(r"\{\{([A-Z0-9_]+)\}\}")
+TEXT_EXTENSIONS = {".json", ".tmdl", ".pbir", ".pbism", ".md", ".txt"}
 
 
 def build_workspace_payload(
@@ -51,8 +60,20 @@ def build_lakehouse_payload(
     }
 
 
-def build_notebook_payload(notebook: NotebookSpec) -> dict[str, Any]:
+def build_notebook_payload(
+    notebook: NotebookSpec,
+    workspace_id: str,
+    lakehouse_ids: dict[str, str],
+) -> dict[str, Any]:
     content = json.loads(notebook.definition_path.read_text(encoding="utf-8"))
+    metadata = content.setdefault("metadata", {})
+    metadata["dependencies"] = {
+        "lakehouse": {
+            "default_lakehouse": lakehouse_ids[notebook.default_lakehouse],
+            "default_lakehouse_workspace_id": workspace_id,
+            "default_lakehouse_name": notebook.default_lakehouse,
+        }
+    }
     return {
         "displayName": notebook.display_name,
         "description": notebook.description,
@@ -60,11 +81,60 @@ def build_notebook_payload(notebook: NotebookSpec) -> dict[str, Any]:
         "definition": {
             "format": "ipynb",
             "parts": [
-                _definition_part("artifact.content.ipynb", content),
+                _definition_part("notebook-content.ipynb", content),
                 _definition_part(".platform", _platform_payload("Notebook", notebook.display_name)),
             ],
         },
     }
+
+
+def build_artifact_definition(
+    artifact: ArtifactSpec,
+    template_values: dict[str, str],
+) -> dict[str, Any]:
+    parts = []
+    seen_paths: set[str] = set()
+    for include_path in artifact.include_paths:
+        for file_path in sorted(artifact.definition_root.glob(include_path)):
+            if not file_path.is_file():
+                continue
+            part_path = file_path.relative_to(artifact.definition_root).as_posix()
+            if part_path in seen_paths:
+                continue
+            seen_paths.add(part_path)
+            parts.append(
+                _file_definition_part(
+                    file_path,
+                    artifact.definition_root,
+                    template_values,
+                )
+            )
+    parts.append(
+        _definition_part(
+            ".platform",
+            _platform_payload(artifact.item_type, artifact.display_name),
+        )
+    )
+    return {
+        "format": artifact.definition_format,
+        "parts": parts,
+    }
+
+
+def build_artifact_create_body(
+    artifact: ArtifactSpec,
+    definition: dict[str, Any],
+    *,
+    specialized_endpoint: bool,
+) -> dict[str, Any]:
+    payload = {
+        "displayName": artifact.display_name,
+        "description": artifact.description,
+        "definition": definition,
+    }
+    if not specialized_endpoint:
+        payload["type"] = artifact.item_type
+    return payload
 
 
 def build_notebook_job_request(
@@ -164,6 +234,34 @@ def _definition_part(path: str, payload: Any) -> dict[str, str]:
         "payload": _encode_payload(payload),
         "payloadType": "InlineBase64",
     }
+
+
+def _file_definition_part(
+    file_path: Path,
+    definition_root: Path,
+    template_values: dict[str, str],
+) -> dict[str, str]:
+    relative_path = file_path.relative_to(definition_root).as_posix()
+    suffix = file_path.suffix.lower()
+    if suffix in TEXT_EXTENSIONS or file_path.name.startswith("definition"):
+        text = file_path.read_text(encoding="utf-8")
+        rendered = _render_template(text, template_values)
+        return _definition_part(relative_path, rendered)
+    return {
+        "path": relative_path,
+        "payload": base64.b64encode(file_path.read_bytes()).decode("utf-8"),
+        "payloadType": "InlineBase64",
+    }
+
+
+def _render_template(text: str, template_values: dict[str, str]) -> str:
+    def replace(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key not in template_values:
+            raise ValueError(f"Missing template value for {key!r}.")
+        return template_values[key]
+
+    return TEMPLATE_PATTERN.sub(replace, text)
 
 
 def _encode_payload(payload: Any) -> str:

@@ -1,0 +1,81 @@
+table 'Property KPI Daily'
+
+/// Occupancy rate (OCC) from occupied and sellable rooms.
+measure OCC = DIVIDE(SUM('Property KPI Daily'[Occupied Rooms]), SUM('Property KPI Daily'[Sellable Rooms]))
+	formatString: 0.00%
+
+/// Average daily rate based on room revenue over occupied rooms.
+measure ADR = DIVIDE([Room Revenue], SUM('Property KPI Daily'[Occupied Rooms]))
+	formatString: $#,##0.00
+
+/// Revenue per available room.
+measure RevPAR = DIVIDE([Room Revenue], SUM('Property KPI Daily'[Sellable Rooms]))
+	formatString: $#,##0.00
+
+/// Average length of stay from completed stays and room nights.
+measure ALOS = DIVIDE(SUM('Property KPI Daily'[Room Nights]), SUM('Property KPI Daily'[Completed Stays]))
+	formatString: 0.00
+
+/// Total room revenue from the committed property daily metrics contract.
+measure 'Room Revenue' = SUM('Property KPI Daily'[Room Revenue Amount])
+	formatString: $#,##0.00
+
+/// Not available in Phase 1 because the committed CSV contract contains no food-and-beverage revenue column.
+measure 'Food and Beverage Revenue' = BLANK()
+	formatString: $#,##0.00
+
+/// Not available in Phase 1 because the committed CSV contract contains no food-and-beverage revenue column.
+measure TRevPAR = BLANK()
+	formatString: $#,##0.00
+
+/// Completed stays on the service date.
+measure 'Completed Stays' = SUM('Property KPI Daily'[Completed Stays])
+	formatString: #,##0
+
+column 'Property Id'
+	dataType: string
+	isHidden
+	summarizeBy: none
+	sourceColumn: property_id
+
+column 'Service Date'
+	dataType: dateTime
+	summarizeBy: none
+	sourceColumn: service_date
+
+column Currency
+	dataType: string
+	sourceColumn: currency
+
+column 'Sellable Rooms'
+	dataType: int64
+	sourceColumn: sellable_rooms
+
+column 'Occupied Rooms'
+	dataType: int64
+	sourceColumn: occupied_rooms
+
+column 'Room Revenue Amount'
+	dataType: decimal
+	isHidden
+	sourceColumn: room_revenue
+
+column 'Completed Stays'
+	dataType: int64
+	isHidden
+	sourceColumn: completed_stays
+
+column 'Room Nights'
+	dataType: int64
+	isHidden
+	sourceColumn: room_nights
+
+column 'Total Reservations'
+	dataType: int64
+	sourceColumn: total_reservations
+
+partition 'Property KPI Daily' = entity
+	mode: directLake
+	source
+		entityName: agg_property_kpis_daily
+		expressionSource: DL_HotelGuestServices

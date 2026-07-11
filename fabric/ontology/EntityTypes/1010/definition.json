@@ -1,0 +1,42 @@
+{
+  "id": "1010",
+  "namespace": "usertypes",
+  "baseEntityTypeId": null,
+  "name": "WorkOrder",
+  "entityIdParts": [
+    "2901"
+  ],
+  "displayNamePropertyId": "2901",
+  "namespaceType": "Custom",
+  "visibility": "Visible",
+  "properties": [
+    {
+      "id": "2901",
+      "name": "WorkOrderId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2902",
+      "name": "MaintenanceRequestId",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2903",
+      "name": "Priority",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    },
+    {
+      "id": "2904",
+      "name": "Status",
+      "redefines": null,
+      "baseTypeNamespaceType": null,
+      "valueType": "String"
+    }
+  ]
+}
