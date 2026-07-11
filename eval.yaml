@@ -1,7 +1,7 @@
 name: hotel-servicing-smoke
 agent:
   name: hotel-servicing-agent
-  version: "3"
+  version: "4"
 dataset:
   local_uri: tests/fixtures/evaluation/hotel_servicing_smoke.jsonl
 evaluators: []
