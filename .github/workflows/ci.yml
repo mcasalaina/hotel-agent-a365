@@ -1,0 +1,30 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: src/hotel-servicing-agent/pyproject.toml
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e "./src/hotel-servicing-agent[dev]"
+      - name: Run repository checks
+        run: |
+          python -m ruff check src scripts tests
+          python -m ruff format --check src scripts tests
+          python -m mypy src/hotel-servicing-agent/hotel_servicing_agent scripts
+          python -m pytest
+          python scripts/validate_technical_naming.py
+          python scripts/validate_configuration.py

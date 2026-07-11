@@ -1,0 +1,8 @@
+.env
+.foundry/datasets
+.foundry/evaluators
+.foundry/results
+.foundry/suites
+__pycache__
+*.pyc
+tests

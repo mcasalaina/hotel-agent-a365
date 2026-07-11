@@ -1,0 +1,18 @@
+{
+  "_comment": "Example only. Discover every tenant-specific value before use.",
+  "tenantId": "00000000-0000-0000-0000-000000000000",
+  "subscriptionId": "27b0139a-16b4-42bf-9ec9-c6db3768245e",
+  "resourceGroup": "rg-hotel-agent-a365",
+  "location": "eastus2",
+  "environment": "dev",
+  "needDeployment": false,
+  "clientAppId": "00000000-0000-0000-0000-000000000000",
+  "agentIdentityDisplayName": "hotel-agent Identity",
+  "agentBlueprintDisplayName": "hotel-agent Blueprint",
+  "agentUserPrincipalName": "hotel-agent@<tenant-domain>.onmicrosoft.com",
+  "agentUserDisplayName": "Hotel Guest Services Agent",
+  "managerEmail": "<manager-email>",
+  "agentUserUsageLocation": "US",
+  "hostedAgentName": "hotel-servicing-agent",
+  "messagingEndpoint": "<hosted-agent-activity-protocol-endpoint>"
+}

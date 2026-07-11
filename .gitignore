@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+.venv/
+venv/
+
+# Environment and secrets
+.env
+*.env
+!*.env.template
+!*.env.example
+
+# Azure Developer CLI state
+.azure/*
+!.azure/deployment-plan.md
+
+# Agent 365 generated configuration
+a365.config.json
+a365.generated.config.json
+agent/a365.config.json
+
+# Generated and packaged artifacts
+data/generated/*
+!data/generated/README.md
+foundryiq-docs/**/*.generated.*
+manifest/*.zip
+*.zip
+docker-logs/
+logs/
+
+# Fabric and Foundry local caches
+fabric/.cache/
+src/hotel-servicing-agent/.foundry/datasets/*
+src/hotel-servicing-agent/.foundry/evaluators/*
+src/hotel-servicing-agent/.foundry/results/*
+src/hotel-servicing-agent/.foundry/suites/*
+!src/hotel-servicing-agent/.foundry/**/README.md
+
+# Dashboard
+dashboard/frontend/node_modules/
+dashboard/frontend/dist/
+dashboard/frontend/test-results/
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,13 @@
+name: hotel-agent-bootstrap
+agent:
+  name: hotel-servicing-agent
+dataset:
+  local_uri: tests/fixtures/evaluation/bootstrap.jsonl
+evaluators: []
+options:
+  eval_model: gpt-5.4-mini
+  pass_threshold: 1.0
+max_samples: 1
+generation_instruction: >
+  Replace this bootstrap intent with the approved smoke, regression, coverage,
+  tool-routing, groundedness, citation, confirmation, and sensitive-data suite.

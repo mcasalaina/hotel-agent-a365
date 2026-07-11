@@ -1,0 +1,18 @@
+{
+  "mcpServers": [
+    {
+      "mcpServerName": "mail-tools-v2",
+      "mcpServerUniqueName": "mail-tools-v2",
+      "url": "<current-mail-mcp-v2-url>",
+      "scope": "Tools.ListInvoke.All",
+      "audience": "<current-mail-mcp-v2-audience>"
+    },
+    {
+      "mcpServerName": "teams-tools-v2",
+      "mcpServerUniqueName": "teams-tools-v2",
+      "url": "<current-teams-mcp-v2-url>",
+      "scope": "Tools.ListInvoke.All",
+      "audience": "<current-teams-mcp-v2-audience>"
+    }
+  ]
+}

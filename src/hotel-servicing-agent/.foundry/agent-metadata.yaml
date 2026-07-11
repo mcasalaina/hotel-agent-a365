@@ -1,0 +1,7 @@
+defaultEnvironment: dev
+environments:
+  dev:
+    azd:
+      environmentName: hotel-dev
+      service: hotel-servicing-agent
+    evaluationSuites: []

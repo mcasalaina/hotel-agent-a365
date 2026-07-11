@@ -1,0 +1,14 @@
+{
+  "_comment": "Resolve live application IDs and scope IDs before Agent 365 publication.",
+  "categories": [
+    "Microsoft Graph",
+    "Power Platform",
+    "Messaging Bot",
+    "Agent 365 observability",
+    "Agent 365 Tools",
+    "Work IQ",
+    "Microsoft Cognitive Services",
+    "Azure Machine Learning Services"
+  ],
+  "resolvedPermissions": []
+}
