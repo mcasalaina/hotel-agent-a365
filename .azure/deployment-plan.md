@@ -2,7 +2,7 @@
 
 ## Status
 
-Planned - implementation not started
+In Progress - repository and application preparation
 
 ## Canonical product plan
 
@@ -74,3 +74,10 @@ When implementation artifacts are complete:
 3. Resolve all validation findings.
 4. Use the `azure-deploy` workflow for Azure deployment.
 5. Run the live component and phase-gate tests in `PLAN.md`.
+
+## Progress
+
+- 2026-07-11: Product plan approved.
+- 2026-07-11: GitHub repository created and collaborator invited.
+- 2026-07-11: Azure context resolved from the supplied Foundry endpoint; use subscription `27b0139a-16b4-42bf-9ec9-c6db3768245e` and region `eastus2`.
+- 2026-07-11: Repository/application bootstrap started. No cloud resources have been created or modified yet.
