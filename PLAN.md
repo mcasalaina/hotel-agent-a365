@@ -502,7 +502,9 @@ Do not use Azure Bot Web Chat or Direct Line as the authoritative OBO test; use 
 
 ## 7. Phase 3 - Voice Live simulated contact center
 
-Phase 3 upgrades the same `hotel-servicing-agent` version and preserves all Phase 1 and Phase 2 behavior.
+Phase 3 upgrades the same `hotel-servicing-agent` version and preserves all Phase 1 and Phase 2
+behavior. The existing simulated-call web application becomes the authenticated browser surface for
+both text and voice, including Work IQ access on behalf of the signed-in user.
 
 ### 7.1 Dual-protocol Hosted Agent
 
@@ -511,6 +513,9 @@ Phase 3 upgrades the same `hotel-servicing-agent` version and preserves all Phas
 3. Use a container with at least 1 CPU/2 GiB and validate the Foundry preview feature flag and region support.
 4. Use the Voice Live Responses integration where useful, while preserving the explicit duplex WebSocket endpoint required by the contact-center browser flow.
 5. Confirm Voice Live model availability in the target resource/region before deployment; deploy or select a supported realtime model only after a capacity check.
+6. Add a protocol-aware Work IQ gateway: Agent 365 activity requests retain `user_fic`, while
+   authenticated web `invocations_ws` requests use standard OBO through the web backend. Never
+   silently fall back to application identity.
 
 ### 7.2 Foreground/background experience
 
@@ -530,12 +535,35 @@ Requirements:
 - Once a confirmed mutation begins its atomic Delta commit, cancellation reports the eventual committed result rather than claiming rollback.
 - Reconnect with the same `agent_session_id` restores session-visible task status; business state is reread from the lakehouse.
 
-### 7.3 Simulated-call web application
+### 7.3 Authenticated simulated-call web application
 
 Build a React/TypeScript frontend and Python backend proxy:
 
+- Require Microsoft Entra sign-in before any text or voice session begins; Phase 3 has no anonymous
+  application mode.
+- Register the browser as a generic public client, use Authorization Code with PKCE, and request a
+  user token for an exposed scope on the existing agent blueprint/API boundary. Keep browser tokens
+  in memory only.
+- Validate issuer, tenant, audience, signature, expiry, and scopes in the Python backend. Bind every
+  call, reconnect, confirmation, and tool invocation to the authenticated subject and tenant.
+- Use the backend managed identity/FIC plus the inbound user assertion to perform the documented
+  agent OBO exchange. Acquire a separate delegated token for each V2 Work IQ Copilot, Mail, and
+  Teams audience.
+- Keep the user assertion and downstream tokens in the backend's encrypted, bounded token cache.
+  Never place them in prompts, WebSocket payloads sent to Foundry, URLs, browser storage, telemetry,
+  or logs.
+- Give the Hosted Agent only a short-lived opaque web-auth session handle through protocol metadata.
+  Its Work IQ gateway calls a private backend token-broker/tool endpoint authenticated with the
+  Hosted Agent identity. The broker resolves the handle to the signed-in user and performs Work IQ
+  calls under that user's OBO tokens.
+- Select authentication by verified channel context: Agent 365/Teams uses `user_fic`; the Phase 3
+  web app uses the OBO broker. Reject missing, expired, mismatched, replayed, or cross-user context.
+- Preserve the positive read-only MCP tool allowlists in both modes. There is no application-only
+  Work IQ fallback and no token forwarding from arbitrary request bodies.
 - Browser captures PCM16 24-kHz mono audio and receives audio/transcript/events.
-- The backend obtains the Entra token and opens the Foundry WebSocket because browser WebSocket APIs cannot set the Authorization header.
+- The backend obtains its own Foundry service token and opens the Foundry WebSocket because browser
+  WebSocket APIs cannot set the Authorization header. This service token is distinct from the
+  signed-in user's Work IQ assertion and OBO tokens.
 - The page shows call state, live user/agent transcripts, elapsed time, friendly tool/data-source events, confirmation cards, reservation/folio/request result cards, and final disposition.
 - The UI explicitly labels generated synthetic data and the fictional hotel chain.
 - Do not display hidden prompts, credentials, raw tokens, chain-of-thought, or unnecessary customer fields.
@@ -546,9 +574,16 @@ Build a React/TypeScript frontend and Python backend proxy:
 - Local duplex headless test: session start, text turn, audio bytes, transcript, progress events, and completion.
 - Microphone/browser test with server VAD, echo cancellation, noise reduction, barge-in, and reconnect.
 - Hosted WebSocket authentication and preview-flag tests.
+- Unauthenticated browser, expired session, wrong tenant/audience, missing consent, Conditional
+  Access challenge, replayed handle, and cross-user session-isolation tests.
+- Web OBO tests for Copilot, Mail, and Teams audiences under the signed-in browser user, including
+  token refresh and concurrent-user isolation.
+- Bimodal regression proving the same Work IQ question uses OBO from the web app and `user_fic`
+  from a real Teams DM, with equivalent read-only enforcement.
 - Long-running property lookup and reservation mutation with multiple status utterances followed by one final result.
 - Confirmation over voice and on-screen UI before a mutation.
-- Browser proxy security and token non-disclosure.
+- Browser/backend proxy security, token-cache bounds, service-to-broker authentication, and token
+  non-disclosure.
 - Playwright tests for timeline, transcript, confirmations, reconnect, errors, and accessibility.
 - Regression of all Phase 1 Responses tests and Phase 2 Teams/A365 tests against the new Hosted Agent version.
 
