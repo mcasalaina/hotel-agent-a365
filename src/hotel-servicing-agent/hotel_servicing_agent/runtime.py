@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import UTC, date, datetime, timedelta
 
 from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
@@ -55,15 +56,32 @@ def create_agent(settings: Settings) -> Agent:
     )
     return Agent(
         client=client,
+        id=settings.agent365_instance_client_id,
         name="hotel-servicing-agent",
         description="Guest-services orchestration for a fictional hotel chain.",
-        instructions=settings.instructions,
+        instructions=_instructions_with_current_utc_date(settings.instructions),
         default_options={"store": False},
         tools=[
             knowledge_tool.as_function_tool(),
             fabric_tool.as_function_tool(),
             work_iq_tool.as_function_tool(),
         ],
+    )
+
+
+def _instructions_with_current_utc_date(
+    instructions: str,
+    today: date | None = None,
+) -> str:
+    current_date = today or datetime.now(UTC).date()
+    next_week_end = current_date + timedelta(days=6)
+    return (
+        f"{instructions.rstrip()}\n\n"
+        "Authoritative time context:\n"
+        f"- Today's UTC date is {current_date.isoformat()}.\n"
+        f"- A relative next-7-days window is {current_date.isoformat()} through "
+        f"{next_week_end.isoformat()}, inclusive.\n"
+        "- Never infer the current date from model training data."
     )
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
-from datetime import timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from agent_framework import FunctionTool
@@ -9,8 +9,15 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 FABRIC_TOKEN_SCOPE = "https://api.fabric.microsoft.com/.default"
-PROPERTY_ID_DIRECTIVE = (
-    " Always include the exact property_id for every property mentioned in the answer."
+PROPERTY_CONTEXT_DIRECTIVE = (
+    " Always include the exact property_id and official property name for every property "
+    "mentioned. "
+    "For a chain-wide aggregation, query the complete property roster, return an overall total and "
+    "a Markdown table with exactly 20 property rows, and include properties with zero matching "
+    "records. Never collapse zero-count rows into an 'all other properties' summary. For a "
+    "forward-looking reservation window, interpret reservations as arrivals by check_in with "
+    "status future or arriving unless the user explicitly asks for records created or booked "
+    "during the window; state the date range and interpretation used."
 )
 FabricQueryRunner = Callable[[str, dict[str, str], str], Awaitable[str]]
 
@@ -33,8 +40,9 @@ class FabricDataAgentTool:
             name="query_hotel_operations_data",
             description=(
                 "Query governed hotel operations and guest-services data across both Fabric "
-                "lakehouses, the semantic model, and the ontology. Every property result includes "
-                "its exact property_id for reliable handoff to approved knowledge retrieval."
+                "lakehouses, the semantic model, and the ontology. Property results include the "
+                "official property name and exact property_id; chain-wide results include a "
+                "complete property breakdown."
             ),
             func=self.query,
         )
@@ -44,8 +52,18 @@ class FabricDataAgentTool:
             raise ValueError("question must not be empty")
         token = self._credential.get_token(FABRIC_TOKEN_SCOPE)
         headers = {"Authorization": f"Bearer {token.token}"}
-        governed_question = f"{question.strip()}{PROPERTY_ID_DIRECTIVE}"
+        governed_question = _governed_question(question)
         return await self._query_runner(self._mcp_url, headers, governed_question)
+
+
+def _governed_question(question: str, today: date | None = None) -> str:
+    current_date = today or datetime.now(UTC).date()
+    next_week_end = current_date + timedelta(days=6)
+    return (
+        f"{question.strip()}{PROPERTY_CONTEXT_DIRECTIVE} Today's authoritative UTC date is "
+        f"{current_date.isoformat()}, and a relative next-7-days window ends "
+        f"{next_week_end.isoformat()}, inclusive."
+    )
 
 
 async def _query_data_agent(

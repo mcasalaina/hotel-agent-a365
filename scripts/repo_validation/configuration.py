@@ -31,6 +31,7 @@ EXPECTED_AGENT365_ENV = {
     ),
     "WORK_IQ_TEAMS_MCP_AUDIENCE": "ce5029ee-c1d3-45c0-bdcc-efb5a4245687",
 }
+EXPECTED_OBSERVABILITY_ENV = {"A365_USE_S2S_ENDPOINT": "true"}
 EXPECTED_PROJECT_ENDPOINT = (
     "https://4iq-foundry-project-resource.services.ai.azure.com/api/projects/4iq-foundry-project"
 )
@@ -140,6 +141,13 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
             environment_variables.get(name),
             f"${{{name}}}",
         )
+    for name, expected in EXPECTED_OBSERVABILITY_ENV.items():
+        _expect(
+            problems,
+            f"agent.environmentVariables.{name}",
+            environment_variables.get(name),
+            expected,
+        )
     if "FOUNDRY_PROJECT_ENDPOINT" in environment_variables:
         problems.append(
             ConfigurationProblem(
@@ -163,12 +171,14 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         "FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
         "FABRIC_DATA_AGENT_MCP_URL",
         *EXPECTED_AGENT365_ENV,
+        *EXPECTED_OBSERVABILITY_ENV,
     ):
+        expected = EXPECTED_OBSERVABILITY_ENV.get(name, f"{{{{{name}}}}}")
         _expect(
             problems,
             f"manifest.template.environment_variables.{name}",
             manifest_environment_variables.get(name),
-            f"{{{{{name}}}}}",
+            expected,
         )
     _expect(
         problems,

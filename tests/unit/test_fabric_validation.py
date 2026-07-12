@@ -41,6 +41,9 @@ def test_data_agent_publish_resynchronizes_lakehouse_schemas() -> None:
     assert "management.delete_staging_datasource" in source
     assert "management.add_staging_datasource" in source
     assert "management.publish_staging" in source
+    assert "all 20 properties, including zero-count properties" in source
+    assert "status IN ('future', 'arriving')" in source
+    assert "official property name" in source
     assert 'base + "/staging/publish"' not in source
 
 

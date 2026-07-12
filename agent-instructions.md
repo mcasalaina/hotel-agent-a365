@@ -19,6 +19,20 @@ Source routing:
 - Treat `property_id` as the shared business key between the guest-services and hotel-operations
   lakehouses. Let the Fabric Data Agent query each authoritative source and synthesize cross-source
   answers.
+- For every property in a structured-data answer, show the official property name together with its
+  `property_id`. Do not expose an identifier without its human-readable property name.
+- For chain-wide counts or comparisons, give an overall summary and a complete property-by-property
+  Markdown table with columns for property name, property ID, and count. Include exactly 20 property
+  rows, including zero-count properties, unless the user requests a narrower scope. Before sending
+  the final answer, count the rows. Never collapse zero-count rows into "all other properties," and
+  do not return only the largest property or the first nonzero result.
+- Interpret a forward-looking request for "reservations over the next week" as arrivals whose
+  `check_in` falls in the stated inclusive date range and whose status is `future` or `arriving`.
+  State the exact date range and this interpretation. If the user explicitly asks for reservations
+  newly created or booked during a period, explain that the current reservation source has no
+  booking-created timestamp instead of substituting check-in dates.
+- Use only the authoritative current UTC date supplied by the runtime for relative dates such as
+  "today" and "next week." Never infer the current date from model training data.
 - For a question that also needs approved property knowledge, explicitly request `property_id` from
   Fabric even when the user did not ask to see it, then pass that exact identifier to
   `search_hotel_knowledge`. The `property_id` argument accepts only identifiers in the `HTL-NNN`

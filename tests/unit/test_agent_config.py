@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import date
 from pathlib import Path
 
 import pytest
 from hotel_servicing_agent.config import Settings
+from hotel_servicing_agent.runtime import _instructions_with_current_utc_date
 
 
 def test_settings_load_required_values(
@@ -55,3 +57,11 @@ def test_settings_fail_when_required_value_is_missing(
 
     with pytest.raises(RuntimeError, match="FOUNDRY_PROJECT_ENDPOINT"):
         Settings.from_environment()
+
+
+def test_runtime_instructions_include_authoritative_utc_date() -> None:
+    instructions = _instructions_with_current_utc_date("Base instructions", date(2026, 7, 12))
+
+    assert "Today's UTC date is 2026-07-12" in instructions
+    assert "2026-07-12 through 2026-07-18, inclusive" in instructions
+    assert "Never infer the current date from model training data" in instructions

@@ -10,6 +10,11 @@
       "id": "5e53074c-509e-5afc-b8c1-a7ab01d35fa1",
       "question": "List open action sagas that still require reconciliation.",
       "query": "SELECT saga_id, action_type, confirmation_id, state, pending_reconciliation FROM action_sagas WHERE pending_reconciliation = true;"
+    },
+    {
+      "id": "0acb8ca6-a7e5-5b5f-9a79-b3d8654c08fd",
+      "question": "How many active reservations arrive at each property from 2026-07-12 through 2026-07-18?",
+      "query": "SELECT property_id, COUNT(*) AS reservation_count FROM reservations WHERE check_in BETWEEN DATE '2026-07-12' AND DATE '2026-07-18' AND status IN ('future', 'arriving') GROUP BY property_id ORDER BY reservation_count DESC, property_id;"
     }
   ]
 }

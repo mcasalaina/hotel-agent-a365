@@ -157,16 +157,21 @@ Secrets, generated agent configuration, tokens, deployment packages, large gener
 
 Phase 1 is not complete until every component passes its isolated tests and the canonical end-to-end scenarios pass.
 
-Live implementation status on 2026-07-11:
+Live implementation status on 2026-07-12:
 
 - Generated and validated 658,611 structured rows and 95 knowledge documents.
 - Deployed and validated both Fabric lakehouses, six aggregate tables, the semantic model, report,
   ontology, and published Data Agent.
 - Published Data Agent lakehouse schemas must be synchronized through
   `HotelDataAgentRuntimePublish`; definition-only imports leave the lakehouse elements unavailable.
-- Deployed Hosted Agent version 10 with on-demand Fabric MCP, Foundry IQ, and read-only Work IQ
+- Deployed Hosted Agent version 13 with on-demand Fabric MCP, Foundry IQ, and read-only Work IQ
   tools. Isolated retrieval tests and the combined reservation-to-property-knowledge handoff pass,
-  including exact `property_id` propagation and citations.
+  including exact `property_id` propagation and citations. The chain-wide next-week reservation
+  regression returns the authoritative 2026-07-12 through 2026-07-18 window, total 214, and all 20
+  named properties in a Markdown table.
+- Agent 365 observability uses the S2S endpoint and the runtime Agent Framework ID is pinned to the
+  authenticated instance client ID. The version 13 regression session has no observability HTTP
+  403.
 - Published the existing Foundry-managed blueprint to Agent 365 and deployed the Bot Service/Teams
   channel. Work IQ reaches the three-hop token exchange; a real Teams DM remains required to create
   and validate the agentic-user federated credential.

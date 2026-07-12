@@ -10,6 +10,11 @@
       "id": "bc2bbce3-29a9-5682-9d4c-8a2fdc0ea071",
       "question": "Which maintenance requests are still open for HTL-004?",
       "query": "SELECT maintenance_request_id, room_id, request_type, status, reported_at FROM maintenance_requests WHERE property_id = 'HTL-004' AND status <> 'resolved';"
+    },
+    {
+      "id": "c3b06c94-fd9b-56cd-b253-5b93b9b1dcda",
+      "question": "List the complete property roster for a chain-wide result.",
+      "query": "SELECT property_id, name, city, region FROM properties ORDER BY property_id;"
     }
   ]
 }

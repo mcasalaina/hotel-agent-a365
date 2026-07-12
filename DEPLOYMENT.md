@@ -135,13 +135,21 @@ this boundary; prompt instructions are not the security control.
 The blueprint has tenant-wide delegated `Tools.ListInvoke.All` grants and matching enumerated
 inheritable permissions for all three V2 Work IQ resources. The Hosted Agent identity has the
 `Agent365.Observability.OtelWrite` application role. These are separate requirements: OAuth consent
-alone does not make a scope inheritable by future agentic users, and observability export fails with
-HTTP 403 when the instance role is absent.
+alone does not make a scope inheritable by future agentic users. The Hosted Agent also sets
+`A365_USE_S2S_ENDPOINT=true`: its managed identity obtains an app-only token with the
+`Agent365.Observability.OtelWrite` role, so the exporter must use the `/observabilityService/` route.
+The delegated `/observability/` route expects an `scp` claim and rejects the app-only token with
+HTTP 403 even when the role assignment is present. The runtime also pins the Agent Framework
+agent `id` to `AGENT365_INSTANCE_CLIENT_ID`; otherwise generated `gen_ai.agent.id` span attributes
+do not match the authenticated instance identity and the observability service rejects them.
 
-An ordinary version 10 Responses invocation passed with cited HTL-001 pool hours. A direct Foundry
-Work IQ probe reached the three-hop exchange and failed with `AADSTS7002200` because a direct Azure
-caller does not have an Agent 365 user federated credential. This is expected and is not an
-authoritative Work IQ test. Complete Work IQ validation from a real Teams DM after an M365
+Hosted Agent version 13 is active. The chain-wide next-week reservation regression returned the
+authoritative 2026-07-12 through 2026-07-18 date window, total 214, and a complete 20-property
+Markdown table with official names and IDs. Its session log contained no Agent 365 observability
+HTTP 403. A direct Foundry Work IQ probe reached the three-hop exchange and failed with
+`AADSTS7002200` because a direct Azure caller does not have an Agent 365 user federated credential.
+This is expected and is not an authoritative Work IQ test. Complete Work IQ validation from a real
+Teams DM after an M365
 administrator publishes the pending request in **Microsoft 365 admin center > Agents > All agents
 > Requests**. The Teams invocation must then cover Mail, Teams, and cross-M365 reads and confirm
 that mutation attempts remain blocked.
