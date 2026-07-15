@@ -10,9 +10,10 @@ from hotel_servicing_agent.config import Settings
 from hotel_servicing_agent.credentials import select_azure_credential
 from hotel_servicing_agent.hosting import Agent365ResponsesHostServer
 from hotel_servicing_agent.tools import (
-    WORK_IQ_READ_ONLY_TOOLS,
+    WORK_IQ_AGENT_TOOLS,
     AgenticUserTokenProvider,
     FabricDataAgentTool,
+    FabricReservationMutationTool,
     FoundryIQTool,
     WorkIQServer,
     WorkIQTool,
@@ -35,6 +36,13 @@ def create_agent(settings: Settings) -> Agent:
         mcp_url=settings.fabric_data_agent_mcp_url,
         credential=credential,
     )
+    reservation_tool = FabricReservationMutationTool(
+        workspace_id=settings.fabric_workspace_id,
+        guest_services_lakehouse_id=settings.fabric_guest_services_lakehouse_id,
+        reservation_notebook_id=settings.fabric_reservation_notebook_id,
+        credential=credential,
+        verifier=fabric_tool.query,
+    )
     work_iq_tool = WorkIQTool(
         project_endpoint=settings.project_endpoint,
         model_deployment=settings.model_deployment,
@@ -52,7 +60,7 @@ def create_agent(settings: Settings) -> Agent:
                 name=name,
                 url=url,
                 audience=audience,
-                allowed_tools=WORK_IQ_READ_ONLY_TOOLS[name],
+                allowed_tools=WORK_IQ_AGENT_TOOLS[name],
             )
             for name, url, audience in settings.work_iq_servers
         ),
@@ -67,8 +75,11 @@ def create_agent(settings: Settings) -> Agent:
         tools=[
             knowledge_tool.as_function_tool(),
             fabric_tool.as_function_tool(),
+            reservation_tool.as_function_tool(),
             work_iq_tool.as_access_check_tool(),
             work_iq_tool.as_function_tool(),
+            work_iq_tool.as_send_email_tool(),
+            work_iq_tool.as_reply_to_email_tool(),
         ],
     )
 

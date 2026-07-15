@@ -22,6 +22,9 @@ def test_settings_load_required_values(
         "FABRIC_DATA_AGENT_MCP_URL",
         "https://api.fabric.microsoft.com/v1/mcp/workspaces/workspace/dataagents/agent/agent",
     )
+    monkeypatch.setenv("FABRIC_WORKSPACE_ID", "workspace-id")
+    monkeypatch.setenv("FABRIC_GUEST_SERVICES_LAKEHOUSE_ID", "lakehouse-id")
+    monkeypatch.setenv("FABRIC_RESERVATION_NOTEBOOK_ID", "notebook-id")
     monkeypatch.setenv("AGENT365_TENANT_ID", "tenant-id")
     monkeypatch.setenv("AGENT365_BLUEPRINT_CLIENT_ID", "blueprint-id")
     monkeypatch.setenv(
@@ -45,6 +48,9 @@ def test_settings_load_required_values(
     assert settings.search_endpoint == "https://search.example.test"
     assert settings.knowledge_base_name == "hotel-foundryiq"
     assert settings.fabric_data_agent_mcp_url.endswith("/dataagents/agent/agent")
+    assert settings.fabric_workspace_id == "workspace-id"
+    assert settings.fabric_guest_services_lakehouse_id == "lakehouse-id"
+    assert settings.fabric_reservation_notebook_id == "notebook-id"
     assert settings.agent365_blueprint_client_id == "blueprint-id"
     assert settings.agent365_blueprint_secret_vault_url == "https://vault.example.test"
     assert settings.agent365_blueprint_secret_name == "blueprint-secret"

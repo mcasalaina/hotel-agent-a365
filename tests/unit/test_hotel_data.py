@@ -3,12 +3,18 @@ from __future__ import annotations
 import csv
 import json
 import shutil
+from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
 import pytest
-from generate_hotel_data import DATE_END, DATE_START, generate
-from validate_hotel_data import REAL_BRANDS, parse_frontmatter, validate_output
+from generate_hotel_data import DATE_END, DATE_START, FIXTURES_PATH, build_reservations, generate
+from validate_hotel_data import (
+    REAL_BRANDS,
+    RESERVATION_STATUSES,
+    parse_frontmatter,
+    validate_output,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "data" / "generated" / "test-unit-output"
@@ -41,6 +47,7 @@ def test_demo_generation_is_deterministic(generated_manifest: dict[str, object])
 
 def test_property_completeness_and_named_fixtures(generated_manifest: dict[str, object]) -> None:
     property_rows = rows(OUTPUT / "properties.csv")
+    guest_rows = rows(OUTPUT / "guests.csv")
     scenario_data = json.loads((ROOT / "data" / "fixtures" / "demo_scenarios.json").read_text())
     reservation_ids = {row["reservation_id"] for row in rows(OUTPUT / "reservations.csv")}
 
@@ -52,6 +59,14 @@ def test_property_completeness_and_named_fixtures(generated_manifest: dict[str, 
         for scenario in scenario_data["scenarios"]
         if "reservation_id" in scenario and scenario["reservation_id"].startswith("RES-")
     } <= reservation_ids
+    assert guest_rows[0] == {
+        "guest_id": "GST-000001",
+        "first_name": "Maria",
+        "last_name": "Garcia",
+        "email": "mariagarcia@cam3652609.onmicrosoft.com",
+        "country": "United States",
+        "privacy_consent": "true",
+    }
 
 
 def test_dates_inventory_and_statuses_are_valid(generated_manifest: dict[str, object]) -> None:
@@ -83,6 +98,36 @@ def test_dates_inventory_and_statuses_are_valid(generated_manifest: dict[str, ob
         "completed",
         "in_house",
     } <= reservation_statuses
+
+
+def test_every_property_has_reservations_across_all_statuses(
+    generated_manifest: dict[str, object],
+) -> None:
+    statuses_by_property: defaultdict[str, set[str]] = defaultdict(set)
+    for row in rows(OUTPUT / "reservations.csv"):
+        statuses_by_property[row["property_id"]].add(row["status"])
+
+    property_ids = {row["property_id"] for row in rows(OUTPUT / "properties.csv")}
+    assert set(statuses_by_property) == property_ids
+    assert all(
+        statuses_by_property[property_id] >= RESERVATION_STATUSES for property_id in property_ids
+    )
+
+
+def test_full_scale_active_reservations_cover_every_property() -> None:
+    fixtures = json.loads(FIXTURES_PATH.read_text(encoding="utf-8"))["scenarios"]
+    reservations = build_reservations("full", fixtures)
+    active_by_property: defaultdict[str, int] = defaultdict(int)
+    for reservation in reservations:
+        check_in = date.fromisoformat(reservation["check_in"])
+        if date(2026, 7, 12) <= check_in <= date(2026, 7, 18) and reservation["status"] in {
+            "future",
+            "arriving",
+        }:
+            active_by_property[reservation["property_id"]] += 1
+
+    assert set(active_by_property) == {f"HTL-{number:03d}" for number in range(1, 21)}
+    assert all(count > 0 for count in active_by_property.values())
 
 
 def test_referential_integrity_folio_reconciliation_and_masked_payments(

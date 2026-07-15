@@ -101,6 +101,7 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
         reservation_properties = {
             row["reservation_id"]: row["property_id"] for row in tables["reservations"]
         }
+        reservation_statuses_by_property: defaultdict[str, set[str]] = defaultdict(set)
         for row in tables["room_types"]:
             if row["property_id"] not in property_ids:
                 problems.append("room type property FK failure")
@@ -110,6 +111,7 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             elif room_type_properties[row["room_type_id"]] != row["property_id"]:
                 problems.append("room and room type property mismatch")
         for row in tables["reservations"]:
+            reservation_statuses_by_property[row["property_id"]].add(row["status"])
             if row["guest_id"] not in guest_ids or row["property_id"] not in property_ids:
                 problems.append("reservation FK failure")
             if (
@@ -123,6 +125,13 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             check_out = date.fromisoformat(row["check_out"])
             if check_in < DATE_START or check_out > DATE_END or check_out <= check_in:
                 problems.append("reservation date range failure")
+        for property_id in sorted(property_ids):
+            missing_statuses = RESERVATION_STATUSES - reservation_statuses_by_property[property_id]
+            if missing_statuses:
+                problems.append(
+                    f"property {property_id} missing reservation statuses: "
+                    f"{sorted(missing_statuses)}"
+                )
         for row in tables["stays"]:
             if (
                 row["reservation_id"] not in reservation_ids

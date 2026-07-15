@@ -45,6 +45,12 @@ services:
               value: ${FOUNDRY_IQ_KNOWLEDGE_BASE_NAME}
             - name: FABRIC_DATA_AGENT_MCP_URL
               value: ${FABRIC_DATA_AGENT_MCP_URL}
+            - name: FABRIC_WORKSPACE_ID
+              value: ${FABRIC_WORKSPACE_ID}
+            - name: FABRIC_GUEST_SERVICES_LAKEHOUSE_ID
+              value: ${FABRIC_GUEST_SERVICES_LAKEHOUSE_ID}
+            - name: FABRIC_RESERVATION_NOTEBOOK_ID
+              value: ${FABRIC_RESERVATION_NOTEBOOK_ID}
             - name: AGENT365_TENANT_ID
               value: ${AGENT365_TENANT_ID}
             - name: AGENT365_BLUEPRINT_CLIENT_ID
