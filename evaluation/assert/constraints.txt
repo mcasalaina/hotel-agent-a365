@@ -1,0 +1,9 @@
+# Runtime dependencies are constrained independently from the deployed agent.
+azure-identity>=1.19,<2
+azure-monitor-query>=1.4,<2
+httpx>=0.28,<1
+litellm==1.80.17
+openai>=2.15,<3
+cryptography>=44,<47
+PyJWT>=2.10,<3
+PyYAML>=6.0,<7

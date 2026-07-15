@@ -39,7 +39,22 @@ path. Phase 3 will add `invocations_ws` to the same agent and compose it over th
 `orchestration`, `tools`, and `state` packages.
 
 See `PLAN.md` for the approved architecture, `DEPLOYMENT.md` for the controlled deployment handoff,
-and `docs/foundry-evaluator-rubrics.md` for evaluator creation and portal verification.
+`docs/foundry-evaluator-rubrics.md` for evaluator creation and portal verification, and
+`docs/assert-evaluation.md` for agent-user ASSERT testing, trace gates, and the local results viewer.
+
+## ASSERT evaluation
+
+ASSERT runs in an isolated Python 3.13 environment and invokes the deployed agent only with a
+validated Hotel Guest Services Agent ID user token from a loopback-only Entra Auth SDK sidecar.
+
+```bash
+python3.13 -m venv evaluation/assert/.venv
+evaluation/assert/.venv/bin/python scripts/bootstrap_assert.py --install
+evaluation/assert/.venv/bin/python scripts/run_assert_evaluation.py validate
+```
+
+Live runs, controlled Azure execution, baseline promotion, artifact restrictions, and viewer startup
+are documented in `evaluation/assert/README.md`.
 
 ## Deterministic demo data and source documents
 

@@ -16,3 +16,6 @@ tests
 **/*.zip
 .env
 *.env
+evaluation/assert/.runtime
+evaluation/assert/.venv
+artifacts

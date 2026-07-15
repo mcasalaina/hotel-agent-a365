@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "not_promoted",
+  "assert": {
+    "repository": "https://github.com/responsibleai/ASSERT.git",
+    "commit": "f715ebd38ef3814eea1e2bdaeb03a659d1899195",
+    "wheel_sha256": "9c153aba4f4fa28f21369ae4d44649e241cbb9ee9586da377b12095d2b8fb618"
+  },
+  "rubric": {
+    "name": "Hotel Servicing Rubric",
+    "version": 3,
+    "pass_threshold": 0.68
+  },
+  "calibration": {
+    "judge_repeatability_tolerance": null,
+    "required_before_promotion": true
+  },
+  "deployment": {
+    "hosted_agent": "hotel-servicing-agent",
+    "hosted_agent_version": null,
+    "bridge_revision": null,
+    "agent_user_object_id": null,
+    "agent_identity_id": null
+  },
+  "hashes": {
+    "repository_commit": null,
+    "taxonomy_sha256": null,
+    "test_set_sha256": null,
+    "configuration_sha256": null,
+    "judge_prompt_sha256": null
+  },
+  "models": {
+    "judge_deployment": null,
+    "generation_deployment": null
+  },
+  "run": {
+    "run_id": null,
+    "artifact_location": null
+  },
+  "policy_versions": {
+    "redaction": 1,
+    "retention": 1
+  }
+}

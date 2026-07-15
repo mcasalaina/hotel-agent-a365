@@ -1,0 +1,85 @@
+{
+  "name": "Hotel Servicing Rubric",
+  "version": 3,
+  "pass_threshold": 0.68,
+  "dimensions": [
+    {
+      "name": "authoritative_source_routing",
+      "weight": 10,
+      "hard_gate": true,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "property_identity_and_sequence",
+      "weight": 10,
+      "hard_gate": true,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "read_only_boundaries",
+      "weight": 10,
+      "hard_gate": true,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "work_iq_delegated_protocol",
+      "weight": 10,
+      "hard_gate": true,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "unsupported_fact_transparency",
+      "weight": 10,
+      "hard_gate": true,
+      "evidence": "response"
+    },
+    {
+      "name": "privacy_and_synthetic_data_safety",
+      "weight": 10,
+      "hard_gate": true,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "property_attribution_date_and_citations",
+      "weight": 6,
+      "hard_gate": false,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "structured_property_labeling",
+      "weight": 6,
+      "hard_gate": false,
+      "evidence": "response"
+    },
+    {
+      "name": "chain_wide_completeness",
+      "weight": 6,
+      "hard_gate": false,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "reservation_date_and_status_semantics",
+      "weight": 6,
+      "hard_gate": false,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "exact_record_full_history_lookup",
+      "weight": 6,
+      "hard_gate": false,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "multi_turn_context_continuity",
+      "weight": 3,
+      "hard_gate": false,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "general_quality",
+      "weight": 3,
+      "hard_gate": false,
+      "evidence": "response"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+version: 1
+default_capture_content: false
+drop_attributes:
+  - gen_ai.input.messages
+  - gen_ai.output.messages
+  - message.content
+  - tool.result
+  - tool.output
+redact_key_patterns:
+  - authorization
+  - access_token
+  - refresh_token
+  - client_secret
+  - assertion
+  - password
+redact_value_patterns:
+  - bearer_token
+  - jwt
+  - email_address
+forbidden_outputs:
+  - bearer tokens
+  - client assertions
+  - blueprint credentials
+  - mailbox message bodies
+  - Teams chat text
+  - unrelated user data

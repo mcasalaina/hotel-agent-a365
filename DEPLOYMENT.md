@@ -37,6 +37,25 @@ threshold.
 See [Foundry evaluator rubrics](docs/foundry-evaluator-rubrics.md) for the required catalog-visible
 creation sequence, the direct-version orphan failure mode, version cleanup, and portal verification.
 
+## ASSERT agent-user evaluation
+
+The source-controlled ASSERT integration is under `evaluation/assert/`. Live target inference is
+permitted only through the loopback Entra Auth SDK sidecar with the Hotel Guest Services agent
+identity and agent-user object ID. The target validates the signed token claims before calling the
+Hosted Agent and does not fall back to managed identity, developer identity, API keys, or
+header-only impersonation.
+
+Deploy the controlled job from `infra/evaluation/assert-job.bicep`. Its runner workload identity is
+separate from the target identity and is used only for evaluation models, Application Insights,
+Key Vault, registry, and restricted artifact storage. The sidecar has no ingress and reads the
+parent blueprint credential from Key Vault through a Container Apps secret reference.
+
+Every live run performs the no-content Copilot, Mail, and Teams authentication check before the
+nine deterministic cases. Release gates require all smoke cases, zero weight-10 failures, a weighted
+score of at least `0.68`, and complete response-ID or operation-ID trace correlation. See
+`docs/assert-evaluation.md` for deployment inputs, execution, privacy, baseline promotion, and the
+required periodic real Teams canary.
+
 ## Foundry IQ setup and verification
 
 These commands operate on the approved endpoints configured in the local environment. They do not

@@ -15,16 +15,22 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
-          cache-dependency-path: src/hotel-servicing-agent/pyproject.toml
+          cache-dependency-path: |
+            src/hotel-servicing-agent/pyproject.toml
+            evaluation/assert/pyproject.toml
+            evaluation/assert/assert-source.lock.json
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e "./src/hotel-servicing-agent[dev]"
+          python scripts/bootstrap_assert.py --install
       - name: Run repository checks
         run: |
-          python -m ruff check src scripts tests
-          python -m ruff format --check src scripts tests
-          python -m mypy src/hotel-servicing-agent/hotel_servicing_agent scripts
+          python -m ruff check src scripts tests evaluation/assert/src evaluation/assert/tests
+          python -m ruff format --check src scripts tests evaluation/assert/src evaluation/assert/tests
+          python -m mypy src/hotel-servicing-agent/hotel_servicing_agent scripts evaluation/assert/src
           python -m pytest
+          python -m pytest evaluation/assert/tests
           python scripts/validate_technical_naming.py
           python scripts/validate_configuration.py
+          python scripts/run_assert_evaluation.py validate

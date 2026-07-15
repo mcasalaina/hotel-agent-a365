@@ -35,6 +35,14 @@ manifest/*.zip
 docker-logs/
 logs/
 
+# ASSERT evaluation runtime and restricted artifacts
+evaluation/assert/.runtime/
+evaluation/assert/.venv/
+artifacts/results/
+artifacts/generated/
+artifacts/correlation/
+*.otlp.json
+
 # Fabric and Foundry local caches
 fabric/.cache/
 src/hotel-servicing-agent/.foundry/datasets/*

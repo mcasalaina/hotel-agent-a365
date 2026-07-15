@@ -3,6 +3,7 @@ addopts = "-q"
 pythonpath = [
   "scripts",
   "src/hotel-servicing-agent",
+  "evaluation/assert/src",
 ]
 testpaths = ["tests"]
 

@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hotel-agent-assert"
+version = "0.1.0"
+description = "ASSERT evaluation integration for the Hotel Guest Services agent"
+requires-python = ">=3.13"
+dependencies = [
+  "azure-identity>=1.19,<2",
+  "azure-monitor-query>=1.4,<2",
+  "httpx>=0.28,<1",
+  "openai>=2.15,<3",
+  "PyJWT[crypto]>=2.10,<3",
+  "PyYAML>=6.0,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.15,<2",
+  "pytest>=8.3,<10",
+  "pytest-asyncio>=0.25,<2",
+  "ruff>=0.11,<1",
+  "types-PyYAML>=6.0,<7",
+]
+
+[project.scripts]
+hotel-assert = "hotel_assert.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hotel_assert"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+ignore_missing_imports = true

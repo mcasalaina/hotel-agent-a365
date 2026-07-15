@@ -1,0 +1,13 @@
+version: 1
+local_artifacts:
+  source_controlled: false
+  default_retention_days: 7
+restricted_cloud_artifacts:
+  encryption_required: true
+  role_based_access_required: true
+  default_retention_days: 30
+  purge_supported: true
+ci_published_artifacts:
+  aggregate_only: true
+  raw_transcripts_allowed: false
+  raw_traces_allowed: false

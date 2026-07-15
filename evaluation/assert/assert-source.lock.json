@@ -1,0 +1,11 @@
+{
+  "repository": "https://github.com/responsibleai/ASSERT.git",
+  "commit": "f715ebd38ef3814eea1e2bdaeb03a659d1899195",
+  "wheel": "assert_ai-0.1.0-py3-none-any.whl",
+  "sha256": "9c153aba4f4fa28f21369ae4d44649e241cbb9ee9586da377b12095d2b8fb618",
+  "build": {
+    "source_date_epoch": "1783714090",
+    "setuptools": "80.9.0",
+    "wheel": "0.45.1"
+  }
+}

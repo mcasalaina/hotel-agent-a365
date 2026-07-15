@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "case_invalid_when_correlation_incomplete": true,
+  "required_checks": [
+    "authoritative tool routing",
+    "Fabric-before-Foundry-IQ ordering",
+    "exact property-ID propagation",
+    "effective-date arguments",
+    "complete-history exact-ID queries",
+    "no-content Work IQ access checks",
+    "Work IQ server and tool selection",
+    "MCP approval continuations",
+    "absence of mutating tool calls"
+  ]
+}

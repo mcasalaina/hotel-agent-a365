@@ -1,0 +1,61 @@
+name: ASSERT live evaluation
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 9 * * *"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: assert-live-evaluation
+  cancel-in-progress: false
+
+jobs:
+  start-controlled-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 130
+    environment: assert-evaluation
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Start ASSERT job
+        run: |
+          az extension add --name containerapp --upgrade --only-show-errors
+          execution_name="$(
+            az containerapp job start \
+              --name "${{ vars.ASSERT_JOB_NAME }}" \
+              --resource-group "${{ vars.ASSERT_JOB_RESOURCE_GROUP }}" \
+              --query name \
+              --output tsv
+          )"
+          test -n "$execution_name"
+          echo "Started controlled ASSERT execution: $execution_name"
+          for attempt in $(seq 1 720); do
+            status="$(
+              az containerapp job execution show \
+                --name "${{ vars.ASSERT_JOB_NAME }}" \
+                --resource-group "${{ vars.ASSERT_JOB_RESOURCE_GROUP }}" \
+                --job-execution-name "$execution_name" \
+                --query properties.status \
+                --output tsv
+            )"
+            case "$status" in
+              Succeeded)
+                echo "ASSERT execution passed."
+                exit 0
+                ;;
+              Failed|Stopped|Degraded)
+                echo "ASSERT execution ended with status: $status" >&2
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          echo "ASSERT execution did not finish within two hours." >&2
+          exit 1
