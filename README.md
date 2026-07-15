@@ -38,7 +38,8 @@ plus the stable Agent 365 activity endpoint. The Dockerfile provides the equival
 path. Phase 3 will add `invocations_ws` to the same agent and compose it over the shared
 `orchestration`, `tools`, and `state` packages.
 
-See `PLAN.md` for the approved architecture and `DEPLOYMENT.md` for the controlled deployment handoff.
+See `PLAN.md` for the approved architecture, `DEPLOYMENT.md` for the controlled deployment handoff,
+and `docs/foundry-evaluator-rubrics.md` for evaluator creation and portal verification.
 
 ## Deterministic demo data and source documents
 

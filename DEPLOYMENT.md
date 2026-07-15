@@ -28,6 +28,15 @@ make check
 
 The naming check is mandatory before every deployment. It scans technical configuration fields and fails when the fictional customer brand is used in Azure, Foundry, Fabric, Agent 365, package, environment, identity, URL, or item names. Customer-facing Markdown and generated business data are intentionally outside that technical scan.
 
+## Foundry evaluation rubric
+
+The project uses the `hotel-agent-rubric` evaluator, displayed in Foundry as
+`Hotel Servicing Rubric`. `eval.yaml` binds the smoke dataset to this evaluator with a `0.68` pass
+threshold.
+
+See [Foundry evaluator rubrics](docs/foundry-evaluator-rubrics.md) for the required catalog-visible
+creation sequence, the direct-version orphan failure mode, version cleanup, and portal verification.
+
 ## Foundry IQ setup and verification
 
 These commands operate on the approved endpoints configured in the local environment. They do not

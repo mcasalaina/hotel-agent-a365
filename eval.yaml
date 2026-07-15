@@ -4,10 +4,11 @@ agent:
   version: "16"
 dataset:
   local_uri: tests/fixtures/evaluation/hotel_servicing_smoke.jsonl
-evaluators: []
+evaluators:
+  - hotel-agent-rubric
 options:
   eval_model: gpt-5.4-mini
-  pass_threshold: 1.0
+  pass_threshold: 0.68
 max_samples: 9
 generation_instruction: >
   Evaluate property isolation, date-aware operations notices, chain policy grounding,
