@@ -157,26 +157,35 @@ Secrets, generated agent configuration, tokens, deployment packages, large gener
 
 Phase 1 is not complete until every component passes its isolated tests and the canonical end-to-end scenarios pass.
 
-Live implementation status on 2026-07-12:
+Live implementation status on 2026-07-14:
 
 - Generated and validated 658,611 structured rows and 95 knowledge documents.
 - Deployed and validated both Fabric lakehouses, six aggregate tables, the semantic model, report,
   ontology, and published Data Agent.
 - Published Data Agent lakehouse schemas must be synchronized through
   `HotelDataAgentRuntimePublish`; definition-only imports leave the lakehouse elements unavailable.
-- Deployed Hosted Agent version 13 with on-demand Fabric MCP, Foundry IQ, and read-only Work IQ
-  tools. Isolated retrieval tests and the combined reservation-to-property-knowledge handoff pass,
-  including exact `property_id` propagation and citations. The chain-wide next-week reservation
-  regression returns the authoritative 2026-07-12 through 2026-07-18 window, total 214, and all 20
-  named properties in a Markdown table.
+- Deployed Hosted Agent version 23 with on-demand Fabric MCP, Foundry IQ, and read-only Work IQ
+  tools. A live 16-prompt acceptance run identified four deterministic response defects; the current
+  implementation fixes them with a typed 20-property catalog, official-name enrichment, full-history exact-ID
+  lookups, a content-free Work IQ access preflight, and a deterministic Fabric-to-Foundry-IQ
+  property-key guard. The corrected cross-source scenario preserves `HTL-004`, identifies Lyrenza
+  Scottsdale Sonoran Resort, and returns the approved pool and transportation facts with citations.
+- The chain-wide next-week reservation regression returns the authoritative 2026-07-12 through
+  2026-07-18 window, total 214, and all 20 named properties in a Markdown table.
 - Agent 365 observability uses the S2S endpoint and the runtime Agent Framework ID is pinned to the
-  authenticated instance client ID. The version 13 regression session has no observability HTTP
+  authenticated instance client ID. The acceptance sessions have no observability HTTP
   403.
+- A trace audit proved all eight operational acceptance prompts called the exact Fabric Data Agent
+  MCP endpoint and correlated through Foundry/Application Insights model, tool, and HTTP spans.
+  Telemetry remains partial for version/session/finish-reason dimensions and retains full synthetic
+  message/tool payloads; production payload minimization is a required hardening item.
 - Published the existing Foundry-managed blueprint to Agent 365 and deployed the Bot Service/Teams
   channel. Work IQ reaches the three-hop token exchange; a real Teams DM remains required to create
   and validate the agentic-user federated credential.
-- Phase 1 remains open for mutation flows, a Teams-authenticated Work IQ test, remote Foundry
-  evaluations, and the remaining acceptance scenarios.
+- The transient folio persistence failure was isolated to a Foundry storage active-turn mismatch;
+  identical retries on versions 13 and 14 returned HTTP 200 after successful Fabric execution.
+- Phase 1 remains open for mutation flows, a Teams-authenticated Work IQ test, and remote Foundry
+  evaluation-suite execution.
 
 ### 5.1 Bootstrap and configuration
 
@@ -415,24 +424,71 @@ Phase 2 starts only after the Phase 1 gate passes.
 
 ### 6.1 Identity, blueprint, host, and manifest
 
-1. Reuse the live Hosted Agent's Foundry-managed blueprint reference as the canonical blueprint; do not create a competing duplicate blueprint.
-2. Keep the Agent 365 host/configuration parity files from the bank repository for notifications, OBO, MCP tooling, and diagnostics.
+1. Use an independently owned Agent 365 blueprint and self-hosted `/api/messages` bridge. Keep the
+   Foundry-managed blueprint enabled because the Hosted Agent runtime still depends on it.
+2. Keep the Agent 365 host/configuration parity files from the bank repository for notifications,
+   user-context propagation, OBO, MCP tooling, and diagnostics.
 3. Build the four-file manifest package with IDs discovered from the live agent/blueprint. Validate both ID-linkage invariants before packaging.
 4. Publish to Microsoft 365 Admin Center, configure the blueprint as API Based in Teams Developer Portal, and set the notification URL to the Hosted Agent's `activityprotocol` endpoint or the documented A365 messaging endpoint selected by the live publish flow.
 5. Create and approve the agent instance, create the generic agent user, assign manager, usage location, Teams/Agent 365/Microsoft 365 licenses, and a writable Exchange mailbox when mail mutation is part of the demo.
 
-Live Phase 2 status on 2026-07-11:
+Live Phase 2 status on 2026-07-15:
 
-- Reused blueprint `hotel-servicing-agent-fefec`; no competing blueprint was created.
-- Deployed `hotel-servicing-agent-bot`, enabled its Teams channel, and published Microsoft 365 title
-  `T_5f1601d1-0ccc-13b2-6d7f-ec5730e45a91`.
+- Teams history and the Bank Agent implementation proved that the working Agent 365 pattern is an
+  independently owned blueprint with a self-hosted `/api/messages` bridge. Created
+  `hotel-agent-bridge Blueprint` (`f1ae4991-0418-470b-96d5-7f7df43ab5d2`) and deployed
+  `hotel-agent-bridge-a365` into the existing `shipment-dashboard-env` Container Apps environment
+  after App Service deployment was blocked by subscription VM quota zero.
+- The earlier direct Foundry tenant publication created Microsoft 365 title
+  `T_5f1601d1-0ccc-13b2-6d7f-ec5730e45a91`, but its registry shape is not the required reusable
+  **Agent template** and must not be approved.
+- Rebuilt the Agent 365 package using the proven Bank Agent pattern: a flat four-file manifest whose
+  `agenticUserTemplates` entry links template `9a2da06d-059c-4b40-910f-ca8e0a6b1730` to the
+  owned blueprint client ID `f1ae4991-0418-470b-96d5-7f7df43ab5d2`. Both ID-linkage
+  invariants, the Teams manifest schema, icon dimensions, and package shape validate locally.
 - Added V2 Copilot, Mail, and Teams tenant-wide delegated grants plus matching enumerated
   inheritable permissions for `Tools.ListInvoke.All`.
 - Granted the Hosted Agent identity `Agent365.Observability.OtelWrite`.
-- Deployed Hosted Agent version 10 with per-user context propagation, three-hop Work IQ token
-  exchange, and positive read-only MCP tool allowlists.
-- Remaining manual gate: an M365 administrator must publish the pending request to an approved
-  audience, after which the authoritative real-Teams Work IQ and observability tests can run.
+- Re-enabled the disabled Foundry-managed blueprint principal
+  `11004b7e-29c5-4406-a1bd-b5defdcaacd9`, restoring Hosted Agent runtime storage.
+- Updated the bridge to propagate `activity.get_agentic_user()` through `x-ms-user-identity` on
+  initial and approval requests.
+- Replaced the broken Identity Proxy Manager, preview SDK federated-credential, raw-FIC, and
+  unavailable project-managed-identity approaches with a dedicated owned-blueprint credential in
+  Key Vault `hotelagentkv4iqs`. The Hosted Agent managed identity can read only that credential.
+- Deployed Hosted Agent version 23 with the explicit blueprint, instance, and delegated `user_fic`
+  token exchanges. Authentication, real Mail metadata retrieval, real Teams metadata retrieval, and
+  read-only mutation refusal all pass under the `Hotel Guest Services` agentic user.
+- Corrected obsolete Work IQ MCP allowlist names by discovering the live case-sensitive tool
+  contracts. Mail and Teams retrieval started working immediately after version 23 activated.
+- Published `manifest/manifest.zip` through the canonical **Agents > All agents > Registry > ... >
+  Add agent** path. The resulting `Hotel Guest Services` item is labeled **Agent template**, is
+  linked to blueprint client ID `f1ae4991-0418-470b-96d5-7f7df43ab5d2`, and is available to all
+  users. The separate activation wizard was required even though the upload wizard retained the
+  all-users activation selection.
+- Configured the owned blueprint as **API Based** with the Container Apps
+  `hotel-agent-bridge-a365` `/api/messages` endpoint.
+- The surviving instance is `Hotel Guest Services`
+  (`hotelguestservices@cam3652609.onmicrosoft.com`, object ID
+  `ba923ab8-d1d8-46de-98a4-229cf0b29e6b`, Entra agent ID
+  `cc4f4078-c463-494a-a5fc-0b63a6995296`). Agent 365 assigned its Frontier license automatically.
+- Granted the agentic user the four required Foundry roles and Fabric workspace **Contributor**
+  access. Added the missing Microsoft Cognitive Services and Azure Machine Learning Services
+  `user_impersonation` admin-consent grants and matching inheritable permissions to the blueprint.
+  Verified the tenant Work IQ policy under **Agents > Tools > Work IQ MCP > Policies** already has
+  all mutation controls enabled; the Hosted Agent's own positive allowlists still enforce its
+  intentional read-only Microsoft 365 boundary.
+- Granted **Read and manage (Full Access)** on the agent's Exchange mailbox to Marco Casalaina and
+  Ayca Bas so both operators can inspect the inbox. Send As and Send on behalf remain unassigned.
+- Found Microsoft Graph, Power Platform API, and Agent Tools inheritable scopes without matching
+  tenant-wide blueprint consent grants. Added the three least-privilege grants, bringing the live
+  blueprint to nine grants. The earlier failed validation identities were deleted after the owned
+  blueprint instance worked.
+- Do not wait more than one minute for permission propagation in this tenant. Recheck immediately,
+  then investigate identity selection, consent, FIC subject/audience, endpoint configuration, or
+  runtime logs.
+- Remaining Phase 2 gate: complete the final real Teams DM regression against version 23, verify a
+  Fabric lookup in that turn, and correlate the invocation in telemetry.
 
 ### 6.2 Permission matrix and known fixes
 
@@ -463,6 +519,8 @@ Automate discovery and verification, but retain explicit admin/manual gates wher
 - Work IQ:
   - Use current V2 Mail and Teams MCP audiences with `Tools.ListInvoke.All`, not the legacy V1 audience.
   - Ensure the agent has a writable Exchange-bearing license.
+  - Delegate **Read and manage (Full Access)** to designated human operators when they must inspect
+    the agent inbox. This does not grant Send As or Send on behalf.
   - Tenant admin enables Work IQ MCP write/mutation actions in Admin Center. The default policy denies writes.
   - Allow the documented propagation window, then restart/redeploy the host to clear stale tokens.
 
@@ -482,6 +540,9 @@ Document symptom, diagnostic, fix, propagation interval, and verification for:
   365 user federated credential; validate through a real Teams DM after admin approval.
 - Work IQ consent exists but `user_fic` still fails in Teams: verify each V2 resource has both an
   OAuth2 permission grant and an `inheritablePermissions` entry on the blueprint application.
+- Teams remains silent after adding inheritable permissions: inheritable permissions are applied to
+  newly created identities. Create a clean instance after the grant set is final, grant its new user
+  Foundry/Fabric access, and validate it before deleting the original instance.
 - Agent 365 telemetry exporter returns HTTP 403: assign `Agent365.Observability.OtelWrite`
   (`8f71190c-00c8-461d-a63b-f74abde9ba52`) to the Hosted Agent identity, then allow propagation.
 - `a365 query-entra` cannot find the blueprint: Foundry-managed blueprint display names do not
@@ -490,6 +551,12 @@ Document symptom, diagnostic, fix, propagation interval, and verification for:
 - App Service import/start failure: include all A365/Agents dependencies and compatible OpenTelemetry pins.
 - Stateless Responses 400: persist assistant text/history, not raw SDK response objects.
 - Hosted Agent cold start or `session_not_ready`: inspect session logs, model name, identity permissions, and allocate at least 1 CPU/2 GiB.
+- Foundry storage returns `x-agent-foundry-call-id does not match an active turn`: preserve the
+  session log and response ID, then retry. If the identical request succeeds and the tool completed,
+  treat it as a transient service-side persistence race rather than a data-agent failure.
+- Foundry telemetry shows a successful root request around a failed storage write: correlate
+  exceptions by `operation_Id`; current preview telemetry can misclassify storage 401 and caller 500
+  status/duration even when the span tree is otherwise complete.
 
 ### 6.4 Phase 2 tests and exit gate
 

@@ -1,0 +1,76 @@
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: 0.625rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface-soft);
+  color: var(--cp-text-muted);
+}
+
+.badgeDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.badgeIdle {
+  color: var(--cp-text-muted);
+}
+
+.badgeConnecting {
+  color: var(--cp-warning);
+  background: var(--cp-accent-soft);
+}
+
+.badgeActive {
+  color: var(--cp-success);
+  background: var(--cp-accent-soft);
+}
+
+.badgeReconnecting {
+  color: var(--cp-warning);
+  background: var(--cp-accent-soft);
+}
+
+.badgeEnded {
+  color: var(--cp-text-muted);
+}
+
+.badgeError {
+  color: var(--cp-danger);
+  background: var(--cp-accent-soft);
+}
+
+.elapsed {
+  font-family: Consolas, "Courier New", Courier, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--cp-text);
+  font-size: 0.9rem;
+}
+
+.reconnectNote {
+  color: var(--cp-warning);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mutedNote {
+  color: var(--cp-text-muted);
+  font-size: 0.8rem;
+}

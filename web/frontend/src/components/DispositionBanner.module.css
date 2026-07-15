@@ -1,0 +1,44 @@
+.banner {
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface);
+  color: var(--cp-text);
+}
+
+.title {
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+}
+
+.outcomeResolved {
+  border-color: var(--cp-success);
+}
+.outcomeResolved .title {
+  color: var(--cp-success);
+}
+
+.outcomeEscalated {
+  border-color: var(--cp-warning);
+}
+.outcomeEscalated .title {
+  color: var(--cp-warning);
+}
+
+.outcomeCancelled {
+  border-color: var(--cp-border-strong);
+}
+.outcomeCancelled .title {
+  color: var(--cp-text-muted);
+}
+
+.outcomeError {
+  border-color: var(--cp-danger);
+}
+.outcomeError .title {
+  color: var(--cp-danger);
+}

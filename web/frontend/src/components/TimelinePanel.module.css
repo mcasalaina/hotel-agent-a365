@@ -1,0 +1,67 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: 16px;
+  padding: 1rem;
+  flex: 1;
+}
+
+.heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--cp-text);
+  margin: 0 0 0.75rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+  max-height: 24rem;
+  padding-right: 0.25rem;
+}
+
+.empty {
+  color: var(--cp-text-soft);
+  font-size: 0.85rem;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--cp-text-muted);
+}
+
+.tag {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--cp-border);
+  background: var(--cp-surface-soft);
+  color: var(--cp-text-muted);
+}
+
+.tagProgress {
+  color: var(--cp-link);
+}
+
+.tagTool {
+  color: var(--cp-accent);
+}
+
+.tagDataSource {
+  color: var(--cp-success);
+}
+
+.itemText {
+  color: var(--cp-text);
+}

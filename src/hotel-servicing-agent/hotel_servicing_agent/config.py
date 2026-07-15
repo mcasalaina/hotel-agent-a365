@@ -16,6 +16,8 @@ class Settings:
     fabric_data_agent_mcp_url: str
     agent365_tenant_id: str
     agent365_blueprint_client_id: str
+    agent365_blueprint_secret_vault_url: str
+    agent365_blueprint_secret_name: str
     agent365_instance_client_id: str
     work_iq_servers: tuple[tuple[str, str, str], ...]
     instructions: str
@@ -55,6 +57,12 @@ class Settings:
             agent365_tenant_id=_required_environment_variable("AGENT365_TENANT_ID"),
             agent365_blueprint_client_id=_required_environment_variable(
                 "AGENT365_BLUEPRINT_CLIENT_ID"
+            ),
+            agent365_blueprint_secret_vault_url=_required_environment_variable(
+                "AGENT365_BLUEPRINT_SECRET_VAULT_URL"
+            ),
+            agent365_blueprint_secret_name=_required_environment_variable(
+                "AGENT365_BLUEPRINT_SECRET_NAME"
             ),
             agent365_instance_client_id=_required_environment_variable(
                 "AGENT365_INSTANCE_CLIENT_ID"

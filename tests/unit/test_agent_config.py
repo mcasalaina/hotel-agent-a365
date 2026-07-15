@@ -24,6 +24,11 @@ def test_settings_load_required_values(
     )
     monkeypatch.setenv("AGENT365_TENANT_ID", "tenant-id")
     monkeypatch.setenv("AGENT365_BLUEPRINT_CLIENT_ID", "blueprint-id")
+    monkeypatch.setenv(
+        "AGENT365_BLUEPRINT_SECRET_VAULT_URL",
+        "https://vault.example.test",
+    )
+    monkeypatch.setenv("AGENT365_BLUEPRINT_SECRET_NAME", "blueprint-secret")
     monkeypatch.setenv("AGENT365_INSTANCE_CLIENT_ID", "instance-id")
     for prefix in ("COPILOT", "MAIL", "TEAMS"):
         monkeypatch.setenv(
@@ -41,6 +46,8 @@ def test_settings_load_required_values(
     assert settings.knowledge_base_name == "hotel-foundryiq"
     assert settings.fabric_data_agent_mcp_url.endswith("/dataagents/agent/agent")
     assert settings.agent365_blueprint_client_id == "blueprint-id"
+    assert settings.agent365_blueprint_secret_vault_url == "https://vault.example.test"
+    assert settings.agent365_blueprint_secret_name == "blueprint-secret"
     assert settings.work_iq_servers[1] == (
         "work-iq-mail",
         "https://agent365.example.test/mail",

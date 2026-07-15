@@ -1,0 +1,84 @@
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--cp-bg-elevated);
+  border-bottom: 1px solid var(--cp-border);
+}
+
+.brandGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.brandMark {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brandName {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--cp-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.syntheticBadge {
+  font-size: 0.7rem;
+  color: var(--cp-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.userGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.userSummary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.userName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cp-text);
+}
+
+.userDetail {
+  font-size: 0.75rem;
+  color: var(--cp-text-muted);
+}
+
+.signOutButton {
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  border-radius: 0.625rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.signOutButton:hover {
+  background: var(--cp-surface-soft);
+}

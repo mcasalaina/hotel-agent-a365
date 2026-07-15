@@ -43,6 +43,9 @@ def create_agent(settings: Settings) -> Agent:
             tenant_id=settings.agent365_tenant_id,
             blueprint_client_id=settings.agent365_blueprint_client_id,
             instance_client_id=settings.agent365_instance_client_id,
+            blueprint_secret_vault_url=settings.agent365_blueprint_secret_vault_url,
+            blueprint_secret_name=settings.agent365_blueprint_secret_name,
+            credential=credential,
         ),
         servers=tuple(
             WorkIQServer(
@@ -64,6 +67,7 @@ def create_agent(settings: Settings) -> Agent:
         tools=[
             knowledge_tool.as_function_tool(),
             fabric_tool.as_function_tool(),
+            work_iq_tool.as_access_check_tool(),
             work_iq_tool.as_function_tool(),
         ],
     )

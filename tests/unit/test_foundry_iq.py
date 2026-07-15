@@ -169,6 +169,10 @@ def test_tool_serializes_answer_and_references_without_network() -> None:
     assert result["references"][0]["source_path"].endswith("HTL-001.profile.generated.md")
     assert result["references"][0]["property_id"] == "HTL-001"
     assert result["references"][0]["valid_to"] == "2026-12-31"
+    assert result["property"] == {
+        "property_id": "HTL-001",
+        "official_name": "Lyrenza Seattle Waterfront",
+    }
     factory = captured["factory"]
     assert factory["endpoint"] == "https://search.example.test"
     assert factory["knowledge_base_name"] == "hotel-foundryiq"
@@ -181,3 +185,23 @@ def test_tool_serializes_answer_and_references_without_network() -> None:
         "property_id eq 'chain-wide'"
         in request.as_dict()["knowledgeSourceParams"][0]["filterAddOn"]
     )
+
+
+def test_cross_source_reservation_lookup_requires_matching_fabric_confirmation() -> None:
+    tool = FoundryIQTool(
+        "https://search.example.test",
+        "hotel-foundryiq",
+        object(),
+        client_factory=lambda **_: pytest.fail("Retrieval must not run for an unverified property"),
+    )
+
+    with pytest.raises(ValueError, match="first wait for the Fabric result"):
+        tool.search(
+            "For the property associated with reservation RES-123, give pool hours.",
+            property_id="HTL-001",
+        )
+    with pytest.raises(ValueError, match="must exactly match"):
+        tool.search(
+            "Confirmed from Fabric: HTL-004. For reservation RES-123, give property pool hours.",
+            property_id="HTL-001",
+        )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
@@ -9,6 +10,8 @@ from agent_framework import FunctionTool
 from azure.search.documents.knowledgebases import KnowledgeBaseRetrievalClient
 from azure.search.documents.knowledgebases.models import KnowledgeBaseRetrievalRequest
 
+from hotel_servicing_agent.property_catalog import PropertyId, official_property_name
+
 KNOWLEDGE_SOURCE_NAMES = (
     "hotel-properties-ks",
     "hotel-policies-ks",
@@ -16,6 +19,10 @@ KNOWLEDGE_SOURCE_NAMES = (
     "hotel-operations-ks",
 )
 SHARED_PROPERTY_ID = "chain-wide"
+_FABRIC_PROPERTY_CONFIRMATION = re.compile(
+    r"\bconfirmed\s+from\s+fabric\s*:\s*(HTL-\d{3})\b",
+    re.IGNORECASE,
+)
 
 
 class FoundryIQTool:
@@ -38,7 +45,9 @@ class FoundryIQTool:
             name="search_hotel_knowledge",
             description=(
                 "Search approved hotel property, policy, dining, and operations knowledge. "
-                "Returns a concise cited answer. Supply property_id and as_of when known."
+                "Returns a concise cited answer. Supply property_id and as_of when known. For a "
+                "cross-source reservation lookup, first obtain property_id from Fabric and include "
+                "'Confirmed from Fabric: HTL-###' in the question."
             ),
             func=self.search,
         )
@@ -46,11 +55,12 @@ class FoundryIQTool:
     def search(
         self,
         question: str,
-        property_id: str | None = None,
+        property_id: PropertyId | None = None,
         as_of: str | None = None,
     ) -> str:
         if not question.strip():
             raise ValueError("question must not be empty")
+        _validate_cross_source_property_context(question, property_id)
         effective_date = as_of or datetime.now(UTC).date().isoformat()
         request = KnowledgeBaseRetrievalRequest(
             {
@@ -80,7 +90,34 @@ class FoundryIQTool:
             api_version="2026-05-01-preview",
         )
         response = client.retrieve(retrieval_request=request)
-        return json.dumps(_serialize_response(response), ensure_ascii=False, separators=(",", ":"))
+        result = _serialize_response(response)
+        if property_id:
+            result["property"] = {
+                "property_id": property_id,
+                "official_name": official_property_name(property_id),
+            }
+        return json.dumps(result, ensure_ascii=False, separators=(",", ":"))
+
+
+def _validate_cross_source_property_context(
+    question: str,
+    property_id: PropertyId | None,
+) -> None:
+    normalized = question.casefold()
+    if "reservation" not in normalized or "property" not in normalized:
+        return
+    match = _FABRIC_PROPERTY_CONFIRMATION.search(question)
+    if match is None:
+        raise ValueError(
+            "Cross-source reservation property lookup rejected: first wait for the Fabric result, "
+            "then retry with the exact marker 'Confirmed from Fabric: HTL-###'."
+        )
+    confirmed_property_id = match.group(1).upper()
+    if property_id != confirmed_property_id:
+        raise ValueError(
+            "Cross-source reservation property lookup rejected: property_id must exactly match "
+            f"the Fabric-confirmed identifier {confirmed_property_id}."
+        )
 
 
 def _filter_for(property_id: str | None, as_of: str) -> str:

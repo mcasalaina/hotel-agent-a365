@@ -1,0 +1,91 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: 16px;
+  padding: 1rem;
+}
+
+.heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--cp-text);
+  margin: 0;
+}
+
+.modeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.modeButton {
+  flex: 1;
+  min-width: 6.5rem;
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  border-radius: 0.625rem;
+  padding: 0.6rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.modeButton:hover:not(:disabled) {
+  background: var(--cp-surface-soft);
+}
+
+.modeButton:disabled {
+  opacity: 0.5;
+}
+
+.activeControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.controlButton {
+  flex: 1;
+  min-width: 6.5rem;
+  border: 1px solid var(--cp-border-strong);
+  background: var(--cp-surface);
+  color: var(--cp-text);
+  border-radius: 0.625rem;
+  padding: 0.6rem 0.75rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.controlButton:hover:not(:disabled) {
+  background: var(--cp-surface-soft);
+}
+
+.controlButtonActive {
+  background: var(--cp-accent-soft);
+  border-color: var(--cp-accent);
+  color: var(--cp-accent);
+}
+
+.endCallButton {
+  flex: 1;
+  min-width: 6.5rem;
+  border: none;
+  background: var(--cp-danger);
+  color: var(--cp-accent-fg);
+  border-radius: 0.625rem;
+  padding: 0.6rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.endCallButton:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--cp-text-soft);
+}

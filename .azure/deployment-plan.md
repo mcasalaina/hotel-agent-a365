@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress - Phase 1 foundation deployed; mutation, Work IQ, evaluation, and Agent 365 gates remain
+In Progress - Phase 1 foundation and Work IQ deployed; mutation, evaluation, and final Teams gates remain
 
 ## Canonical product plan
 
@@ -120,9 +120,45 @@ When implementation artifacts are complete:
   structured-data tool now requires exact property IDs in every property result to make the handoff
   deterministic.
 - 2026-07-11: Reused the Foundry-managed blueprint, deployed Azure Bot Service
-  `hotel-servicing-agent-bot`, and published Microsoft 365 title
+  `hotel-servicing-agent-bot`, and created Microsoft 365 title
   `T_5f1601d1-0ccc-13b2-6d7f-ec5730e45a91`. The stable endpoint exposes `activity` and `responses`
   with `BotServiceTenant` authorization.
+- 2026-07-14: Determined that the direct Foundry tenant publication did not appear as the required
+  reusable Agent 365 **Agent template**. Rebuilt the flat four-file package using the Bank Agent
+  structure, linked template `9a2da06d-059c-4b40-910f-ca8e0a6b1730` to blueprint
+  `55698a0b-48c3-412e-ba56-373ebb35283d`, validated both ID invariants and the Teams manifest schema,
+  and generated `manifest/manifest.zip`.
+- 2026-07-14: Published the package through **Agents > All agents > Registry > ... > Add agent**,
+  not Integrated Apps. Verified the resulting `Hotel Guest Services` registry item is an
+  **Agent template**, activated it for all users, configured its Foundry-managed blueprint as
+  **API Based** with the live Bot Service `activityProtocol` endpoint, and created
+  `Hotel Guest Services Agent` (`hotelguestservices@cam3652609.onmicrosoft.com`, object ID
+  `dbd88b91-61f2-4ee7-92e9-0c04a6322e1b`). Granted the instance user Azure AI Developer at account
+  and project scope, both required Cognitive Services user roles at account scope, and Fabric
+  workspace Contributor access. Added Microsoft Cognitive Services and Azure Machine Learning
+  Services `user_impersonation` tenant-wide consent grants plus matching inheritable blueprint
+  permissions. Verified **Agents > Tools > Work IQ MCP > Policies** already enables write, create,
+  partial-update, replace, and delete actions tenant-wide; the hotel agent remains read-only through
+  its own tool allowlists. Real Teams, Work IQ, Fabric, and telemetry acceptance remains pending
+  propagation.
+- 2026-07-14: In Exchange admin center, granted **Read and manage (Full Access)** on
+  `hotelguestservices@cam3652609.onmicrosoft.com` to
+  `mcasalaina.local@cam3652609.onmicrosoft.com` and
+  `aycabas.local@cam3652609.onmicrosoft.com`. Exchange confirmed both assignments and a Full Access
+  count of two. Send As and Send on behalf remain unassigned.
+- 2026-07-14: Audited blueprint consent against its inheritable permissions and found three missing
+  tenant-wide grants: Microsoft Graph, Power Platform API, and Agent Tools. Added the minimum matching
+  scopes, bringing the blueprint to nine grants. A direct synthetic `activityProtocol` request then
+  returned HTTP 202, resolved Hosted Agent version 16, and produced a successful correlated
+  `invoke_agent` trace and `READY` response in Foundry.
+- 2026-07-14: Microsoft documentation states that inheritable permissions apply to newly created
+  agent identities. Created clean validation instance `Hotel Guest Services Agent 2`
+  (`hotelguestservices2@cam3652609.onmicrosoft.com`, user object
+  `0711dbee-f251-41b8-a71b-2ad92283945c`, Entra agent ID
+  `288dbfc9-2f41-4b55-b64d-f31a29ad4057`) after the complete grant set was in place. Granted the new
+  user Azure AI Developer at Foundry account and project scope, Cognitive Services User and
+  Cognitive Services OpenAI User at account scope, and Fabric workspace Contributor access.
+  Preserve the original instance until this replacement passes live Teams acceptance.
 - 2026-07-11: Granted the blueprint tenant-wide delegated and inheritable
   `Tools.ListInvoke.All` access for the V2 Copilot, Mail, and Teams Work IQ resources. Granted the
   Hosted Agent identity `Agent365.Observability.OtelWrite`.
@@ -136,3 +172,19 @@ When implementation artifacts are complete:
   Re-enabled Bot Service public network access because disabling it unconfigures Teams channels.
   The live Teams channel remains enabled, stable endpoint traffic routes 100% to `@latest`, and the
   cited HTL-001 regression passes.
+- 2026-07-15: Re-enabled the disabled Foundry-managed blueprint principal, which restored Hosted
+  Agent runtime storage. Replaced the nonworking Foundry-managed Agent 365 route with owned blueprint
+  `f1ae4991-0418-470b-96d5-7f7df43ab5d2` and Container Apps bridge
+  `hotel-agent-bridge-a365`. The bridge sends the authenticated agentic user through
+  `x-ms-user-identity` on initial and MCP approval requests.
+- 2026-07-15: Identity Proxy Manager, preview SDK federated credentials, a raw Hosted Agent FIC, and
+  explicit project-managed-identity selection all failed for distinct identity or token-contract
+  reasons. Stored a dedicated owned-blueprint credential in Key Vault `hotelagentkv4iqs`, granted
+  only the Hosted Agent identity read access, and implemented the explicit blueprint, instance, and
+  delegated `user_fic` token exchanges. No credential is present in source or Hosted Agent
+  environment metadata.
+- 2026-07-15: Deployed Hosted Agent version 23. Authentication preflight passed for Copilot, Mail,
+  and Teams. Replaced obsolete prefixed MCP allowlist names with the exact live case-sensitive tool
+  names, after which live Mail and Teams metadata reads passed. A send-email request was refused,
+  confirming the positive read-only boundary. Permission changes in this tenant must be checked
+  immediately and never waited on for more than one minute.

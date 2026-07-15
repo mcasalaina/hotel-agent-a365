@@ -65,3 +65,10 @@ def test_governed_question_injects_authoritative_relative_date_window() -> None:
 
     assert "Today's authoritative UTC date is 2026-07-12" in question
     assert "next-7-days window ends 2026-07-18, inclusive" in question
+
+
+def test_governed_exact_id_lookup_does_not_inject_date_window() -> None:
+    question = _governed_question("Find reservation RES-DEMO-FAMILY", date(2026, 7, 12))
+
+    assert "search the full record history" in question
+    assert "Today's authoritative UTC date" not in question

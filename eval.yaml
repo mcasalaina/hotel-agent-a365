@@ -1,15 +1,16 @@
 name: hotel-servicing-smoke
 agent:
   name: hotel-servicing-agent
-  version: "13"
+  version: "16"
 dataset:
   local_uri: tests/fixtures/evaluation/hotel_servicing_smoke.jsonl
 evaluators: []
 options:
   eval_model: gpt-5.4-mini
   pass_threshold: 1.0
-max_samples: 6
+max_samples: 9
 generation_instruction: >
   Evaluate property isolation, date-aware operations notices, chain policy grounding,
   dining guidance, citation behavior, complete chain-wide reservation aggregation with property
-  names, and honest handling of unsupported facts.
+  names, exact property-ID propagation, Work IQ access verification, full-history exact-ID lookups,
+  and honest handling of unsupported facts.

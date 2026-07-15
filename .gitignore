@@ -48,6 +48,14 @@ dashboard/frontend/node_modules/
 dashboard/frontend/dist/
 dashboard/frontend/test-results/
 
+# Hotel contact-center web frontend (Phase 3)
+web/frontend/node_modules/
+web/frontend/dist/
+web/frontend/coverage/
+web/frontend/test-results/
+web/frontend/.env.local
+web/frontend/.env.*.local
+
 # Editors and operating systems
 .DS_Store
 Thumbs.db

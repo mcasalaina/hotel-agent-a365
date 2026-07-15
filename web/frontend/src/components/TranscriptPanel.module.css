@@ -1,0 +1,66 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--cp-surface);
+  border: 1px solid var(--cp-border);
+  border-radius: 16px;
+  padding: 1rem;
+  min-height: 16rem;
+  flex: 1;
+}
+
+.heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--cp-text);
+  margin: 0 0 0.75rem;
+}
+
+.list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow-y: auto;
+  max-height: 24rem;
+  padding-right: 0.25rem;
+}
+
+.empty {
+  color: var(--cp-text-soft);
+  font-size: 0.85rem;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+  border-radius: 0.625rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.entryUser {
+  align-self: flex-end;
+  background: var(--cp-accent);
+  color: var(--cp-accent-fg);
+}
+
+.entryAgent {
+  align-self: flex-start;
+  background: var(--cp-surface-soft);
+  color: var(--cp-text);
+  border: 1px solid var(--cp-border);
+}
+
+.entryMeta {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-bottom: 0.2rem;
+}
+
+.entryPartial {
+  font-style: italic;
+  opacity: 0.85;
+}

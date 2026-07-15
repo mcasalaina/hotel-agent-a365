@@ -1,44 +1,58 @@
 from __future__ import annotations
 
+import asyncio
+import json
 from collections.abc import Awaitable, Callable, Sequence
-from contextlib import AsyncExitStack
+from contextlib import AbstractAsyncContextManager, AsyncExitStack
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 from agent_framework import Agent, FunctionTool, MCPStreamableHTTPTool
 from agent_framework.foundry import FoundryChatClient
-from microsoft_agents.authentication.msal import MsalAuth
-from microsoft_agents.hosting.core import AgentAuthConfiguration, AuthTypes
+from azure.core.exceptions import ClientAuthenticationError
 
 from hotel_servicing_agent.hosting import current_agent_user_id
 
 WORK_IQ_SCOPE = "Tools.ListInvoke.All"
+TOKEN_EXCHANGE_SCOPE = "api://AzureADTokenExchange/.default"
+KEY_VAULT_SCOPE = "https://vault.azure.net/.default"
+CLIENT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
 WORK_IQ_READ_ONLY_TOOLS = {
-    "work-iq-copilot": ("ask", "list_agents"),
+    "work-iq-copilot": ("copilot_chat",),
     "work-iq-mail": (
-        "mcp_MailTools_graph_mail_getMessage",
-        "mcp_MailTools_graph_mail_listSent",
-        "mcp_MailTools_graph_mail_searchMessages",
+        "GetMessage",
+        "SearchMessages",
+        "SearchMessagesQueryParameters",
+        "GetAttachments",
+        "DownloadAttachment",
     ),
     "work-iq-teams": (
-        "mcp_graph_chat_getChat",
-        "mcp_graph_chat_getChatMessage",
-        "mcp_graph_chat_listChatMembers",
-        "mcp_graph_chat_listChatMessages",
-        "mcp_graph_chat_listChats",
-        "mcp_graph_teams_getChannel",
-        "mcp_graph_teams_getTeam",
-        "mcp_graph_teams_listChannelMembers",
-        "mcp_graph_teams_listChannelMessages",
-        "mcp_graph_teams_listChannels",
-        "mcp_graph_teams_listTeams",
+        "ListTeams",
+        "ListChats",
+        "ListChannels",
+        "GetTeam",
+        "ListTeamMembers",
+        "GetChat",
+        "GetChannel",
+        "ListChatMembers",
+        "ListChannelMembers",
+        "ListChannelFiles",
+        "ListChatMessages",
+        "ListChannelMessages",
+        "GetChatMessage",
+        "ListChannelMessageReplies",
+        "GetRichMessageFormats",
+        "GetUserPresence",
+        "SearchTeamsMessages",
+        "SearchTeamMessagesQueryParameters",
     ),
 }
 WorkIQQueryRunner = Callable[
     [str, str, Any, Sequence["WorkIQServer"], dict[str, str], str],
     Awaitable[str],
 ]
+HttpClientFactory = Callable[[], AbstractAsyncContextManager[httpx.AsyncClient]]
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,6 +71,10 @@ class WorkIQServer:
         return f"{self.audience}/{WORK_IQ_SCOPE}"
 
 
+class WorkIQAuthenticationUnavailableError(RuntimeError):
+    """Raised when Agent 365 cannot establish delegated Work IQ authentication."""
+
+
 class AgenticUserTokenProvider:
     """Acquires delegated Work IQ tokens for the current Agent 365 user."""
 
@@ -65,27 +83,124 @@ class AgenticUserTokenProvider:
         tenant_id: str,
         blueprint_client_id: str,
         instance_client_id: str,
+        blueprint_secret_vault_url: str,
+        blueprint_secret_name: str,
+        credential: Any,
+        http_client_factory: HttpClientFactory | None = None,
     ) -> None:
         self._tenant_id = tenant_id
+        self._blueprint_client_id = blueprint_client_id
         self._instance_client_id = instance_client_id
-        self._auth = MsalAuth(
-            AgentAuthConfiguration(
-                auth_type=AuthTypes.identity_proxy_manager,
-                client_id=blueprint_client_id,
-                tenant_id=tenant_id,
-            )
-        )
+        self._blueprint_secret_vault_url = blueprint_secret_vault_url.rstrip("/")
+        self._blueprint_secret_name = blueprint_secret_name
+        self._blueprint_secret: str | None = None
+        self._credential = credential
+        self._http_client_factory = http_client_factory or (lambda: httpx.AsyncClient(timeout=30))
 
     async def get_token(self, agent_user_id: str, scope: str) -> str:
-        token = await self._auth.get_agentic_user_token(
-            tenant_id=self._tenant_id,
-            agent_app_instance_id=self._instance_client_id,
-            agentic_user_id=agent_user_id,
-            scopes=[scope],
+        async with self._http_client_factory() as client:
+            blueprint_secret = await self._get_blueprint_secret(client)
+            blueprint_token = await self._exchange(
+                client,
+                "blueprint",
+                {
+                    "client_id": self._blueprint_client_id,
+                    "scope": TOKEN_EXCHANGE_SCOPE,
+                    "grant_type": "client_credentials",
+                    "client_secret": blueprint_secret,
+                    "fmi_path": self._instance_client_id,
+                },
+            )
+            instance_token = await self._exchange(
+                client,
+                "instance",
+                {
+                    "client_id": self._instance_client_id,
+                    "scope": TOKEN_EXCHANGE_SCOPE,
+                    "grant_type": "client_credentials",
+                    "client_assertion_type": CLIENT_ASSERTION_TYPE,
+                    "client_assertion": blueprint_token,
+                },
+            )
+            return await self._exchange(
+                client,
+                "delegated user",
+                {
+                    "client_id": self._instance_client_id,
+                    "scope": scope,
+                    "grant_type": "user_fic",
+                    "client_assertion_type": CLIENT_ASSERTION_TYPE,
+                    "client_assertion": blueprint_token,
+                    "user_federated_identity_credential": instance_token,
+                    "user_id": agent_user_id,
+                },
+            )
+
+    async def _get_blueprint_secret(self, client: httpx.AsyncClient) -> str:
+        if self._blueprint_secret:
+            return self._blueprint_secret
+        try:
+            access_token = await asyncio.to_thread(
+                self._credential.get_token,
+                KEY_VAULT_SCOPE,
+            )
+        except ClientAuthenticationError as exc:
+            raise WorkIQAuthenticationUnavailableError(
+                "Hosted Agent identity could not authenticate to Key Vault"
+            ) from exc
+        url = f"{self._blueprint_secret_vault_url}/secrets/{self._blueprint_secret_name}"
+        try:
+            response = await client.get(
+                url,
+                params={"api-version": "7.5"},
+                headers={"Authorization": f"Bearer {access_token.token}"},
+            )
+        except httpx.HTTPError as exc:
+            raise WorkIQAuthenticationUnavailableError(
+                "Agent 365 blueprint credential retrieval failed"
+            ) from exc
+        try:
+            body = response.json()
+        except json.JSONDecodeError as exc:
+            raise WorkIQAuthenticationUnavailableError("Key Vault returned invalid JSON") from exc
+        secret = body.get("value")
+        if not response.is_success or not secret:
+            error = body.get("error", {})
+            code = error.get("code", "unknown_error")
+            message = error.get("message", "No description")
+            raise WorkIQAuthenticationUnavailableError(
+                f"Agent 365 blueprint credential retrieval failed: {code}: {message}"
+            )
+        self._blueprint_secret = str(secret)
+        return self._blueprint_secret
+
+    async def _exchange(
+        self,
+        client: httpx.AsyncClient,
+        stage: str,
+        data: dict[str, str],
+    ) -> str:
+        url = f"https://login.microsoftonline.com/{self._tenant_id}/oauth2/v2.0/token"
+        try:
+            response = await client.post(url, data=data)
+        except httpx.HTTPError as exc:
+            raise WorkIQAuthenticationUnavailableError(
+                f"Agent 365 {stage} token exchange request failed"
+            ) from exc
+        try:
+            body = response.json()
+        except json.JSONDecodeError as exc:
+            raise WorkIQAuthenticationUnavailableError(
+                f"Agent 365 {stage} token exchange returned invalid JSON"
+            ) from exc
+        token = body.get("access_token")
+        if response.is_success and token:
+            return str(token)
+        error = body.get("error", "unknown_error")
+        description = body.get("error_description", "No description")
+        raise WorkIQAuthenticationUnavailableError(
+            f"Agent 365 {stage} token exchange failed: {error}: {description}"
         )
-        if not token:
-            raise RuntimeError(f"Agent 365 did not issue a delegated token for {scope}")
-        return str(token)
 
 
 class WorkIQTool:
@@ -118,6 +233,56 @@ class WorkIQTool:
                 "read-only and may draft text but must not send or modify Microsoft 365 content."
             ),
             func=self.query,
+        )
+
+    def as_access_check_tool(self) -> FunctionTool:
+        return FunctionTool(
+            name="check_work_context_access",
+            description=(
+                "Verify whether this request has authenticated user-scoped Work IQ access without "
+                "reading Microsoft 365 content. Use this before making any claim that Work IQ is "
+                "available."
+            ),
+            func=self.check_access,
+        )
+
+    async def check_access(self) -> str:
+        try:
+            user_id = current_agent_user_id()
+        except RuntimeError:
+            return json.dumps(
+                {
+                    "authenticated_user_context": False,
+                    "available_servers": [],
+                    "content_retrieved": False,
+                    "reason": (
+                        "No authenticated Agent 365 user context was supplied with this request."
+                    ),
+                },
+                separators=(",", ":"),
+            )
+        available_servers: list[str] = []
+        for server in self._servers:
+            try:
+                await self._token_provider.get_token(user_id, server.scope)
+            except WorkIQAuthenticationUnavailableError:
+                return json.dumps(
+                    {
+                        "authenticated_user_context": False,
+                        "available_servers": [],
+                        "content_retrieved": False,
+                        "reason": "Delegated Agent 365 user authentication is unavailable.",
+                    },
+                    separators=(",", ":"),
+                )
+            available_servers.append(server.name)
+        return json.dumps(
+            {
+                "authenticated_user_context": True,
+                "available_servers": available_servers,
+                "content_retrieved": False,
+            },
+            separators=(",", ":"),
         )
 
     async def query(self, question: str) -> str:

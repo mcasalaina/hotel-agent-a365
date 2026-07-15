@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
@@ -17,7 +18,13 @@ PROPERTY_CONTEXT_DIRECTIVE = (
     "records. Never collapse zero-count rows into an 'all other properties' summary. For a "
     "forward-looking reservation window, interpret reservations as arrivals by check_in with "
     "status future or arriving unless the user explicitly asks for records created or booked "
-    "during the window; state the date range and interpretation used."
+    "during the window; state the date range and interpretation used. For an exact reservation, "
+    "folio, dispute, request, or work-order identifier, search the full record history and do not "
+    "apply a date window unless the user explicitly requests one."
+)
+RELATIVE_DATE_PATTERN = re.compile(
+    r"\b(today|tomorrow|yesterday|next week|this week|last week|next \d+ days?|upcoming)\b",
+    re.IGNORECASE,
 )
 FabricQueryRunner = Callable[[str, dict[str, str], str], Awaitable[str]]
 
@@ -57,10 +64,13 @@ class FabricDataAgentTool:
 
 
 def _governed_question(question: str, today: date | None = None) -> str:
+    governed_question = f"{question.strip()}{PROPERTY_CONTEXT_DIRECTIVE}"
+    if not RELATIVE_DATE_PATTERN.search(question):
+        return governed_question
     current_date = today or datetime.now(UTC).date()
     next_week_end = current_date + timedelta(days=6)
     return (
-        f"{question.strip()}{PROPERTY_CONTEXT_DIRECTIVE} Today's authoritative UTC date is "
+        f"{governed_question} Today's authoritative UTC date is "
         f"{current_date.isoformat()}, and a relative next-7-days window ends "
         f"{next_week_end.isoformat()}, inclusive."
     )

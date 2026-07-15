@@ -9,6 +9,8 @@ import yaml
 
 EXPECTED_AGENT_NAME = "hotel-servicing-agent"
 EXPECTED_MODEL = "gpt-5.4-mini"
+EXPECTED_AGENT365_BLUEPRINT_ID = "f1ae4991-0418-470b-96d5-7f7df43ab5d2"
+EXPECTED_AGENT365_TEMPLATE_ID = "9a2da06d-059c-4b40-910f-ca8e0a6b1730"
 EXPECTED_SEARCH_ENDPOINT = "https://3iqs-search-aycabas.search.windows.net"
 EXPECTED_KNOWLEDGE_BASE = "hotel-foundryiq"
 EXPECTED_FABRIC_DATA_AGENT_MCP_URL = (
@@ -18,8 +20,10 @@ EXPECTED_FABRIC_DATA_AGENT_MCP_URL = (
 )
 EXPECTED_AGENT365_ENV = {
     "AGENT365_TENANT_ID": "a9d9510e-7131-4355-8b7e-37e7b1e99862",
-    "AGENT365_BLUEPRINT_CLIENT_ID": "55698a0b-48c3-412e-ba56-373ebb35283d",
-    "AGENT365_INSTANCE_CLIENT_ID": "6b7f2f82-66cb-470b-b16a-f7775463b341",
+    "AGENT365_BLUEPRINT_CLIENT_ID": "f1ae4991-0418-470b-96d5-7f7df43ab5d2",
+    "AGENT365_BLUEPRINT_SECRET_VAULT_URL": "https://hotelagentkv4iqs.vault.azure.net",
+    "AGENT365_BLUEPRINT_SECRET_NAME": "agent365-blueprint-client-secret",
+    "AGENT365_INSTANCE_CLIENT_ID": "cc4f4078-c463-494a-a5fc-0b63a6995296",
     "WORK_IQ_COPILOT_MCP_URL": (
         "https://agent365.svc.cloud.microsoft/agents/servers/mcp_M365Copilot"
     ),
@@ -53,6 +57,8 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     azure = _load_yaml(root / "azure.yaml")
     manifest = _load_yaml(root / "src/hotel-servicing-agent/agent.manifest.yaml")
     tooling_manifest = _load_json(root / "agent/ToolingManifest.json")
+    m365_manifest = _load_json(root / "manifest/manifest.json")
+    agentic_user_template = _load_json(root / "manifest/agenticUserTemplateManifest.json")
     evaluation = _load_yaml(root / "eval.yaml")
     env = _load_env(root / "config/azd.env.example")
     local_env = _load_env(root / ".env.template")
@@ -278,6 +284,50 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
             },
         ],
     )
+    _expect(
+        problems,
+        "m365.manifest.id",
+        m365_manifest.get("id"),
+        EXPECTED_AGENT365_BLUEPRINT_ID,
+    )
+    _expect(
+        problems,
+        "m365.manifest.agenticUserTemplates[0].id",
+        _nested_sequence(m365_manifest, "agenticUserTemplates", 0, "id"),
+        EXPECTED_AGENT365_TEMPLATE_ID,
+    )
+    _expect(
+        problems,
+        "m365.manifest.agenticUserTemplates[0].file",
+        _nested_sequence(m365_manifest, "agenticUserTemplates", 0, "file"),
+        "agenticUserTemplateManifest.json",
+    )
+    _expect(
+        problems,
+        "m365.agenticUserTemplate.id",
+        agentic_user_template.get("id"),
+        EXPECTED_AGENT365_TEMPLATE_ID,
+    )
+    _expect(
+        problems,
+        "m365.agenticUserTemplate.agentIdentityBlueprintId",
+        agentic_user_template.get("agentIdentityBlueprintId"),
+        EXPECTED_AGENT365_BLUEPRINT_ID,
+    )
+    _expect(
+        problems,
+        "m365.agenticUserTemplate.communicationProtocol",
+        agentic_user_template.get("communicationProtocol"),
+        "activityProtocol",
+    )
+    for icon in ("color.png", "outline.png"):
+        if not (root / "manifest" / icon).is_file():
+            problems.append(
+                ConfigurationProblem(
+                    f"m365.manifest.icons.{icon}",
+                    f"required package icon is missing: manifest/{icon}",
+                )
+            )
     evaluation_dataset = _nested(evaluation, "dataset", "local_uri")
     if not isinstance(evaluation_dataset, str) or not (root / evaluation_dataset).is_file():
         problems.append(
