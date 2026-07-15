@@ -46,6 +46,14 @@ REQUIRED_TABLES = (
     "idempotency_records",
     "audit_events",
 )
+NON_COMPLETED_RESERVATION_STATUSES = (
+    "future",
+    "arriving",
+    "departed",
+    "cancelled",
+    "no_show",
+    "in_house",
+)
 SCALE_COUNTS = {
     "demo": {
         "rooms_per_property": 8,
@@ -493,17 +501,27 @@ def build_reference(
 
 
 def build_guests(count: int) -> list[dict[str, str]]:
-    return [
-        {
-            "guest_id": f"GST-{number:06d}",
-            "first_name": f"Guest{number:05d}",
-            "last_name": "Demo",
-            "email": f"guest{number:05d}@example.test",
-            "country": profiles()[(number - 1) % len(ROSTER)].country,
-            "privacy_consent": "true",
-        }
-        for number in range(1, count + 1)
-    ]
+    named_guests = {
+        1: ("Maria", "Garcia", "mariagarcia@cam3652609.onmicrosoft.com"),
+        2: ("Marco", "Casalaina", "mcasalaina.local@cam3652609.onmicrosoft.com"),
+    }
+    rows: list[dict[str, str]] = []
+    for number in range(1, count + 1):
+        first_name, last_name, email = named_guests.get(
+            number,
+            (f"Guest{number:05d}", "Demo", f"guest{number:05d}@example.test"),
+        )
+        rows.append(
+            {
+                "guest_id": f"GST-{number:06d}",
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "country": profiles()[(number - 1) % len(ROSTER)].country,
+                "privacy_consent": "true",
+            }
+        )
+    return rows
 
 
 def reservation_row(
@@ -608,14 +626,18 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
     stay_count = SCALE_COUNTS[scale]["stays"]
     fixture_stay_count = sum(row["status"] in {"completed", "in_house"} for row in rows)
     generated_stay_limit = len(rows) + stay_count - fixture_stay_count
+    property_count = len(ROSTER)
     for number in range(len(rows) + 1, count + 1):
-        profile = profiles()[(number - 1) % len(ROSTER)]
+        profile = profiles()[(number - 1) % property_count]
         if number <= generated_stay_limit:
             status = "completed"
             check_in = DATE_START + timedelta(days=(number * 3) % 275)
         else:
-            status = ("future", "arriving", "departed", "cancelled", "no_show")[number % 5]
-            check_in = DATE_START + timedelta(days=(number * 7) % 392)
+            property_cycle = (number - 1) // property_count
+            status = NON_COMPLETED_RESERVATION_STATUSES[
+                property_cycle % len(NON_COMPLETED_RESERVATION_STATUSES)
+            ]
+            check_in = DATE_START + timedelta(days=number % 392)
         policy = "nonrefundable" if number % 7 == 0 else "flexible"
         rows.append(
             reservation_row(

@@ -9,6 +9,7 @@ import httpx
 import pytest
 from hotel_servicing_agent.tools import work_iq
 from hotel_servicing_agent.tools.work_iq import (
+    WORK_IQ_AGENT_TOOLS,
     WORK_IQ_READ_ONLY_TOOLS,
     AgenticUserTokenProvider,
     WorkIQAuthenticationUnavailableError,
@@ -133,6 +134,116 @@ def test_work_iq_tool_rejects_empty_questions() -> None:
         asyncio.run(tool.query(" "))
 
 
+def test_work_iq_mail_action_tools_issue_explicit_send_requests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    questions: list[str] = []
+
+    class FakeTokenProvider:
+        async def get_token(self, user_id: str, scope: str) -> str:
+            return "delegated-token"
+
+    async def fake_query_runner(
+        project_endpoint: str,
+        model_deployment: str,
+        credential: Any,
+        servers: tuple[WorkIQServer, ...],
+        tokens: dict[str, str],
+        question: str,
+    ) -> str:
+        questions.append(question)
+        return "Mail tool confirmed the send."
+
+    monkeypatch.setattr(work_iq, "current_agent_user_id", lambda: "agent-user-id")
+    tool = WorkIQTool(
+        project_endpoint="https://example.test/project",
+        model_deployment="model",
+        credential=object(),
+        token_provider=FakeTokenProvider(),  # type: ignore[arg-type]
+        servers=(WorkIQServer("mail", "https://example.test/mail", "audience", ("send",)),),
+        query_runner=fake_query_runner,
+    )
+
+    send_result = asyncio.run(
+        tool.send_email(
+            "marco@example.test, maria@example.test",
+            "Reservation update",
+            "Your reservation is confirmed.",
+        )
+    )
+    reply_result = asyncio.run(
+        tool.reply_to_email(
+            "folder-message-id",
+            "Your reservation number is RES-TEST.",
+        )
+    )
+
+    assert send_result == "Mail tool confirmed the send."
+    assert reply_result == "Mail tool confirmed the send."
+    assert "SendEmailWithAttachments" in questions[0]
+    assert "marco@example.test, maria@example.test" in questions[0]
+    assert "ReplyToMessage" in questions[1]
+    assert "sendImmediately set to true" in questions[1]
+    assert "folder-message-id" in questions[1]
+    assert tool.as_send_email_tool().name == "send_email"
+    assert tool.as_reply_to_email_tool().name == "reply_to_email"
+
+
+def test_work_iq_mail_actions_do_not_depend_on_unrelated_servers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    token_calls: list[str] = []
+    queried_servers: list[str] = []
+
+    class PartiallyAvailableTokenProvider:
+        async def get_token(self, user_id: str, scope: str) -> str:
+            token_calls.append(scope)
+            if scope.startswith("teams-audience/"):
+                raise WorkIQAuthenticationUnavailableError("Teams is unavailable")
+            return "mail-token"
+
+    async def fake_query_runner(
+        project_endpoint: str,
+        model_deployment: str,
+        credential: Any,
+        servers: tuple[WorkIQServer, ...],
+        tokens: dict[str, str],
+        question: str,
+    ) -> str:
+        queried_servers.extend(server.name for server in servers)
+        return "Email sent."
+
+    monkeypatch.setattr(work_iq, "current_agent_user_id", lambda: "agent-user-id")
+    tool = WorkIQTool(
+        project_endpoint="https://example.test/project",
+        model_deployment="model",
+        credential=object(),
+        token_provider=PartiallyAvailableTokenProvider(),  # type: ignore[arg-type]
+        servers=(
+            WorkIQServer("work-iq-mail", "https://example.test/mail", "mail-audience", ("send",)),
+            WorkIQServer(
+                "work-iq-teams",
+                "https://example.test/teams",
+                "teams-audience",
+                ("list",),
+            ),
+        ),
+        query_runner=fake_query_runner,
+    )
+
+    result = asyncio.run(
+        tool.send_email(
+            "guest@example.test",
+            "Reservation update",
+            "Your reservation is confirmed.",
+        )
+    )
+
+    assert result == "Email sent."
+    assert queried_servers == ["work-iq-mail"]
+    assert token_calls == ["mail-audience/Tools.ListInvoke.All"]
+
+
 def test_work_iq_access_check_verifies_tokens_without_retrieving_content(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -215,7 +326,7 @@ def test_work_iq_access_check_reports_missing_delegated_token_without_error(
 
 
 def test_work_iq_servers_fail_closed_with_read_only_allowlists() -> None:
-    with pytest.raises(ValueError, match="requires a read-only tool allowlist"):
+    with pytest.raises(ValueError, match="requires a tool allowlist"):
         WorkIQServer("mail", "https://example.test/mail", "audience", ())
 
     mutating_fragments = ("create", "delete", "send", "post", "reply", "update", "add")
@@ -226,3 +337,18 @@ def test_work_iq_servers_fail_closed_with_read_only_allowlists() -> None:
             for tool_name in allowed_tools
             for fragment in mutating_fragments
         )
+
+
+def test_agent_mailbox_allowlist_supports_read_and_send_without_delete() -> None:
+    mail_tools = WORK_IQ_AGENT_TOOLS["work-iq-mail"]
+
+    assert "GetMessage" in mail_tools
+    assert "CreateDraftMessage" in mail_tools
+    assert "ReplyAllToMessage" in mail_tools
+    assert "ReplyToMessage" in mail_tools
+    assert "SendDraftMessage" in mail_tools
+    assert "SendEmailWithAttachments" in mail_tools
+    assert "UpdateDraft" in mail_tools
+    assert "SendMail" in mail_tools
+    assert "mcp_MailTools_graph_mail_sendMail" in mail_tools
+    assert not any("delete" in tool_name.lower() for tool_name in mail_tools)

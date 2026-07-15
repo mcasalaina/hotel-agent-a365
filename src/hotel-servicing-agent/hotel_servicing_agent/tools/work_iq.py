@@ -48,6 +48,30 @@ WORK_IQ_READ_ONLY_TOOLS = {
         "SearchTeamMessagesQueryParameters",
     ),
 }
+WORK_IQ_AGENT_TOOLS = {
+    **WORK_IQ_READ_ONLY_TOOLS,
+    "work-iq-mail": (
+        *WORK_IQ_READ_ONLY_TOOLS["work-iq-mail"],
+        "CreateDraftMessage",
+        "ReplyAllToMessage",
+        "ReplyToMessage",
+        "SendDraftMessage",
+        "SendEmailWithAttachments",
+        "UpdateDraft",
+        "CreateMessage",
+        "SendDraft",
+        "SendMail",
+        "Reply",
+        "ReplyAll",
+        "mcp_MailTools_graph_mail_createMessage",
+        "mcp_MailTools_graph_mail_getMessage",
+        "mcp_MailTools_graph_mail_reply",
+        "mcp_MailTools_graph_mail_replyAll",
+        "mcp_MailTools_graph_mail_searchMessages",
+        "mcp_MailTools_graph_mail_sendDraft",
+        "mcp_MailTools_graph_mail_sendMail",
+    ),
+}
 WorkIQQueryRunner = Callable[
     [str, str, Any, Sequence["WorkIQServer"], dict[str, str], str],
     Awaitable[str],
@@ -64,7 +88,7 @@ class WorkIQServer:
 
     def __post_init__(self) -> None:
         if not self.allowed_tools:
-            raise ValueError(f"Work IQ server {self.name} requires a read-only tool allowlist")
+            raise ValueError(f"Work IQ server {self.name} requires a tool allowlist")
 
     @property
     def scope(self) -> str:
@@ -204,7 +228,7 @@ class AgenticUserTokenProvider:
 
 
 class WorkIQTool:
-    """Delegates Microsoft 365 questions to governed Work IQ MCP servers."""
+    """Delegates the agent's Microsoft 365 work to governed Work IQ MCP servers."""
 
     def __init__(
         self,
@@ -228,9 +252,9 @@ class WorkIQTool:
         return FunctionTool(
             name="query_work_context",
             description=(
-                "Query the authenticated user's Microsoft 365 context through Work IQ, including "
-                "mail, Teams, files, meetings, and organizational knowledge. This Phase 2 tool is "
-                "read-only and may draft text but must not send or modify Microsoft 365 content."
+                "Read and act on my own Microsoft 365 context through Work IQ, including my email, "
+                "Teams messages, files, meetings, and organizational knowledge. Use the mail tools "
+                "to send an email when the request explicitly asks me to send one."
             ),
             func=self.query,
         )
@@ -239,11 +263,31 @@ class WorkIQTool:
         return FunctionTool(
             name="check_work_context_access",
             description=(
-                "Verify whether this request has authenticated user-scoped Work IQ access without "
-                "reading Microsoft 365 content. Use this before making any claim that Work IQ is "
+                "Verify whether I can access my own Microsoft 365 work context without reading its "
+                "content. Use this before claiming that my mailbox or other work context is "
                 "available."
             ),
             func=self.check_access,
+        )
+
+    def as_send_email_tool(self) -> FunctionTool:
+        return FunctionTool(
+            name="send_email",
+            description=(
+                "Send a new email from my mailbox. Use only for an explicitly requested send. "
+                "Provide the exact recipients, subject, and body."
+            ),
+            func=self.send_email,
+        )
+
+    def as_reply_to_email_tool(self) -> FunctionTool:
+        return FunctionTool(
+            name="reply_to_email",
+            description=(
+                "Send an immediate reply from my mailbox to an email identified by its "
+                "folder-specific message ID. Provide the exact reply body."
+            ),
+            func=self.reply_to_email,
         )
 
     async def check_access(self) -> str:
@@ -288,19 +332,60 @@ class WorkIQTool:
     async def query(self, question: str) -> str:
         if not question.strip():
             raise ValueError("question must not be empty")
+        return await self._query(question.strip(), self._servers)
+
+    async def _query(self, question: str, servers: Sequence[WorkIQServer]) -> str:
         user_id = current_agent_user_id()
         tokens = {
             server.name: await self._token_provider.get_token(user_id, server.scope)
-            for server in self._servers
+            for server in servers
         }
         return await self._query_runner(
             self._project_endpoint,
             self._model_deployment,
             self._credential,
-            self._servers,
+            servers,
             tokens,
-            question.strip(),
+            question,
         )
+
+    async def send_email(self, recipient_emails: str, subject: str, body: str) -> str:
+        recipients = recipient_emails.strip()
+        if not recipients:
+            raise ValueError("recipient_emails must not be empty")
+        if not subject.strip():
+            raise ValueError("subject must not be empty")
+        if not body.strip():
+            raise ValueError("body must not be empty")
+        return await self._query(
+            "Send a new email now using SendEmailWithAttachments, with no attachments. "
+            f"Recipients: {recipients}\n"
+            f"Subject: {subject.strip()}\n"
+            f"Exact body:\n{body.strip()}\n"
+            "Do not create a draft. Report success only after the mail tool confirms the send.",
+            self._mail_servers(),
+        )
+
+    async def reply_to_email(self, message_id: str, body: str) -> str:
+        resolved_message_id = message_id.strip()
+        if not resolved_message_id:
+            raise ValueError("message_id must not be empty")
+        if not body.strip():
+            raise ValueError("body must not be empty")
+        return await self._query(
+            "Reply to the email with the following folder-specific message ID now using "
+            "ReplyToMessage with sendImmediately set to true.\n"
+            f"Message ID: {resolved_message_id}\n"
+            f"Exact reply body:\n{body.strip()}\n"
+            "Do not create a draft. Report success only after the mail tool confirms the send.",
+            self._mail_servers(),
+        )
+
+    def _mail_servers(self) -> tuple[WorkIQServer, ...]:
+        mail_servers = tuple(server for server in self._servers if "mail" in server.name.casefold())
+        if not mail_servers:
+            raise RuntimeError("No Work IQ mail server is configured")
+        return mail_servers
 
 
 async def _query_work_iq(
@@ -338,9 +423,20 @@ async def _query_work_iq(
             ),
             name="work-context-specialist",
             instructions=(
-                "Answer only from the authenticated user's Microsoft 365 context. Use the most "
-                "appropriate Work IQ server and report when access or evidence is unavailable. "
-                "You may draft text, but never send, post, delete, or modify Microsoft 365 content."
+                "You are the Hotel Guest Services agent operating in your own Microsoft 365 "
+                "account. Email, Teams messages, files, and meetings returned by these tools "
+                "belong to you, not to the human speaking with you. Refer to them as 'my email', "
+                "'my mailbox', or 'my messages'. Use the most appropriate Work IQ server. Report "
+                "when evidence is unavailable. Send an email or reply only when the request "
+                "explicitly asks you to send it. For a new email, use the mail server's "
+                "SendEmailWithAttachments tool directly, even when there are no attachments. "
+                "For a reply, use ReplyToMessage with sendImmediately set to true. "
+                "When returning an email task, include both its Internet Message ID for idempotent "
+                "actions and its folder-specific message ID for replies. The folder-specific ID is "
+                "the id field returned by SearchMessagesQueryParameters. Never omit either ID. "
+                "Report a send only after the mail tool succeeds. "
+                "Do not expose MCP names, permission scopes, identifiers, or other implementation "
+                "details."
             ),
             default_options={"store": False},
             tools=tools,

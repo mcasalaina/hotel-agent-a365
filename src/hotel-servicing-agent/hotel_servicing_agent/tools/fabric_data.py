@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime, timedelta
@@ -11,19 +12,29 @@ from mcp.client.streamable_http import streamablehttp_client
 
 FABRIC_TOKEN_SCOPE = "https://api.fabric.microsoft.com/.default"
 PROPERTY_CONTEXT_DIRECTIVE = (
-    " Always include the exact property_id and official property name for every property "
-    "mentioned. "
+    " Always include the exact internal property_id with the official property name in this tool "
+    "response. The identifier is required for tool coordination but must not be recommended for "
+    "display to the user. For a guest lookup, always return the exact guest_id. For a hotel and "
+    "room lookup, always return the exact property_id and room_type_id needed by the write tool, "
+    "and limit the result to the requested hotel. "
     "For a chain-wide aggregation, query the complete property roster, return an overall total and "
-    "a Markdown table with exactly 20 property rows, and include properties with zero matching "
-    "records. Never collapse zero-count rows into an 'all other properties' summary. For a "
+    "a Markdown table with exactly 20 rows using property name and count only, and include "
+    "properties with zero matching records. Never collapse zero-count rows into an 'all other "
+    "properties' summary. For a "
     "forward-looking reservation window, interpret reservations as arrivals by check_in with "
     "status future or arriving unless the user explicitly asks for records created or booked "
-    "during the window; state the date range and interpretation used. For an exact reservation, "
+    "during the window. Return the exact date range without narrating this interpretation. For an "
+    "exact reservation, "
     "folio, dispute, request, or work-order identifier, search the full record history and do not "
     "apply a date window unless the user explicitly requests one."
 )
 RELATIVE_DATE_PATTERN = re.compile(
     r"\b(today|tomorrow|yesterday|next week|this week|last week|next \d+ days?|upcoming)\b",
+    re.IGNORECASE,
+)
+CHAIN_WIDE_PATTERN = re.compile(
+    r"\b(chain[- ]wide|all (?:lyrenza )?(?:hotels|properties)|"
+    r"every (?:lyrenza )?(?:hotel|property)|each (?:lyrenza )?(?:hotel|property))\b",
     re.IGNORECASE,
 )
 FabricQueryRunner = Callable[[str, dict[str, str], str], Awaitable[str]]
@@ -47,9 +58,9 @@ class FabricDataAgentTool:
             name="query_hotel_operations_data",
             description=(
                 "Query governed hotel operations and guest-services data across both Fabric "
-                "lakehouses, the semantic model, and the ontology. Property results include the "
-                "official property name and exact property_id; chain-wide results include a "
-                "complete property breakdown."
+                "sources. Resolve hotels to their official names and return complete chain-wide "
+                "breakdowns when requested. Internal identifiers are for tool coordination only "
+                "and must not be shown to the user."
             ),
             func=self.query,
         )
@@ -59,18 +70,45 @@ class FabricDataAgentTool:
             raise ValueError("question must not be empty")
         token = self._credential.get_token(FABRIC_TOKEN_SCOPE)
         headers = {"Authorization": f"Bearer {token.token}"}
+        if CHAIN_WIDE_PATTERN.search(question):
+            fact_question = (
+                f"{question.strip()} Use HotelGuestServices reservation facts only. Do not query "
+                "the property roster. For an active forward-looking reservation window, filter "
+                "check_in to the requested inclusive date range and status to future or arriving. "
+                "Group by property_id and return property_id and count for every nonzero group."
+                f"{_authoritative_date_directive(question)}"
+            )
+            roster_question = (
+                "Use HotelOperations properties only. Return the complete Lyrenza roster as "
+                "exactly 20 property_id and official property name pairs. Do not query "
+                "reservations."
+            )
+            fact_answer, roster_answer = await asyncio.gather(
+                self._query_runner(self._mcp_url, headers, fact_question),
+                self._query_runner(self._mcp_url, headers, roster_question),
+            )
+            return (
+                "Reservation counts by internal property key:\n"
+                f"{fact_answer}\n\nOfficial hotel roster:\n{roster_answer}\n\n"
+                "Join the two results by property_id. In the final answer, show every official "
+                "hotel name and its count, use zero for missing count groups, and do not show IDs."
+            )
         governed_question = _governed_question(question)
         return await self._query_runner(self._mcp_url, headers, governed_question)
 
 
 def _governed_question(question: str, today: date | None = None) -> str:
     governed_question = f"{question.strip()}{PROPERTY_CONTEXT_DIRECTIVE}"
+    return f"{governed_question}{_authoritative_date_directive(question, today)}"
+
+
+def _authoritative_date_directive(question: str, today: date | None = None) -> str:
     if not RELATIVE_DATE_PATTERN.search(question):
-        return governed_question
+        return ""
     current_date = today or datetime.now(UTC).date()
     next_week_end = current_date + timedelta(days=6)
     return (
-        f"{governed_question} Today's authoritative UTC date is "
+        " Today's authoritative UTC date is "
         f"{current_date.isoformat()}, and a relative next-7-days window ends "
         f"{next_week_end.isoformat()}, inclusive."
     )
