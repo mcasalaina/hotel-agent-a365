@@ -681,7 +681,7 @@ def _build_restaurant_reservations(
     rng: random.Random,
 ) -> list[dict[str, str]]:
     count = 250 if scale == "demo" else 35_000
-    occupied_by_property = Counter()
+    occupied_by_property: Counter[str] = Counter()
     metrics_by_property: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
     for row in metrics:
         occupied_by_property[row["property_id"]] += int(row["occupied_rooms"])
