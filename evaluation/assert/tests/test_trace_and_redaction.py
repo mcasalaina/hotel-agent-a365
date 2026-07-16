@@ -54,9 +54,7 @@ def test_normalizer_assigns_session_and_redacts_content() -> None:
     assert attribute_map["authorization"] == "[REDACTED_SECRET]"
     assert attribute_map["user"] == "[REDACTED_EMAIL]"
     token_attribute = next(
-        attribute
-        for attribute in attributes
-        if attribute["key"] == "gen_ai.usage.input_tokens"
+        attribute for attribute in attributes if attribute["key"] == "gen_ai.usage.input_tokens"
     )
     assert token_attribute["value"] == {"intValue": "42"}
 
