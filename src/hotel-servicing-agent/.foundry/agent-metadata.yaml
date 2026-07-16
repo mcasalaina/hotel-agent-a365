@@ -4,4 +4,25 @@ environments:
     azd:
       environmentName: hotel-dev
       service: hotel-servicing-agent
-    evaluationSuites: []
+    evaluationSuites:
+      - id: smoke-core
+        generationSource: eval-yaml
+        tags:
+          tier: smoke
+          purpose: baseline
+        dataset: smoke-core
+        datasetVersion: "1.0"
+        datasetContentPath: datasets/smoke-core/smoke-core_dg.jsonl
+        evaluators:
+          - name: smoke-core
+            version: "3"
+            definitionFile: evaluators/smoke-core/rubric_dimensions.json
+    lastEval:
+      evalId: eval_94eee407db4c428d9d4be8cd58608371
+      runId: evalrun_3de1cde9ec8a464fb8afbdf4d81340c3
+      agentVersion: "37"
+      status: Completed
+      passed: 15
+      failed: 0
+      errored: 0
+      resultFile: .foundry/results/dev/eval_94eee407db4c428d9d4be8cd58608371/evalrun_3de1cde9ec8a464fb8afbdf4d81340c3.json

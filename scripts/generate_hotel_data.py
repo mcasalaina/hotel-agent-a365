@@ -17,6 +17,8 @@ from datetime import date, timedelta
 from itertools import chain
 from pathlib import Path
 
+from realistic_hotel_data import build_realistic_tables, profile_manifest
+
 DATE_START = date(2026, 3, 1)
 DATE_END = date(2027, 3, 31)
 DEFAULT_SEED = 20260301
@@ -45,6 +47,14 @@ REQUIRED_TABLES = (
     "action_confirmations",
     "idempotency_records",
     "audit_events",
+)
+NON_COMPLETED_RESERVATION_STATUSES = (
+    "future",
+    "arriving",
+    "departed",
+    "cancelled",
+    "no_show",
+    "in_house",
 )
 SCALE_COUNTS = {
     "demo": {
@@ -493,17 +503,27 @@ def build_reference(
 
 
 def build_guests(count: int) -> list[dict[str, str]]:
-    return [
-        {
-            "guest_id": f"GST-{number:06d}",
-            "first_name": f"Guest{number:05d}",
-            "last_name": "Demo",
-            "email": f"guest{number:05d}@example.test",
-            "country": profiles()[(number - 1) % len(ROSTER)].country,
-            "privacy_consent": "true",
-        }
-        for number in range(1, count + 1)
-    ]
+    named_guests = {
+        1: ("Maria", "Garcia", "mariagarcia@cam3652609.onmicrosoft.com"),
+        2: ("Marco", "Casalaina", "mcasalaina.local@cam3652609.onmicrosoft.com"),
+    }
+    rows: list[dict[str, str]] = []
+    for number in range(1, count + 1):
+        first_name, last_name, email = named_guests.get(
+            number,
+            (f"Guest{number:05d}", "Demo", f"guest{number:05d}@example.test"),
+        )
+        rows.append(
+            {
+                "guest_id": f"GST-{number:06d}",
+                "first_name": first_name,
+                "last_name": last_name,
+                "email": email,
+                "country": profiles()[(number - 1) % len(ROSTER)].country,
+                "privacy_consent": "true",
+            }
+        )
+    return rows
 
 
 def reservation_row(
@@ -608,14 +628,18 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
     stay_count = SCALE_COUNTS[scale]["stays"]
     fixture_stay_count = sum(row["status"] in {"completed", "in_house"} for row in rows)
     generated_stay_limit = len(rows) + stay_count - fixture_stay_count
+    property_count = len(ROSTER)
     for number in range(len(rows) + 1, count + 1):
-        profile = profiles()[(number - 1) % len(ROSTER)]
+        profile = profiles()[(number - 1) % property_count]
         if number <= generated_stay_limit:
             status = "completed"
             check_in = DATE_START + timedelta(days=(number * 3) % 275)
         else:
-            status = ("future", "arriving", "departed", "cancelled", "no_show")[number % 5]
-            check_in = DATE_START + timedelta(days=(number * 7) % 392)
+            property_cycle = (number - 1) // property_count
+            status = NON_COMPLETED_RESERVATION_STATUSES[
+                property_cycle % len(NON_COMPLETED_RESERVATION_STATUSES)
+            ]
+            check_in = DATE_START + timedelta(days=number % 392)
         policy = "nonrefundable" if number % 7 == 0 else "flexible"
         rows.append(
             reservation_row(
@@ -1122,41 +1146,20 @@ def generate(
     random.seed(seed)
     clear_output(output, {".csv", ".json"})
     fixture_rows = read_fixtures()
-    property_rows, room_types, rooms, outlets, property_amenities = build_reference(scale)
-    guests = build_guests(SCALE_COUNTS[scale]["guests"])
-    reservations = build_reservations(scale, fixture_rows)
-    stays = build_stays(
-        reservations, SCALE_COUNTS[scale]["stays"], SCALE_COUNTS[scale]["rooms_per_property"]
+    property_rows = [asdict(profile) for profile in profiles()]
+    realistic_tables = build_realistic_tables(
+        scale=scale,
+        property_rows=property_rows,
+        fixture_rows=fixture_rows,
+        start=DATE_START,
+        end=DATE_END,
+        seed=seed,
+        amenities=AMENITIES,
     )
-    restaurant_reservations = build_restaurant_reservations(scale)
-    folios = build_folios(stays, reservations)
-    billing_disputes = build_billing_disputes(scale, folios)
-    special_requests, maintenance_requests, work_orders = build_service_records(
-        scale, reservations, stays
-    )
-    daily_inventory, daily_rates, property_daily_metrics = daily_rows(rooms, room_types)
     action_confirmations, idempotency_records, audit_events = build_control_records()
     table_rows: dict[str, Iterable[dict[str, str]]] = {
-        "properties": property_rows,
-        "room_types": room_types,
-        "rooms": rooms,
-        "outlets": outlets,
+        **realistic_tables,
         "amenities": [{"amenity_id": key, "name": value} for key, value in AMENITIES],
-        "property_amenities": property_amenities,
-        "guests": guests,
-        "reservations": reservations,
-        "stays": stays,
-        "restaurant_reservations": restaurant_reservations,
-        "folios": folios,
-        "folio_transactions": transaction_rows(folios),
-        "payments": payment_rows(folios),
-        "billing_disputes": billing_disputes,
-        "special_requests": special_requests,
-        "maintenance_requests": maintenance_requests,
-        "work_orders": work_orders,
-        "daily_inventory": daily_inventory,
-        "daily_rates": daily_rates,
-        "property_daily_metrics": property_daily_metrics,
         "action_confirmations": action_confirmations,
         "idempotency_records": idempotency_records,
         "audit_events": audit_events,
@@ -1180,10 +1183,11 @@ def generate(
         hashes[table_name] = stable_hash(table_path)
     docs_summary = generate_documents(docs_output)
     manifest: dict[str, object] = {
-        "generator_version": 1,
+        "generator_version": 2,
         "seed": seed,
         "scale": scale,
         "date_range": {"start": DATE_START.isoformat(), "end": DATE_END.isoformat()},
+        "operating_profiles": profile_manifest(),
         "counts": counts,
         "hashes": hashes,
         "documents": docs_summary,
