@@ -106,9 +106,9 @@ resource job 'Microsoft.App/jobs@2024-03-01' = {
               '--config'
               'evaluation/assert/config/smoke.yaml'
               '--suite'
-              'hotel-servicing-smoke'
+              'hotel-guest-services-conversations'
               '--require-all-cases'
-              '9'
+              '12'
             ],
             empty(runIdOverride) ? [] : [
               '--run-id'

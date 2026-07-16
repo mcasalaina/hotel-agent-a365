@@ -21,3 +21,17 @@ preflight.
 Multi-turn conversations must preserve the active reservation, property, guest, requested scope,
 and effective date until the user changes them. A property or guest switch requires fresh identity
 resolution and must not leak the prior subject's context.
+
+Evaluation conversations represent a guest-services associate helping a caller. User turns should
+sound like ordinary hospitality work: properties are usually identified by city or name, synthetic
+reservation numbers may be read from an associate's screen, and follow-up questions may rely on
+prior answers. User turns must not contain evaluator instructions such as asking for an "approved
+source," saying a fact must be "documented," or spelling out the response that will pass the test.
+Exact expected facts, tool order, attribution, and safety requirements belong in evaluator metadata,
+not in the simulated user's words.
+
+The reviewed Hotel Guest Services Conversations suite mixes fixed single-turn prompts with native
+ASSERT scenarios. Scenarios use a tester model to adapt the second user turn to the agent's first
+answer while retaining the scenario's intended correction, context switch, or follow-up. ASSERT does
+not provide declarative scripted turns, so scenario descriptions define the conversational goal and
+sequence rather than claiming byte-for-byte deterministic transcripts.

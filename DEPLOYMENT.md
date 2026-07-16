@@ -51,8 +51,9 @@ Key Vault, registry, and restricted artifact storage. The sidecar has no ingress
 parent blueprint credential from Key Vault through a Container Apps secret reference.
 
 Every live run performs the no-content Copilot, Mail, and Teams authentication check before the
-nine deterministic cases. Release gates require all smoke cases, zero weight-10 failures, a weighted
-score of at least `0.68`, and complete response-ID or operation-ID trace correlation. See
+12-case **Hotel Guest Services Conversations** suite. It combines eight fixed natural requests with
+four adaptive two-turn ASSERT scenarios. Release gates require every case, zero weight-10 failures,
+a weighted score of at least `0.68`, and complete response-ID or operation-ID trace correlation. See
 `docs/assert-evaluation.md` for deployment inputs, execution, privacy, baseline promotion, and the
 required periodic real Teams canary.
 

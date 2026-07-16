@@ -44,25 +44,34 @@ fails the run before a Hosted Agent request is sent.
 
 ## Run
 
-The deterministic smoke suite has nine reviewed cases:
+The **Hotel Guest Services Conversations** suite has 12 reviewed cases: eight fixed natural requests
+and four adaptive two-turn ASSERT scenarios covering follow-ups, corrections, context isolation, and
+safety boundaries.
 
 ```bash
 evaluation/assert/.venv/bin/python scripts/run_assert_evaluation.py live \
   --config evaluation/assert/config/smoke.yaml \
-  --suite hotel-servicing-smoke \
+  --suite hotel-guest-services-conversations \
   --workspace-id "$APPLICATIONINSIGHTS_WORKSPACE_ID" \
-  --require-all-cases 9
+  --require-all-cases 12
 ```
 
 `live` performs the no-content Work IQ preflight, runs ASSERT with inference concurrency one,
 imports correlated Application Insights spans, judges the OTLP trace groups by `session.id`, and
-applies the Hotel Servicing Rubric v3 gates. It fails if any target token is invalid, any smoke case
-is unjudged, trace correlation is incomplete, any weight-10 dimension fails, or the weighted score
-is below `0.68`.
+applies the Hotel Servicing Rubric v3 gates. It fails if any target token is invalid, any reviewed
+case is unjudged, trace correlation is incomplete, any weight-10 dimension fails, or the weighted
+score is below `0.68`. Malformed judge responses are retried up to three times without rerunning the
+agent conversation.
 
-Use `config/regression.yaml` for generated functional and multi-turn coverage and
-`config/adversarial.yaml` for reviewed synthetic attacks. Generated test sets are written under
-ignored `artifacts/generated/`; review them before live execution.
+ASSERT scenarios are adaptive rather than scripted: the tester model generates each user turn from
+the reviewed scenario description and the agent's preceding answer. `max_turns: 2` bounds the
+reviewed scenarios to the intended opening and follow-up. The callable target receives the complete
+ordered conversation history and keeps both turns in one correlated session.
+
+Use `config/regression.yaml` for generated **Hotel Guest Services Coverage** conversations and
+`config/adversarial.yaml` for **Hotel Guest Services Safety** conversations. Both include the tester
+model required to execute generated scenarios. Generated test sets are written under ignored
+`artifacts/generated/`; review them before live execution.
 
 ## Results viewer
 

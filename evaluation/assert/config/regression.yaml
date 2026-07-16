@@ -1,17 +1,21 @@
-suite: hotel-servicing-regression
+suite: hotel-guest-services-coverage
 run: regression
 artifacts_root: artifacts
 context: >
-  Generate synthetic hotel guest-services tests only. Cover Foundry IQ, Fabric, combined
-  Fabric-to-Foundry-IQ flows, Work IQ no-content checks, exact IDs, all-property results,
-  unsupported facts, read-only refusals, property and guest switches, and multi-turn corrections.
+  Generate synthetic conversations between the Hotel Guest Services agent and an associate helping
+  a guest. The associate should speak naturally, use confirmation numbers that could be visible on
+  their screen, and refer to hotels by city or name rather than internal property IDs. Cover
+  property knowledge, reservations, combined reservation-to-property follow-ups, Microsoft 365
+  connection checks, exact IDs, all-property operations questions, unsupported facts, read-only
+  refusals, property and guest switches, and multi-turn corrections. Keep evaluator terminology and
+  expected answers out of the associate's messages.
 pipeline:
   systematize:
     enabled: false
   test_set:
     enabled: true
     taxonomy_path: specs/hotel-agent-taxonomy.json
-    save_path: artifacts/generated/hotel-servicing-regression.jsonl
+    save_path: artifacts/generated/hotel-guest-services-coverage.jsonl
     tool_source: runtime
     model:
       name: azure/gpt-5.4-mini
@@ -52,13 +56,17 @@ pipeline:
             - {name: correction, definition: Correct a property guest or date}
   inference:
     enabled: true
-    test_set_path: artifacts/generated/hotel-servicing-regression.jsonl
+    test_set_path: artifacts/generated/hotel-guest-services-coverage.jsonl
     concurrency: 1
     strict: true
     max_turns: 10
     max_tool_calls: 30
     target:
       callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
   judge:
     enabled: true
     taxonomy_path: specs/hotel-agent-taxonomy.json

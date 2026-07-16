@@ -1,4 +1,4 @@
-suite: hotel-servicing-smoke
+suite: hotel-guest-services-conversations
 run: smoke
 artifacts_root: artifacts
 pipeline:
@@ -8,13 +8,17 @@ pipeline:
     enabled: false
   inference:
     enabled: true
-    test_set_path: seeds/hotel-servicing-smoke.jsonl
+    test_set_path: seeds/hotel-guest-services-conversations.jsonl
     concurrency: 1
     strict: true
-    max_turns: 8
+    max_turns: 2
     max_tool_calls: 24
     target:
       callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
   judge:
     enabled: true
     taxonomy_path: specs/hotel-agent-taxonomy.json

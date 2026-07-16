@@ -71,7 +71,7 @@ def main() -> None:
                 EVALUATION_ROOT / "config" / "specs" / "hotel-agent-taxonomy.json"
             ),
             "test_set_sha256": _sha256(
-                EVALUATION_ROOT / "config" / "seeds" / "hotel-servicing-smoke.jsonl"
+                EVALUATION_ROOT / "config" / "seeds" / "hotel-guest-services-conversations.jsonl"
             ),
             "configuration_sha256": _sha256(args.config),
             "judge_prompt_sha256": _sha256(args.config),

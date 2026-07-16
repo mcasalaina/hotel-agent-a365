@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 
 from hotel_assert.correlation import CorrelationLedger, ScenarioCorrelation
-from hotel_assert.foundry import _complete_approvals
+from hotel_assert.foundry import FoundryTargetConfig, _complete_approvals, invoke_hosted_agent
 from hotel_assert.identity import ValidatedIdentity
 from hotel_assert.target import Agent365Target
 
@@ -54,7 +54,7 @@ async def test_target_does_not_duplicate_current_message(
     assert await target.chat("current", history) == "answer"
     assert captured["history"] == history
     assert captured["history"].count({"role": "user", "content": "current"}) == 1
-    assert captured["agent_user_id"] == "agent-user"
+    assert captured["token"] == "secret-token"
 
 
 @pytest.mark.asyncio
@@ -83,7 +83,6 @@ async def test_approval_continuation_preserves_identity_and_trace_headers() -> N
 
     client = SimpleNamespace(responses=SimpleNamespace(create=create))
     headers = {
-        "x-ms-user-identity": "agent-user",
         "traceparent": "00-abc-def-01",
         "baggage": "assert.run_id=run-1",
     }
@@ -101,3 +100,58 @@ async def test_approval_continuation_preserves_identity_and_trace_headers() -> N
         "approve": True,
         "approval_request_id": "approval-1",
     }
+
+
+@pytest.mark.asyncio
+async def test_foundry_invocation_authenticates_with_agent_user_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, Any] = {}
+    response = SimpleNamespace(
+        id="response-1",
+        output=[
+            SimpleNamespace(
+                type="message",
+                role="assistant",
+                content=[SimpleNamespace(type="output_text", text="answer")],
+            )
+        ],
+    )
+
+    class FakeResponses:
+        async def create(self, **kwargs: Any) -> Any:
+            captured["request"] = kwargs
+            return response
+
+    class FakeClient:
+        def __init__(self, **kwargs: Any) -> None:
+            captured["client"] = kwargs
+            self.responses = FakeResponses()
+
+        async def close(self) -> None:
+            captured["closed"] = True
+
+    monkeypatch.setattr("hotel_assert.foundry.AsyncOpenAI", FakeClient)
+    text, response_id = await invoke_hosted_agent(
+        config=FoundryTargetConfig(
+            endpoint="https://example.test/project",
+            agent_name="hotel-agent",
+            model="model",
+            api_version="2025-05-15-preview",
+        ),
+        token="agent-user-token",
+        history=[{"role": "user", "content": "hello"}],
+        traceparent="00-abc-def-01",
+        baggage="assert.run_id=run-1",
+    )
+
+    assert (text, response_id) == ("answer", "response-1")
+    authorization = captured["client"]["default_headers"]["Authorization"]
+    assert authorization.endswith("agent-user-token")
+    assert "x-ms-user-identity" not in captured["client"]["default_headers"]
+    request_headers = captured["request"]["extra_headers"]
+    assert request_headers["Authorization"].endswith("agent-user-token")
+    assert "x-ms-user-identity" not in request_headers
+    assert request_headers["traceparent"] == "00-abc-def-01"
+    assert request_headers["baggage"] == "assert.run_id=run-1"
+    assert captured["closed"] is True

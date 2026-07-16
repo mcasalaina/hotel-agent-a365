@@ -14,9 +14,132 @@ from hotel_assert.config_validation import validate_repository
 from hotel_assert.gates import evaluate_gates, write_gate_result
 from hotel_assert.preflight import run_preflight
 
+MAX_JUDGE_RETRIES = 3
+
 
 def _repository_root() -> Path:
     return Path(__file__).resolve().parents[4]
+
+
+def _score_rows(path: Path) -> list[dict[str, object]]:
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+
+
+def _judge_failure_count(path: Path) -> int:
+    return sum(row.get("judge_status") != "ok" for row in _score_rows(path))
+
+
+def _retain_successful_scores(path: Path) -> None:
+    successful = [row for row in _score_rows(path) if row.get("judge_status") == "ok"]
+    path.write_text(
+        "".join(json.dumps(row, separators=(",", ":")) + "\n" for row in successful),
+        encoding="utf-8",
+    )
+
+
+def _run_judge_stage(
+    *,
+    assert_command: str,
+    config: Path,
+    suite: str,
+    run_id: str,
+    artifact_root: Path,
+    inference_set: Path,
+    save_dir: Path,
+    force: bool,
+    tolerate_viewer_failure: bool,
+) -> None:
+    command = [
+        assert_command,
+        "run",
+        "--config",
+        str(config),
+        "--override",
+        f"suite={suite}",
+        "--override",
+        f"run={run_id}",
+        "--override",
+        f"artifacts_root={artifact_root / '.judge-retries'}",
+        "--override",
+        "inference.enabled=false",
+        "--override",
+        f"judge.inference_set_path={inference_set}",
+        "--override",
+        f"judge.save_dir={save_dir}",
+    ]
+    if force:
+        command.extend(["--force-stage", "judge"])
+    process = subprocess.run(command, check=False, env=os.environ.copy())
+    if process.returncode == 0:
+        return
+    inference_count = sum(1 for line in inference_set.read_text().splitlines() if line)
+    scores_path = save_dir / "scores.jsonl"
+    score_count = (
+        sum(1 for line in scores_path.read_text().splitlines() if line)
+        if scores_path.is_file()
+        else 0
+    )
+    if not tolerate_viewer_failure or score_count != inference_count:
+        raise subprocess.CalledProcessError(process.returncode, process.args)
+
+
+def _retry_response_judgments(
+    *,
+    assert_command: str,
+    config: Path,
+    suite: str,
+    run_id: str,
+    artifact_root: Path,
+    run_root: Path,
+) -> None:
+    scores_path = run_root / "scores.jsonl"
+    for attempt in range(1, MAX_JUDGE_RETRIES + 1):
+        failures = _judge_failure_count(scores_path)
+        if failures == 0:
+            return
+        print(f"Retrying {failures} malformed response judgment(s), attempt {attempt}")
+        _retain_successful_scores(scores_path)
+        _run_judge_stage(
+            assert_command=assert_command,
+            config=config,
+            suite=f"{suite}-response-retry",
+            run_id=f"{run_id}-{attempt}",
+            artifact_root=artifact_root,
+            inference_set=run_root / "inference_set.jsonl",
+            save_dir=run_root,
+            force=False,
+            tolerate_viewer_failure=False,
+        )
+
+
+def _retry_trace_judgments(
+    *,
+    assert_command: str,
+    config: Path,
+    suite: str,
+    run_id: str,
+    artifact_root: Path,
+    trace_dir: Path,
+) -> None:
+    scores_path = trace_dir / "scores.jsonl"
+    for attempt in range(1, MAX_JUDGE_RETRIES + 1):
+        failures = _judge_failure_count(scores_path)
+        if failures == 0:
+            return
+        print(f"Retrying trace judgments after {failures} malformed row(s), attempt {attempt}")
+        _run_judge_stage(
+            assert_command=assert_command,
+            config=config,
+            suite=f"{suite}-trace-retry",
+            run_id=f"{run_id}-{attempt}",
+            artifact_root=artifact_root,
+            inference_set=trace_dir / "inference_set.jsonl",
+            save_dir=trace_dir,
+            force=True,
+            tolerate_viewer_failure=True,
+        )
 
 
 def _command_validate(_: argparse.Namespace) -> int:
@@ -122,6 +245,14 @@ def _command_live(args: argparse.Namespace) -> int:
         artifact_root=artifact_root,
     )
     _command_run(run_args)
+    _retry_response_judgments(
+        assert_command=args.assert_command,
+        config=args.config,
+        suite=args.suite,
+        run_id=run_id,
+        artifact_root=artifact_root,
+        run_root=run_root,
+    )
     time.sleep(args.telemetry_delay)
     trace_result = query_and_import(
         workspace_id=args.workspace_id,
@@ -131,8 +262,9 @@ def _command_live(args: argparse.Namespace) -> int:
     )
     if not trace_result.complete:
         raise RuntimeError("Trace correlation is incomplete")
-    trace_scores = run_root / "trace-judge" / "scores.jsonl"
-    trace_judge_process = subprocess.run(
+    trace_dir = run_root / "trace-judge"
+    trace_scores = trace_dir / "scores.jsonl"
+    subprocess.run(
         [
             args.assert_command,
             "judge-traces",
@@ -143,48 +275,30 @@ def _command_live(args: argparse.Namespace) -> int:
             "--group-by",
             "session.id",
             "--output",
-            str(trace_scores.parent),
+            str(trace_dir),
         ],
         check=True,
         env=os.environ.copy(),
     )
-    subprocess.run(
-        [
-            args.assert_command,
-            "run",
-            "--config",
-            str(args.config),
-            "--override",
-            f"suite={args.suite}-traces",
-            "--override",
-            f"run={run_id}",
-            "--override",
-            f"artifacts_root={artifact_root}",
-            "--override",
-            "inference.enabled=false",
-            "--override",
-            f"judge.inference_set_path={trace_scores.parent / 'inference_set.jsonl'}",
-            "--override",
-            f"judge.save_dir={trace_scores.parent}",
-            "--force-stage",
-            "judge",
-        ],
-        check=False,
-        env=os.environ.copy(),
+    _run_judge_stage(
+        assert_command=args.assert_command,
+        config=args.config,
+        suite=f"{args.suite}-traces",
+        run_id=run_id,
+        artifact_root=artifact_root,
+        inference_set=trace_dir / "inference_set.jsonl",
+        save_dir=trace_dir,
+        force=True,
+        tolerate_viewer_failure=True,
     )
-    if trace_judge_process.returncode:
-        trace_inferences = trace_scores.parent / "inference_set.jsonl"
-        inference_count = sum(1 for line in trace_inferences.read_text().splitlines() if line)
-        score_count = (
-            sum(1 for line in trace_scores.read_text().splitlines() if line)
-            if trace_scores.is_file()
-            else 0
-        )
-        if score_count != inference_count:
-            raise subprocess.CalledProcessError(
-                trace_judge_process.returncode,
-                trace_judge_process.args,
-            )
+    _retry_trace_judgments(
+        assert_command=args.assert_command,
+        config=args.config,
+        suite=args.suite,
+        run_id=run_id,
+        artifact_root=artifact_root,
+        trace_dir=trace_dir,
+    )
     result = evaluate_gates(
         scores_path=run_root / "scores.jsonl",
         policy_path=args.policy,

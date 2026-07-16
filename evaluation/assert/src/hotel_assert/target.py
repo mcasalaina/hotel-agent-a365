@@ -89,7 +89,6 @@ class Agent365Target:
         text, response_id = await invoke_hosted_agent(
             config=self.foundry,
             token=identity.token,
-            agent_user_id=identity.agent_user_id,
             history=bounded_history,
             traceparent=str(context["traceparent"]),
             baggage=baggage,

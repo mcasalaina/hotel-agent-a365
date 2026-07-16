@@ -95,14 +95,12 @@ async def invoke_hosted_agent(
     *,
     config: FoundryTargetConfig,
     token: str,
-    agent_user_id: str,
     history: Sequence[dict[str, str]],
     traceparent: str,
     baggage: str,
 ) -> tuple[str, str]:
     headers = {
         "Authorization": f"Bearer {token}",
-        "x-ms-user-identity": agent_user_id,
         "traceparent": traceparent,
         "baggage": baggage,
     }

@@ -46,6 +46,8 @@ See `PLAN.md` for the approved architecture, `DEPLOYMENT.md` for the controlled 
 
 ASSERT runs in an isolated Python 3.13 environment and invokes the deployed agent only with a
 validated Hotel Guest Services Agent ID user token from a loopback-only Entra Auth SDK sidecar.
+The reviewed **Hotel Guest Services Conversations** suite combines natural fixed requests with
+adaptive two-turn ASSERT scenarios.
 
 ```bash
 python3.13 -m venv evaluation/assert/.venv
