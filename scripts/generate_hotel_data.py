@@ -17,6 +17,8 @@ from datetime import date, timedelta
 from itertools import chain
 from pathlib import Path
 
+from realistic_hotel_data import build_realistic_tables, profile_manifest
+
 DATE_START = date(2026, 3, 1)
 DATE_END = date(2027, 3, 31)
 DEFAULT_SEED = 20260301
@@ -1144,41 +1146,20 @@ def generate(
     random.seed(seed)
     clear_output(output, {".csv", ".json"})
     fixture_rows = read_fixtures()
-    property_rows, room_types, rooms, outlets, property_amenities = build_reference(scale)
-    guests = build_guests(SCALE_COUNTS[scale]["guests"])
-    reservations = build_reservations(scale, fixture_rows)
-    stays = build_stays(
-        reservations, SCALE_COUNTS[scale]["stays"], SCALE_COUNTS[scale]["rooms_per_property"]
+    property_rows = [asdict(profile) for profile in profiles()]
+    realistic_tables = build_realistic_tables(
+        scale=scale,
+        property_rows=property_rows,
+        fixture_rows=fixture_rows,
+        start=DATE_START,
+        end=DATE_END,
+        seed=seed,
+        amenities=AMENITIES,
     )
-    restaurant_reservations = build_restaurant_reservations(scale)
-    folios = build_folios(stays, reservations)
-    billing_disputes = build_billing_disputes(scale, folios)
-    special_requests, maintenance_requests, work_orders = build_service_records(
-        scale, reservations, stays
-    )
-    daily_inventory, daily_rates, property_daily_metrics = daily_rows(rooms, room_types)
     action_confirmations, idempotency_records, audit_events = build_control_records()
     table_rows: dict[str, Iterable[dict[str, str]]] = {
-        "properties": property_rows,
-        "room_types": room_types,
-        "rooms": rooms,
-        "outlets": outlets,
+        **realistic_tables,
         "amenities": [{"amenity_id": key, "name": value} for key, value in AMENITIES],
-        "property_amenities": property_amenities,
-        "guests": guests,
-        "reservations": reservations,
-        "stays": stays,
-        "restaurant_reservations": restaurant_reservations,
-        "folios": folios,
-        "folio_transactions": transaction_rows(folios),
-        "payments": payment_rows(folios),
-        "billing_disputes": billing_disputes,
-        "special_requests": special_requests,
-        "maintenance_requests": maintenance_requests,
-        "work_orders": work_orders,
-        "daily_inventory": daily_inventory,
-        "daily_rates": daily_rates,
-        "property_daily_metrics": property_daily_metrics,
         "action_confirmations": action_confirmations,
         "idempotency_records": idempotency_records,
         "audit_events": audit_events,
@@ -1202,10 +1183,11 @@ def generate(
         hashes[table_name] = stable_hash(table_path)
     docs_summary = generate_documents(docs_output)
     manifest: dict[str, object] = {
-        "generator_version": 1,
+        "generator_version": 2,
         "seed": seed,
         "scale": scale,
         "date_range": {"start": DATE_START.isoformat(), "end": DATE_END.isoformat()},
+        "operating_profiles": profile_manifest(),
         "counts": counts,
         "hashes": hashes,
         "documents": docs_summary,

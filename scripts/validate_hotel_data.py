@@ -7,7 +7,7 @@ import csv
 import json
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from generate_hotel_data import DATE_END, DATE_START, REQUIRED_TABLES, stable_hash
@@ -141,6 +141,16 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
                 problems.append("stay FK or status failure")
             elif reservation_properties[row["reservation_id"]] != room_properties[row["room_id"]]:
                 problems.append("stay reservation and room property mismatch")
+        completed_stay_counts: defaultdict[str, int] = defaultdict(int)
+        completed_stay_nights: defaultdict[str, int] = defaultdict(int)
+        for row in tables["stays"]:
+            if row["status"] != "completed":
+                continue
+            completed_stay_counts[row["property_id"]] += 1
+            completed_stay_nights[row["property_id"]] += (
+                date.fromisoformat(row["actual_check_out"][:10])
+                - date.fromisoformat(row["actual_check_in"][:10])
+            ).days
         stay_properties = {
             row["stay_id"]: reservation_properties[row["reservation_id"]]
             for row in tables["stays"]
@@ -180,8 +190,16 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             if payment_totals[row["folio_id"]] != payments:
                 problems.append("folio payments do not reconcile")
         for row in tables["daily_inventory"]:
-            if int(row["sellable_rooms"]) < 0 or int(row["occupied_rooms"]) > int(
-                row["sellable_rooms"]
+            physical = int(row["physical_rooms"])
+            out_of_order = int(row["out_of_order_rooms"])
+            sellable = int(row["sellable_rooms"])
+            occupied = int(row["occupied_rooms"])
+            if (
+                physical < 0
+                or out_of_order < 0
+                or sellable != physical - out_of_order
+                or occupied < 0
+                or occupied > sellable
             ):
                 problems.append("invalid daily inventory")
         metric_dates = {row["service_date"] for row in tables["property_daily_metrics"]}
@@ -193,9 +211,57 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             problems.append("daily inventory date coverage failure")
         if metric_dates != expected_dates:
             problems.append("daily metrics date coverage failure")
+        occupied_nights: defaultdict[str, int] = defaultdict(int)
+        sellable_nights: defaultdict[str, int] = defaultdict(int)
+        portfolio_by_date: defaultdict[str, list[int]] = defaultdict(lambda: [0, 0])
+        for row in tables["property_daily_metrics"]:
+            property_id = row["property_id"]
+            occupied = int(row["occupied_rooms"])
+            sellable = int(row["sellable_rooms"])
+            occupied_nights[property_id] += occupied
+            sellable_nights[property_id] += sellable
+            portfolio_by_date[row["service_date"]][0] += occupied
+            portfolio_by_date[row["service_date"]][1] += sellable
+        if occupied_nights != completed_stay_nights:
+            problems.append("completed stay room nights do not reconcile to occupied room nights")
+        occupancy_rates = {
+            property_id: occupied_nights[property_id] / sellable_nights[property_id]
+            for property_id in property_ids
+        }
+        if any(rate < 0.38 or rate > 0.96 for rate in occupancy_rates.values()):
+            problems.append("property occupancy outside plausible bounds")
+        if max(occupancy_rates.values()) - min(occupancy_rates.values()) < 0.05:
+            problems.append("property occupancy lacks meaningful variation")
+        if len(set(completed_stay_counts.values())) < 10:
+            problems.append("completed stay counts are suspiciously uniform")
+        portfolio_rates = [
+            occupied / sellable
+            for occupied, sellable in (
+                portfolio_by_date[service_date] for service_date in sorted(portfolio_by_date)
+            )
+        ]
+        if (
+            max(
+                abs(portfolio_rates[index] - portfolio_rates[index - 1])
+                for index in range(1, len(portfolio_rates))
+            )
+            > 0.12
+        ):
+            problems.append("portfolio occupancy contains an implausible daily jump")
+        weekly_repeats = sum(
+            abs(portfolio_rates[index] - portfolio_rates[index - 7]) < 0.000001
+            for index in range(7, len(portfolio_rates))
+        )
+        if weekly_repeats > len(portfolio_rates) // 4:
+            problems.append("portfolio occupancy contains a repeated weekly pattern")
         for row in tables["special_requests"]:
             if row["reservation_id"] not in reservation_ids or row["guest_id"] not in guest_ids:
                 problems.append("special request FK failure")
+        open_requests = sum(row["status"] == "requested" for row in tables["special_requests"])
+        if open_requests / len(tables["special_requests"]) >= 0.10:
+            problems.append("service request backlog is implausibly large")
+        if len({row["request_type"] for row in tables["special_requests"]}) < 6:
+            problems.append("service request categories lack variety")
         maintenance_ids = ids(tables["maintenance_requests"], "maintenance_request_id")
         maintenance_properties: dict[str, str] = {}
         for row in tables["maintenance_requests"]:
@@ -207,11 +273,35 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             ):
                 problems.append("maintenance request property mismatch")
             maintenance_properties[row["maintenance_request_id"]] = row["property_id"]
+        work_order_response_minutes: defaultdict[str, list[float]] = defaultdict(list)
+        maintenance_by_id = {
+            row["maintenance_request_id"]: row for row in tables["maintenance_requests"]
+        }
         for row in tables["work_orders"]:
             if row["maintenance_request_id"] not in maintenance_ids:
                 problems.append("work order FK failure")
             elif row["property_id"] != maintenance_properties[row["maintenance_request_id"]]:
                 problems.append("work order property mismatch")
+            else:
+                request = maintenance_by_id[row["maintenance_request_id"]]
+                response_minutes = (
+                    datetime.fromisoformat(row["opened_at"])
+                    - datetime.fromisoformat(request["reported_at"])
+                ).total_seconds() / 60
+                if response_minutes <= 0:
+                    problems.append("maintenance response time must be positive")
+                work_order_response_minutes[row["property_id"]].append(response_minutes)
+        property_response_averages = {
+            property_id: sum(values) / len(values)
+            for property_id, values in work_order_response_minutes.items()
+        }
+        if len({round(value, 1) for value in property_response_averages.values()}) < 10:
+            problems.append("maintenance response times are suspiciously uniform")
+        dispute_types = {row["dispute_type"] for row in tables["billing_disputes"]}
+        if len(dispute_types) < 5:
+            problems.append("billing dispute categories lack variety")
+        if len(tables["billing_disputes"]) / sum(completed_stay_counts.values()) >= 0.03:
+            problems.append("billing dispute incidence is implausibly high")
     except (KeyError, ValueError) as error:
         problems.append(str(error))
     document_paths = sorted(docs_output.glob("*/*.generated.md"))
