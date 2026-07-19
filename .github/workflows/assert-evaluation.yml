@@ -2,8 +2,6 @@ name: ASSERT live evaluation
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "30 9 * * *"
 
 permissions:
   contents: read
