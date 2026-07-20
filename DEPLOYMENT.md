@@ -124,12 +124,49 @@ an SPA redirect URI and configure the public frontend values from `web/frontend/
 Health checks use `/api/health`. The proxy has no anonymous call mode and does not accept browser
 credentials over the WebSocket.
 
-Export the public `VITE_ENTRA_*` values from `web/frontend/.env.example`, then build the production
-frontend/proxy image with:
+The production deployment uses `infra/voice-web.bicep` and these Azure resources:
+
+- Resource group `rg-hotel-agent-a365` in East US 2.
+- Consumption-based Container Apps environment `hotel-voice-env`.
+- Scale-to-zero Container App `hotel-voice-proxy`.
+- User-assigned identity `hotel-voice-proxy-identity`.
+- Existing registry `ca31c6a7351facr.azurecr.io`.
+
+Create a single-tenant API registration that exposes delegated scope `HotelAgent.Access` and a
+single-tenant SPA registration that requests that scope. The API audience is
+`api://<api-application-client-id>`. Register the deployed HTTPS origin as the SPA redirect URI.
+The production image uses `VITE_ENTRA_REDIRECT_URI=auto`, which resolves to that exact origin at
+runtime; local development continues to use `http://localhost:5173`.
+
+Export the public `VITE_ENTRA_*` values, then build and deploy the production frontend/proxy image:
 
 ```bash
-make web-docker-build
+IMAGE_TAG="$(git rev-parse --short=12 HEAD)"
+IMAGE="ca31c6a7351facr.azurecr.io/hotel-voice-proxy:${IMAGE_TAG}"
+
+az acr build \
+  --registry ca31c6a7351facr \
+  --image "hotel-voice-proxy:${IMAGE_TAG}" \
+  --file web/backend/Dockerfile \
+  --build-arg VITE_ENTRA_CLIENT_ID="$VOICE_SPA_CLIENT_ID" \
+  --build-arg VITE_ENTRA_AUTHORITY="https://login.microsoftonline.com/$AGENT365_TENANT_ID" \
+  --build-arg VITE_ENTRA_REDIRECT_URI=auto \
+  --build-arg VITE_ENTRA_API_SCOPE="api://$VOICE_API_CLIENT_ID/HotelAgent.Access" \
+  .
+
+az deployment group create \
+  --resource-group rg-hotel-agent-a365 \
+  --template-file infra/voice-web.bicep \
+  --parameters \
+    imageName="$IMAGE" \
+    entraTenantId="$AGENT365_TENANT_ID" \
+    entraApiClientId="$VOICE_API_CLIENT_ID"
 ```
+
+The Bicep deployment assigns the proxy identity `AcrPull` on the registry and `Azure AI Developer`
+on the Foundry project. These are security-sensitive RBAC changes and require explicit approval
+before deployment. Container Apps consumption and registry build/storage usage are billable; the
+environment has no minimum replica and does not create a Log Analytics workspace.
 
 Run `scripts/run_voice_smoke.py` with a mono, 16-bit, 24 kHz PCM WAV after deploying the hosted-agent
 version. The command fails unless it receives a final user transcript, a final agent transcript, and

@@ -2,7 +2,7 @@
 
 ## Status
 
-In Progress - Phase 1 foundation and Work IQ deployed; mutation, evaluation, and final Teams gates remain
+Ready for Validation - Phase 3 Voice Live hosted-agent and web deployment prepared
 
 ## Canonical product plan
 
@@ -24,6 +24,8 @@ See `../PLAN.md` for the complete three-phase implementation plan, property rost
 - Containerized Foundry Hosted Agent `hotel-servicing-agent`.
 - Generic Agent 365 host/web resources needed by the approved publish path.
 - Existing Application Insights associated with the target Foundry resource for tracing.
+- East US 2 consumption-based Container Apps web host in `rg-hotel-agent-a365`, reusing the existing
+  `ca31c6a7351facr.azurecr.io` registry.
 
 ## Fabric scope
 
@@ -52,6 +54,12 @@ Deploy the workspace on the existing active East US 2 F16 capacity `cap3iqs5ea83
 - Explicit confirmation before every synthetic business mutation.
 - Idempotency, record-version checks, immutable audit events, and cross-lakehouse reconciliation.
 - Agent 365 blueprint ownership, Agent ID roles, OBO grants, current V2 Work IQ MCP scopes, Fabric workspace access, and tenant mutation policy verified before Teams sign-off.
+- Dedicated Voice web managed identity with `AcrPull` only on the existing registry and
+  `Azure AI Developer` only on the existing Foundry project.
+- Single-tenant Entra API registration exposing delegated `HotelAgent.Access`, plus a separate SPA
+  public client using Authorization Code with PKCE and the deployed HTTPS origin as its redirect URI.
+- Browser access tokens remain in memory and are validated by the proxy; the Foundry bearer token
+  is acquired only by the proxy managed identity and never reaches the browser.
 
 ## Phase gates
 
@@ -66,6 +74,23 @@ Prepare and verify Agent 365 identity, blueprint, consent, licenses, manifest, p
 ### Phase 3
 
 Add `invocations_ws` to the same Hosted Agent, integrate Voice Live foreground/background processing, deploy the simulated-call web app, and rerun all prior regressions.
+
+The prepared web deployment uses:
+
+- `infra/voice-web.bicep` for `hotel-voice-env`, `hotel-voice-proxy`, and
+  `hotel-voice-proxy-identity` in East US 2.
+- Container Apps consumption with `minReplicas: 0`, `maxReplicas: 2`, HTTPS-only ingress, managed
+  identity image pull, no registry credential, and no Log Analytics workspace.
+- The existing East US Basic registry `ca31c6a7351facr`; no new registry is provisioned.
+- `web/backend/Dockerfile` for the same-origin React frontend and aiohttp proxy image.
+- Single-tenant Entra API and SPA registrations. The production frontend resolves its redirect URI
+  from `window.location.origin`; the exact deployed origin is registered after provisioning.
+
+Capacity checks found East US 2 App Service Basic quota is zero, while Container Apps supports the
+region and the subscription has a managed-environment limit of five with one environment currently
+deployed elsewhere. Container Apps consumption, ACR build/storage, and network usage are billable.
+Deployment requires explicit approval for those charges, the two Entra registrations, API scope and
+SPA preauthorization, and the two managed-identity role assignments.
 
 ## Validation and deployment handoff
 
@@ -188,3 +213,9 @@ When implementation artifacts are complete:
   names, after which live Mail and Teams metadata reads passed. A send-email request was refused,
   confirming the positive read-only boundary. Permission changes in this tenant must be checked
   immediately and never waited on for more than one minute.
+- 2026-07-16: Prepared the Phase 3 Voice Live deployment. Confirmed subscription
+  `27b0139a-16b4-42bf-9ec9-c6db3768245e`, tenant
+  `a9d9510e-7131-4355-8b7e-37e7b1e99862`, and East US 2. App Service Basic quota is unavailable;
+  selected a scale-to-zero Container App instead. Added repeatable Bicep for the web host, dedicated
+  identity, ACR pull, and Foundry project access. No Azure resources or Entra registrations were
+  modified during preparation.

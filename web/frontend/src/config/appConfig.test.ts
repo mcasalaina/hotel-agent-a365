@@ -40,6 +40,15 @@ describe("getAppEnvConfig", () => {
     expect(second).toBe(first);
   });
 
+  it("resolves the production redirect URI from the deployed origin", () => {
+    for (const [key, value] of Object.entries(REQUIRED_ENV)) {
+      vi.stubEnv(key, value);
+    }
+    vi.stubEnv("VITE_ENTRA_REDIRECT_URI", "auto");
+
+    expect(getAppEnvConfig().entraRedirectUri).toBe(window.location.origin);
+  });
+
   it("throws a helpful error when a required variable is missing", () => {
     vi.stubEnv("VITE_ENTRA_CLIENT_ID", "");
     vi.stubEnv("VITE_ENTRA_AUTHORITY", REQUIRED_ENV.VITE_ENTRA_AUTHORITY);

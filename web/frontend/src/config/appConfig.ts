@@ -29,6 +29,11 @@ function requireEnv(name: string, value: string | undefined): string {
   return value;
 }
 
+function resolveRedirectUri(value: string | undefined): string {
+  const configured = requireEnv("VITE_ENTRA_REDIRECT_URI", value);
+  return configured === "auto" ? window.location.origin : configured;
+}
+
 let cachedConfig: AppEnvConfig | null = null;
 
 /** Reads and validates the Vite-provided environment configuration exactly once per page load. */
@@ -40,7 +45,7 @@ export function getAppEnvConfig(): AppEnvConfig {
   cachedConfig = {
     entraClientId: requireEnv("VITE_ENTRA_CLIENT_ID", env.VITE_ENTRA_CLIENT_ID),
     entraAuthority: requireEnv("VITE_ENTRA_AUTHORITY", env.VITE_ENTRA_AUTHORITY),
-    entraRedirectUri: requireEnv("VITE_ENTRA_REDIRECT_URI", env.VITE_ENTRA_REDIRECT_URI),
+    entraRedirectUri: resolveRedirectUri(env.VITE_ENTRA_REDIRECT_URI),
     entraApiScope: requireEnv("VITE_ENTRA_API_SCOPE", env.VITE_ENTRA_API_SCOPE),
     backendBaseUrl: env.VITE_BACKEND_BASE_URL?.trim() ?? "",
   };

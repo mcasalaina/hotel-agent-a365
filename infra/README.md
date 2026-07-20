@@ -17,3 +17,12 @@ unless the architecture is deliberately changed back to dedicated supporting res
 The existing Foundry account, project, model deployments, Application Insights resource, and unrelated East US Search service are referenced or left unchanged.
 
 The Search and storage resources use managed identities and disable local/key authentication. Resource names are generic and receive a deterministic uniqueness suffix.
+
+## Voice web application
+
+`voice-web.bicep` is the active deployment template for the browser frontend and authenticated proxy.
+It deploys an East US 2 consumption-based Container Apps environment, a scale-to-zero Container App,
+and a dedicated user-assigned identity in `rg-hotel-agent-a365`. The identity receives only
+`AcrPull` on the existing registry and `Azure AI Developer` on the existing Foundry project. The
+template disables insecure ingress and environment log forwarding, uses managed-identity registry
+authentication, and exposes `/api/health` for startup and liveness probes.
