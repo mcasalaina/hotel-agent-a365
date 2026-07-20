@@ -35,14 +35,17 @@ async def run_smoke(
     agent_name: str,
     timeout_seconds: float,
     expected_text: str | None,
+    session_id: str | None = None,
 ) -> dict[str, object]:
     audio = _read_pcm_wave(audio_path)
-    session_id = f"voice-smoke-{os.urandom(8).hex()}"
+    session_id = session_id or f"voice-smoke-{os.urandom(8).hex()}"
     credential = DefaultAzureCredential()
     token = await credential.get_token(_FOUNDRY_SCOPE)
     user_transcript = ""
     agent_transcript = ""
+    final_agent_transcripts: list[str] = []
     output_audio_bytes = 0
+    observed_events: dict[str, int] = {}
 
     try:
         async with (
@@ -56,37 +59,66 @@ async def run_smoke(
         ):
             await websocket.send_json({"type": "session.start", "mode": "prerecorded"})
 
-            async with asyncio.timeout(timeout_seconds):
-                async for message in websocket:
-                    if message.type == WSMsgType.BINARY:
-                        output_audio_bytes += len(message.data)
-                        continue
-                    if message.type != WSMsgType.TEXT:
-                        continue
-                    event = json.loads(message.data)
-                    if event.get("type") == "auth_ack":
-                        for offset in range(0, len(audio), 2_400):
-                            await websocket.send_bytes(audio[offset : offset + 2_400])
-                        await websocket.send_json({"type": "audio_commit"})
-                    elif event.get("type") == "transcript" and event.get("isFinal"):
-                        if event.get("speaker") == "user":
-                            user_transcript = str(event.get("text", ""))
-                        else:
-                            agent_transcript = str(event.get("text", ""))
-                    elif event.get("type") == "error":
-                        raise RuntimeError(str(event.get("message", "Voice smoke test failed")))
+            try:
+                async with asyncio.timeout(timeout_seconds):
+                    async for message in websocket:
+                        if message.type == WSMsgType.BINARY:
+                            output_audio_bytes += len(message.data)
+                            continue
+                        if message.type != WSMsgType.TEXT:
+                            continue
+                        event = json.loads(message.data)
+                        event_type = str(event.get("type", "unknown"))
+                        observed_events[event_type] = observed_events.get(event_type, 0) + 1
+                        if event_type == "auth_ack":
+                            for offset in range(0, len(audio), 2_400):
+                                await websocket.send_bytes(audio[offset : offset + 2_400])
+                            await websocket.send_json({"type": "audio_commit"})
+                        elif event_type == "transcript" and event.get("isFinal"):
+                            if event.get("speaker") == "user":
+                                user_transcript = str(event.get("text", ""))
+                            else:
+                                agent_transcript = str(event.get("text", ""))
+                                final_agent_transcripts.append(agent_transcript)
+                        elif event_type == "error":
+                            raise RuntimeError(str(event.get("message", "Voice smoke test failed")))
 
-                    if user_transcript and agent_transcript and output_audio_bytes:
-                        break
+                        expected_received = (
+                            expected_text is None
+                            or expected_text.casefold() in agent_transcript.casefold()
+                        )
+                        if (
+                            user_transcript
+                            and agent_transcript
+                            and output_audio_bytes
+                            and expected_received
+                        ):
+                            break
+            except TimeoutError as exc:
+                raise RuntimeError(
+                    "Voice smoke test timed out "
+                    f"(session={session_id}, events={observed_events}, "
+                    f"audioBytes={output_audio_bytes}, "
+                    f"finalAgentTranscripts={final_agent_transcripts})"
+                ) from exc
     finally:
         await credential.close()
 
     if not user_transcript:
-        raise RuntimeError("Voice Live returned no final user transcript")
+        raise RuntimeError(
+            "Voice Live returned no final user transcript "
+            f"(session={session_id}, events={observed_events})"
+        )
     if not agent_transcript:
-        raise RuntimeError("Voice Live returned no final agent transcript")
+        raise RuntimeError(
+            "Voice Live returned no final agent transcript "
+            f"(session={session_id}, events={observed_events})"
+        )
     if output_audio_bytes == 0:
-        raise RuntimeError("Voice Live returned no synthesized audio")
+        raise RuntimeError(
+            "Voice Live returned no synthesized audio "
+            f"(session={session_id}, events={observed_events})"
+        )
     if expected_text and expected_text.casefold() not in agent_transcript.casefold():
         raise RuntimeError(f"Agent transcript did not contain expected text: {expected_text!r}")
 
@@ -94,7 +126,9 @@ async def run_smoke(
         "sessionId": session_id,
         "userTranscript": user_transcript,
         "agentTranscript": agent_transcript,
+        "finalAgentTranscripts": final_agent_transcripts,
         "outputAudioBytes": output_audio_bytes,
+        "observedEvents": observed_events,
     }
 
 
@@ -113,6 +147,7 @@ def main() -> None:
     )
     parser.add_argument("--timeout", type=float, default=90)
     parser.add_argument("--expect")
+    parser.add_argument("--session-id")
     args = parser.parse_args()
     if not args.project_endpoint:
         parser.error("--project-endpoint or FOUNDRY_PROJECT_ENDPOINT is required")
@@ -124,6 +159,7 @@ def main() -> None:
             agent_name=args.agent_name,
             timeout_seconds=args.timeout,
             expected_text=args.expect,
+            session_id=args.session_id,
         )
     )
     print(json.dumps(result, indent=2, ensure_ascii=False))

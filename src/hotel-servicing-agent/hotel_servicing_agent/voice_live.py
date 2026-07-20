@@ -111,8 +111,15 @@ class VoiceLiveBridge:
             if self._settings.voice_live_prefer_locales
             else None
         )
-        turn_detection = None
-        if mode != "prerecorded":
+        if mode == "prerecorded":
+            turn_detection = AzureSemanticVadMultilingual(
+                prefix_padding_ms=400,
+                silence_duration_ms=2_000,
+                auto_truncate=False,
+                create_response=False,
+                interrupt_response=False,
+            )
+        else:
             turn_detection = AzureSemanticVadMultilingual(
                 prefix_padding_ms=400,
                 silence_duration_ms=500,
@@ -131,7 +138,9 @@ class VoiceLiveBridge:
             output_audio_format=OutputAudioFormat.PCM16,
             input_audio_transcription=AudioInputTranscriptionOptions(model="azure-speech"),
             turn_detection=turn_detection,
-            input_audio_echo_cancellation=AudioEchoCancellation(),
+            input_audio_echo_cancellation=(
+                None if mode == "prerecorded" else AudioEchoCancellation()
+            ),
             input_audio_noise_reduction=AudioNoiseReduction(type="azure_deep_noise_suppression"),
             interim_response=LlmInterimResponseConfig(
                 triggers=[
@@ -235,7 +244,6 @@ class VoiceLiveBridge:
                 )
                 return True
             await connection.input_audio_buffer.commit()
-            await connection.response.create()
             return True
 
         if message_type == "cancel_output":
@@ -318,6 +326,8 @@ class VoiceLiveBridge:
             if isinstance(event, ServerEventConversationItemInputAudioTranscriptionCompleted):
                 await _send_transcript(websocket, "user", event.transcript, True)
                 user_transcript = ""
+                if mode == "prerecorded":
+                    await connection.response.create()
                 continue
 
             if isinstance(event, ServerEventResponseAudioTranscriptDelta):

@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready for Validation - Phase 3 Voice Live hosted-agent and web deployment prepared
+Deployed and Verified - Phase 3 Voice Live hosted-agent and web application
 
 ## Canonical product plan
 
@@ -219,3 +219,20 @@ When implementation artifacts are complete:
   selected a scale-to-zero Container App instead. Added repeatable Bicep for the web host, dedicated
   identity, ACR pull, and Foundry project access. No Azure resources or Entra registrations were
   modified during preparation.
+- 2026-07-20: Deployed Hosted Agent version 42 with active `responses` 2.0.0 and
+  `invocations_ws` 1.0.0 protocols. Assigned its identity `Cognitive Services User` on the Foundry
+  account and `Foundry User` on the Foundry project for Voice Live. Prerecorded mode now retains
+  multilingual semantic VAD with automatic response creation disabled, waits for final
+  transcription before creating the response, and omits echo cancellation.
+- 2026-07-20: Deployed `hotel-voice-proxy` in the East US 2 `hotel-voice-env` Container Apps
+  environment. The healthy revision uses immutable image digest
+  `sha256:4094eabda5006e1a806693f0bdd388fad96bdc726de73fb4bb140b5637e140fe` and is available at
+  `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`.
+- 2026-07-20: Created single-tenant Entra API application
+  `87b35858-3f43-46f6-b226-3a211eb2df25` and SPA application
+  `96245d3a-eaee-43d1-9586-e2c3ef65f116`. The API exposes and preauthorizes
+  `HotelAgent.Access`; the SPA redirect URI is the deployed HTTPS origin.
+- 2026-07-20: Live acceptance returned 200 from health, frontend, configuration, and AudioWorklet
+  routes; unauthenticated session exchange returned 401. A prerecorded Spanish prompt produced an
+  automatic Spanish transcript, Spanish interim speech, and 148,800 audio bytes. Voice mode
+  proactively greeted the caller and returned 193,200 audio bytes.

@@ -8,9 +8,7 @@ metadata:
     template: hotel-agent-a365
 services:
     ai-project:
-        project: ""
         host: azure.ai.project
-        language: ""
         deployments:
             - model:
                 format: OpenAI

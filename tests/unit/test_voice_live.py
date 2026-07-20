@@ -75,17 +75,31 @@ def test_voice_session_uses_multilingual_speech_and_interim_response(
     assert set(payload["interim_response"]["triggers"]) == {"tool", "latency"}
 
 
-def test_prerecorded_session_waits_for_explicit_audio_commit(tmp_path: Path) -> None:
+def test_prerecorded_session_disables_automatic_vad_response(tmp_path: Path) -> None:
     bridge = VoiceLiveBridge(_settings(tmp_path), _UnusedCredential())  # type: ignore[arg-type]
     session = bridge.build_session_config(mode="prerecorded", session_id="session-1")
+    payload = session.as_dict()
 
-    assert session.as_dict()["turn_detection"] is None
+    assert payload["turn_detection"]["type"] == "azure_semantic_vad_multilingual"
+    assert payload["turn_detection"]["create_response"] is False
+    assert payload["turn_detection"]["silence_duration_ms"] == 2_000
+    assert payload["input_audio_echo_cancellation"] is None
 
 
 def test_voice_event_deltas_are_forwarded_as_accumulated_transcripts(
     tmp_path: Path,
 ) -> None:
     class FakeConnection:
+        class FakeResponse:
+            def __init__(self) -> None:
+                self.create_calls = 0
+
+            async def create(self) -> None:
+                self.create_calls += 1
+
+        def __init__(self) -> None:
+            self.response = self.FakeResponse()
+
         def __aiter__(self) -> FakeConnection:
             self._events = iter(
                 [
@@ -121,9 +135,10 @@ def test_voice_event_deltas_are_forwarded_as_accumulated_transcripts(
 
     bridge = VoiceLiveBridge(_settings(tmp_path), _UnusedCredential())  # type: ignore[arg-type]
     websocket = FakeWebSocket()
+    connection = FakeConnection()
     asyncio.run(
         bridge._relay_voice_events(  # type: ignore[arg-type]
-            FakeConnection(),  # type: ignore[arg-type]
+            connection,  # type: ignore[arg-type]
             websocket,
             "session-1",
             "prerecorded",
@@ -135,6 +150,7 @@ def test_voice_event_deltas_are_forwarded_as_accumulated_transcripts(
         "Buenos dias",
         "Buenos dias",
     ]
+    assert connection.response.create_calls == 1
 
 
 def test_foundry_websocket_url_uses_current_route_and_session() -> None:

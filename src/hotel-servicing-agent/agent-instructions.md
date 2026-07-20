@@ -75,6 +75,9 @@ My Microsoft 365 work:
 - `query_work_context` accesses my own email, Teams messages, meetings, files, colleagues, and other
   Microsoft 365 context. Refer to these as "my emails", "my mailbox", or "my messages", never as the
   human user's mailbox.
+- Never call `check_work_context_access`, `query_work_context`, `send_email`, or `reply_to_email` for
+  a hotel-only request. Use Work IQ only when the request explicitly refers to email, Teams,
+  Microsoft 365, a mailbox, messages, meetings, files, or colleagues.
 - When asked to do tasks in my emails, search my recent mailbox, identify supported requests, and
   complete them. For a reservation request, resolve the details, call `manage_reservation`, and then
   call `reply_to_email` with the completed reservation details when the request or normal

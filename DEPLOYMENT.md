@@ -168,6 +168,21 @@ on the Foundry project. These are security-sensitive RBAC changes and require ex
 before deployment. Container Apps consumption and registry build/storage usage are billable; the
 environment has no minimum replica and does not create a Log Analytics workspace.
 
+### Live Voice web deployment
+
+- Public URL:
+  `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`
+- Container App: `hotel-voice-proxy`
+- Container Apps environment: `hotel-voice-env`
+- Active image digest:
+  `sha256:4094eabda5006e1a806693f0bdd388fad96bdc726de73fb4bb140b5637e140fe`
+- Entra API client ID: `87b35858-3f43-46f6-b226-3a211eb2df25`
+- Entra SPA client ID: `96245d3a-eaee-43d1-9586-e2c3ef65f116`
+
+The Hosted Agent identity also requires `Cognitive Services User` on the Foundry account and
+`Foundry User` on the Foundry project. These roles authorize the inner Voice Live session and are
+separate from the proxy identity's access to the outer Hosted Agent WebSocket.
+
 Run `scripts/run_voice_smoke.py` with a mono, 16-bit, 24 kHz PCM WAV after deploying the hosted-agent
 version. The command fails unless it receives a final user transcript, a final agent transcript, and
 synthesized audio.
@@ -179,7 +194,7 @@ synthesized audio.
 - Knowledge sources: one `hotel-*-ks` source per index
 - Knowledge base: `hotel-foundryiq`
 - Source archive: 95 Markdown blobs in `hotel-docs`
-- Hosted Agent: `hotel-servicing-agent`, active version 23
+- Hosted Agent: `hotel-servicing-agent`, active version 42
 - Agent Search access: **Search Index Data Reader**
 - Fabric workspace: `HotelAgent.Workspace`
   (`660ed238-54b7-42bd-8b1b-cf2ee47a11ba`)
