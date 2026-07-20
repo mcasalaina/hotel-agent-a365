@@ -68,14 +68,17 @@ def test_frontend_root_assets_are_served_before_spa_fallback(
             favicon = await client.get("/favicon.svg")
             assert favicon.status == 200
             assert favicon.content_type == "image/svg+xml"
+            assert favicon.headers["Cache-Control"] == "no-store"
             assert await favicon.text() == "<svg></svg>"
 
             redirect = await client.get("/redirect.html")
             assert redirect.status == 200
+            assert redirect.headers["Cache-Control"] == "no-store"
             assert await redirect.text() == "<html>bridge</html>"
 
             fallback = await client.get("/contact-center")
             assert fallback.status == 200
+            assert fallback.headers["Cache-Control"] == "no-store"
             assert await fallback.text() == "<html>app</html>"
         finally:
             await client.close()

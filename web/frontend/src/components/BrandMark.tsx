@@ -1,0 +1,22 @@
+interface BrandMarkProps {
+  className?: string;
+}
+
+export function BrandMark({ className }: BrandMarkProps) {
+  return (
+    <svg
+      className={className}
+      data-brand-mark
+      aria-hidden="true"
+      viewBox="0 0 48 48"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="48" height="48" rx="10" fill="#b11f4b" />
+      <path
+        d="M17.5 13h4.2a1.6 1.6 0 0 1 1.55 1.22l1.15 4.8a1.6 1.6 0 0 1-.45 1.55l-2.4 2.3a15.6 15.6 0 0 0 6.4 6.4l2.3-2.4a1.6 1.6 0 0 1 1.55-.45l4.8 1.15a1.6 1.6 0 0 1 1.22 1.55v4.2a1.6 1.6 0 0 1-1.72 1.6C24.4 34.4 13.6 23.6 13.9 14.72A1.6 1.6 0 0 1 17.5 13Z"
+        fill="#fff"
+      />
+    </svg>
+  );
+}

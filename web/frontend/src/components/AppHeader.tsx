@@ -1,6 +1,6 @@
 import styles from "./AppHeader.module.css";
 import type { SignedInUser } from "../auth/authContext";
-import brandMarkUrl from "../assets/brand-mark.svg";
+import { BrandMark } from "./BrandMark";
 
 interface AppHeaderProps {
   hotelBrandName: string;
@@ -12,7 +12,7 @@ export function AppHeader({ hotelBrandName, user, onSignOut }: AppHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.brandGroup}>
-        <img className={styles.brandMark} src={brandMarkUrl} alt="" aria-hidden="true" />
+        <BrandMark className={styles.brandMark} />
         <div className={styles.brandText}>
           <span className={styles.brandName}>{hotelBrandName}</span>
         </div>

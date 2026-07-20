@@ -178,14 +178,16 @@ environment has no minimum replica and does not create a Log Analytics workspace
   `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`
 - Container App: `hotel-voice-proxy`
 - Container Apps environment: `hotel-voice-env`
-- Active revision: `hotel-voice-proxy--0000002`
+- Active revision: `hotel-voice-proxy--0000003`
 - Active image digest:
-  `sha256:b1ffa0416ec1263e77423cbbd5b96943ae9253acb0c1337d0d1f0887593c786d`
+  `sha256:42c331199f1d2973310870bb14477047a7157a1336cba572f059e6c7b7bfbed8`
 - Entra API client ID: `87b35858-3f43-46f6-b226-3a211eb2df25`
 - Entra v2 token audience: `87b35858-3f43-46f6-b226-3a211eb2df25`
 - Entra SPA client ID: `96245d3a-eaee-43d1-9586-e2c3ef65f116`
-- Entra SPA redirect URI:
-  `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io/redirect.html`
+- Entra SPA redirect URIs:
+  - `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io/redirect.html`
+  - `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`
+    (compatibility only for already-open clients; forwarded to the dedicated bridge)
 
 The Hosted Agent identity also requires `Cognitive Services User` on the Foundry account and
 `Foundry User` on the Foundry project. These roles authorize the inner Voice Live session and are

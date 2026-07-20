@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <script>
       (() => {
+        const query = new URLSearchParams(window.location.search);
+        const hash = new URLSearchParams(window.location.hash.slice(1));
+        const isLegacyAuthResponse =
+          window.opener &&
+          (query.has("code") || query.has("error") || hash.has("code") || hash.has("error"));
+        if (isLegacyAuthResponse) {
+          window.location.replace(
+            `/redirect.html${window.location.search}${window.location.hash}`,
+          );
+        }
+
         const param = new URLSearchParams(window.location.search).get("scoutTheme");
         const theme =
           param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");

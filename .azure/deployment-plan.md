@@ -2,7 +2,7 @@
 
 ## Status
 
-Deployed - Voice web call and asset hotfix
+Deployed - Voice web authentication cache hotfix
 
 ## Canonical product plan
 
@@ -128,6 +128,21 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
   `ENTRA_API_AUDIENCE` change from the App ID URI to the v2 API client-ID GUID. The full frontend
   suite passed 59 tests plus lint, typecheck, and production build. The proxy tests and Ruff checks
   passed. Subscription policy and static/live role results remain unchanged.
+- Revalidated on 2026-07-20 for the authentication cache hotfix:
+  - `az bicep build` and `az bicep lint` passed.
+  - `az deployment group validate` returned `Succeeded`.
+  - `az deployment group what-if --result-format ResourceIdOnly` returned `Succeeded` with
+    idempotent deploy operations and no deletion.
+  - Azure CLI authentication is enabled for the intended subscription and tenant; no
+    subscription-scope policy assignments were returned.
+  - The frontend passed 59 tests, lint, typecheck, and production build. The built page forwards
+    legacy root authentication responses to `/redirect.html`, while visible brand marks are inline
+    SVG.
+  - The proxy tests and Ruff checks passed; frontend HTML, root assets, and the redirect bridge
+    return `Cache-Control: no-store`.
+  - Static role review remains unchanged: `AcrPull` is scoped to the existing registry and
+    `Azure AI Developer` is scoped to the existing Foundry project, both for the dedicated
+    `ServicePrincipal`.
 
 ## Progress
 
@@ -278,6 +293,14 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
   synthetic-data header label is absent, health is green, and traffic is 100% on the new revision.
   Live role verification remains limited to `AcrPull` on ACR and `Azure AI Developer` on the
   Foundry project.
+- 2026-07-20: Deployed ready revision `hotel-voice-proxy--0000003` with immutable image digest
+  `sha256:42c331199f1d2973310870bb14477047a7157a1336cba572f059e6c7b7bfbed8`.
+  Traffic is 100% on the healthy revision. Live HTML and the MSAL redirect bridge return
+  `Cache-Control: no-store`; visible brand marks are inline SVG with no image request. The Entra
+  SPA keeps `/redirect.html` as the primary callback and also accepts the exact site origin for
+  already-open stale clients, whose authentication responses are forwarded to the bridge. A live
+  OAuth authorization probe accepted that root URI and redirected it back rather than returning
+  `AADSTS50011`. Live role verification remains unchanged and least-privileged.
 
 ### Live Role Verification
 

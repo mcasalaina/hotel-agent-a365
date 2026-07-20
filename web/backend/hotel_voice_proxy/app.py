@@ -256,10 +256,16 @@ def _serve_frontend_if_present(app: web.Application) -> None:
         app.router.add_static("/audio", audio)
 
     async def root_asset(request: web.Request) -> web.FileResponse:
-        return web.FileResponse(dist / request.path.lstrip("/"))
+        return web.FileResponse(
+            dist / request.path.lstrip("/"),
+            headers={"Cache-Control": "no-store"},
+        )
 
     async def index(_request: web.Request) -> web.FileResponse:
-        return web.FileResponse(dist / "index.html")
+        return web.FileResponse(
+            dist / "index.html",
+            headers={"Cache-Control": "no-store"},
+        )
 
     for filename in ("favicon.svg", "redirect.html"):
         if (dist / filename).is_file():
