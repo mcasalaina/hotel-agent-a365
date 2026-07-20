@@ -120,6 +120,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           image: imageName
           env: [
             {
+              name: 'AZURE_CLIENT_ID'
+              value: managedIdentity.properties.clientId
+            }
+            {
               name: 'ENTRA_TENANT_ID'
               value: entraTenantId
             }

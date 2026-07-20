@@ -2,7 +2,7 @@
 
 ## Status
 
-Deployed - Voice web authentication cache hotfix
+Deployed - Voice proxy managed-identity hotfix
 
 ## Canonical product plan
 
@@ -143,6 +143,17 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
   - Static role review remains unchanged: `AcrPull` is scoped to the existing registry and
     `Azure AI Developer` is scoped to the existing Foundry project, both for the dedicated
     `ServicePrincipal`.
+- Revalidated on 2026-07-20 for the managed-identity hotfix. Production logs at
+  `2026-07-20T22:03Z`
+  proved browser authentication and session creation succeeded (`POST /api/auth/session` 201) and
+  the call socket upgraded (`GET /api/calls` 101), but every upstream attempt failed before the
+  Foundry connection because `DefaultAzureCredential` could not select the attached user-assigned
+  identity. The hotfix injects the identity client ID as `AZURE_CLIENT_ID` and passes it explicitly
+  as `managed_identity_client_id`. Six focused proxy tests and Ruff checks passed, including a
+  startup gate that acquires a Foundry token before the revision can become healthy. Bicep build,
+  lint, and resource-group validation passed. What-if showed the intended environment addition with
+  no deletion; authentication, subscription policy, and static/live least-privilege role checks
+  passed.
 
 ## Progress
 
@@ -301,6 +312,17 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
   already-open stale clients, whose authentication responses are forwarded to the bridge. A live
   OAuth authorization probe accepted that root URI and redirected it back rather than returning
   `AADSTS50011`. Live role verification remains unchanged and least-privileged.
+- 2026-07-20: Production call diagnostics proved browser token validation, session creation, and
+  WebSocket ingress were healthy, while all four reconnect attempts failed when the proxy requested
+  a Foundry token without selecting its user-assigned identity. Deployed ready revision
+  `hotel-voice-proxy--0000005` with immutable image digest
+  `sha256:5a0871b824cf08558dd669480814b7bba49994e300a8f3a43532cb8e130df838`.
+  The live revision receives `AZURE_CLIENT_ID=86cc50dd-3905-4ae6-a483-f479e5903c7d`, explicitly
+  configures that client ID on `DefaultAzureCredential`, and gates startup on Foundry token
+  acquisition. Production startup logs show the managed-identity endpoint returned 200 and
+  `DefaultAzureCredential acquired a token from ManagedIdentityCredential`. Revision `0000005` is
+  healthy and receives 100% traffic; live roles remain `AcrPull` on ACR and `Azure AI Developer`
+  on the Foundry project.
 
 ### Live Role Verification
 

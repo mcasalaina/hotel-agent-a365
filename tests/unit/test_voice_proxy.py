@@ -4,12 +4,22 @@ import asyncio
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp import WSMsgType, web
 from aiohttp.test_utils import TestClient, TestServer
-from hotel_voice_proxy.app import _parse_auth_frame, _serve_frontend_if_present
+from azure.core.credentials import AccessToken
+from azure.identity.aio import DefaultAzureCredential
+from hotel_voice_proxy.app import (
+    CREDENTIAL_KEY,
+    _parse_auth_frame,
+    _serve_frontend_if_present,
+    _verify_foundry_access,
+)
 from hotel_voice_proxy.auth import AuthenticatedUser
+from hotel_voice_proxy.config import ProxySettings
+from hotel_voice_proxy.foundry import FOUNDRY_SCOPE
 from hotel_voice_proxy.sessions import BrowserSessionStore, SessionError
 
 
@@ -48,6 +58,34 @@ def test_browser_session_cannot_be_replayed_concurrently() -> None:
         assert await store.claim(session.handle) == session
 
     asyncio.run(exercise())
+
+
+def test_proxy_settings_load_user_assigned_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AZURE_CLIENT_ID", "managed-identity-client")
+    monkeypatch.setenv("ENTRA_TENANT_ID", "tenant")
+    monkeypatch.setenv("ENTRA_API_AUDIENCE", "audience")
+    monkeypatch.setenv("ENTRA_REQUIRED_SCOPE", "HotelAgent.Access")
+    monkeypatch.setenv(
+        "FOUNDRY_PROJECT_ENDPOINT",
+        "https://example.services.ai.azure.com/api/projects/example",
+    )
+
+    settings = ProxySettings.from_environment()
+
+    assert settings.managed_identity_client_id == "managed-identity-client"
+
+
+def test_startup_verifies_foundry_managed_identity() -> None:
+    credential = AsyncMock(spec=DefaultAzureCredential)
+    credential.get_token.return_value = AccessToken("not-a-real-token", 1_800_000_000)
+    app = web.Application()
+    app[CREDENTIAL_KEY] = credential
+
+    asyncio.run(_verify_foundry_access(app))
+
+    credential.get_token.assert_awaited_once_with(FOUNDRY_SCOPE)
 
 
 def test_frontend_root_assets_are_served_before_spa_fallback(

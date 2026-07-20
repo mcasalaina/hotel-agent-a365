@@ -13,7 +13,7 @@ from azure.identity.aio import DefaultAzureCredential
 
 from hotel_voice_proxy.auth import AuthenticationError, EntraTokenValidator
 from hotel_voice_proxy.config import ProxySettings
-from hotel_voice_proxy.foundry import FoundrySocket, FoundryWebSocketConnector
+from hotel_voice_proxy.foundry import FOUNDRY_SCOPE, FoundrySocket, FoundryWebSocketConnector
 from hotel_voice_proxy.sessions import BrowserSessionStore, SessionError
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,9 @@ def create_app(
     connector: FoundryWebSocketConnector | None = None,
 ) -> web.Application:
     app = web.Application(client_max_size=2 * 1024 * 1024)
-    credential = DefaultAzureCredential()
+    credential = DefaultAzureCredential(
+        managed_identity_client_id=settings.managed_identity_client_id,
+    )
     app[SETTINGS_KEY] = settings
     app[VALIDATOR_KEY] = validator or EntraTokenValidator(
         tenant_id=settings.entra_tenant_id,
@@ -54,9 +56,15 @@ def create_app(
     app.router.add_post("/api/auth/session", _create_session)
     app.router.add_get("/api/calls", _call_websocket)
     app.router.add_get("/api/health", _health)
+    app.on_startup.append(_verify_foundry_access)
     app.on_cleanup.append(_cleanup)
     _serve_frontend_if_present(app)
     return app
+
+
+async def _verify_foundry_access(app: web.Application) -> None:
+    token = await app[CREDENTIAL_KEY].get_token(FOUNDRY_SCOPE)
+    logger.info("Foundry managed-identity token acquired; expires at %s", token.expires_on)
 
 
 async def _get_config(request: web.Request) -> web.Response:

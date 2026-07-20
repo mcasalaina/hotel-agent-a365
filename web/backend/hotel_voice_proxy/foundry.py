@@ -6,7 +6,7 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 from aiohttp import ClientSession, ClientWebSocketResponse
 from azure.core.credentials_async import AsyncTokenCredential
 
-_FOUNDRY_SCOPE = "https://ai.azure.com/.default"
+FOUNDRY_SCOPE = "https://ai.azure.com/.default"
 
 
 def build_foundry_websocket_url(
@@ -66,7 +66,7 @@ class FoundryWebSocketConnector:
         self._agent_name = agent_name
 
     async def open(self, agent_session_id: str) -> FoundrySocket:
-        token = await self._credential.get_token(_FOUNDRY_SCOPE)
+        token = await self._credential.get_token(FOUNDRY_SCOPE)
         client = ClientSession()
         try:
             websocket = await client.ws_connect(

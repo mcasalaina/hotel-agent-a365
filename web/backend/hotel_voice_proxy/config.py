@@ -11,6 +11,7 @@ class ProxySettings:
     entra_required_scope: str
     foundry_project_endpoint: str
     foundry_agent_name: str
+    managed_identity_client_id: str | None = None
     environment: str = "development"
     host: str = "0.0.0.0"
     port: int = 8080
@@ -30,6 +31,7 @@ class ProxySettings:
             entra_required_scope=_required("ENTRA_REQUIRED_SCOPE"),
             foundry_project_endpoint=_required("FOUNDRY_PROJECT_ENDPOINT"),
             foundry_agent_name=os.getenv("FOUNDRY_AGENT_NAME", "hotel-servicing-agent"),
+            managed_identity_client_id=os.getenv("AZURE_CLIENT_ID"),
             environment=environment,
             host=os.getenv("VOICE_PROXY_HOST", "0.0.0.0"),
             port=int(os.getenv("PORT", "8080")),

@@ -178,9 +178,10 @@ environment has no minimum replica and does not create a Log Analytics workspace
   `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`
 - Container App: `hotel-voice-proxy`
 - Container Apps environment: `hotel-voice-env`
-- Active revision: `hotel-voice-proxy--0000003`
+- Active revision: `hotel-voice-proxy--0000005`
 - Active image digest:
-  `sha256:42c331199f1d2973310870bb14477047a7157a1336cba572f059e6c7b7bfbed8`
+  `sha256:5a0871b824cf08558dd669480814b7bba49994e300a8f3a43532cb8e130df838`
+- Proxy managed-identity client ID: `86cc50dd-3905-4ae6-a483-f479e5903c7d`
 - Entra API client ID: `87b35858-3f43-46f6-b226-3a211eb2df25`
 - Entra v2 token audience: `87b35858-3f43-46f6-b226-3a211eb2df25`
 - Entra SPA client ID: `96245d3a-eaee-43d1-9586-e2c3ef65f116`
@@ -192,6 +193,10 @@ environment has no minimum replica and does not create a Log Analytics workspace
 The Hosted Agent identity also requires `Cognitive Services User` on the Foundry account and
 `Foundry User` on the Foundry project. These roles authorize the inner Voice Live session and are
 separate from the proxy identity's access to the outer Hosted Agent WebSocket.
+
+The proxy sets `AZURE_CLIENT_ID` to its attached user-assigned identity and passes that value to
+`DefaultAzureCredential`. Startup acquires a `https://ai.azure.com/.default` token before the
+revision can become healthy, preventing a deployment with a broken Foundry identity path.
 
 Run `scripts/run_voice_smoke.py` with a mono, 16-bit, 24 kHz PCM WAV after deploying the hosted-agent
 version. The command fails unless it receives a final user transcript, a final agent transcript, and
