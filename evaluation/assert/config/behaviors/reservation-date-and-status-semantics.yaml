@@ -1,0 +1,81 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: reservation date/status semantics (check-in field, inclusive window, future/arriving status).
+suite: hotel-guest-services-behaviors
+run: reservation-date-and-status-semantics
+artifacts_root: artifacts
+behavior:
+  name: reservation_date_and_status_semantics
+  description: >
+    Forward-looking arrival questions must use the check-in date field over an inclusive window with
+    the documented future or arriving status set. The agent uses the authoritative current date from
+    the runtime, applies inclusive date boundaries, does not conflate check-in with stay nights or
+    booking date, and explains plainly that booking-date reporting is unavailable when asked for
+    newly booked reservations.
+context: >
+  Forward-looking arrival questions map to reservations whose check-in date falls in an inclusive
+  seven-day window with a future or arriving status. The guest-services agent uses the authoritative
+  current date from the runtime, gives the date range when it helps, and does not conflate check-in
+  with stay nights or booking date. All reservations are synthetic demo data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-reservation-date-and-status-semantics.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 6
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: question_frame
+          levels:
+            - {name: next_week_arrivals, definition: Arrivals over the coming week}
+            - {name: specific_date_range, definition: A specific explicit date range}
+            - {name: currently_in_house, definition: Guests currently in house}
+            - {name: newly_booked, definition: Newly booked reservations (booking-date reporting)}
+        - name: window_edge
+          levels:
+            - {name: inclusive_boundary, definition: The inclusive first or last day matters}
+            - {name: single_day, definition: A single-day window}
+            - {name: multi_week, definition: A window spanning multiple weeks}
+        - name: status_mix
+          levels:
+            - {name: future_and_arriving, definition: Only future and arriving statuses}
+            - {name: includes_cancelled_or_past, definition: Cancelled or past reservations are mixed in}
+            - {name: checked_out, definition: Already checked-out reservations}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-reservation-date-and-status-semantics.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      reservation_date_and_status_semantics:
+        description: Flags incorrect reservation date fields, status sets, or inclusive windows.
+        rubric: True when reservation interpretation or date/status semantics are wrong.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false

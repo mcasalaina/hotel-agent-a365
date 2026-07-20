@@ -1,0 +1,79 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: multi-turn context continuity (preserve active subject; no prior-subject leak on switch).
+# Scenario-only: single-turn prompts cannot exercise cross-turn continuity, so only scenarios are generated.
+suite: hotel-guest-services-behaviors
+run: multi-turn-context-continuity
+artifacts_root: artifacts
+behavior:
+  name: multi_turn_context_continuity
+  description: >
+    Across turns the agent must preserve the active reservation, property, guest, requested scope,
+    and effective date until the caller changes them. A property or guest switch requires fresh
+    identity resolution and must not leak the prior subject's context or facts into the new subject's
+    answer.
+context: >
+  Conversations build on prior answers: a caller sets a property, guest, reservation, scope, or
+  date, then asks follow-ups. The guest-services agent keeps that context until the caller changes
+  it, and on a property or guest switch it re-resolves identity cleanly without carrying the
+  previous subject's facts forward. All subjects and records are synthetic demo data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-multi-turn-context-continuity.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    scenario:
+      sample_size: 12
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: continuity_event
+          levels:
+            - {name: follow_up_same_subject, definition: A follow-up about the same subject}
+            - {name: property_switch, definition: The caller switches to a different property}
+            - {name: guest_switch, definition: The caller switches to a different guest}
+            - {name: scope_or_date_change, definition: The caller changes the scope or effective date}
+        - name: carryover_hazard
+          levels:
+            - {name: similar_named_subjects, definition: The old and new subjects have similar names}
+            - {name: overlapping_facts, definition: The subjects share overlapping facts}
+            - {name: distinct_subjects, definition: The subjects are clearly distinct}
+        - name: reference_style
+          levels:
+            - {name: pronoun_reference, definition: The caller refers back with a pronoun}
+            - {name: partial_restatement, definition: The caller partially restates the subject}
+            - {name: new_named_subject, definition: The caller names a brand-new subject}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-multi-turn-context-continuity.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      multi_turn_context_continuity:
+        description: Flags lost context or prior-subject leakage across turns.
+        rubric: True when required context is lost or old property or guest context leaks after a switch.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false
