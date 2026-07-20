@@ -95,7 +95,8 @@ async def _create_session(request: web.Request) -> web.Response:
         return _error_response("A bearer access token is required.", 401)
     try:
         user = await request.app[VALIDATOR_KEY].validate(token)
-    except AuthenticationError:
+    except AuthenticationError as exc:
+        logger.warning("Browser access token rejected: %s", exc)
         return _error_response("The access token is invalid or unauthorized.", 401)
 
     session = await request.app[SESSIONS_KEY].create(user)

@@ -2,7 +2,7 @@
 
 ## Status
 
-Deployed and Verified - Voice web sign-in hotfix
+Deployed - Voice web call and asset hotfix
 
 ## Canonical product plan
 
@@ -123,6 +123,11 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
 - Static role review verified the user-assigned proxy identity receives `AcrPull` only on the
   existing registry and `Azure AI Developer` only on the existing Foundry project. Both assignments
   use deterministic names and `ServicePrincipal` principal type.
+- Revalidated on 2026-07-20 for the call and asset hotfix. Bicep compilation and resource-group
+  validation passed; what-if succeeded with no resource deletion and showed the intended
+  `ENTRA_API_AUDIENCE` change from the App ID URI to the v2 API client-ID GUID. The full frontend
+  suite passed 59 tests plus lint, typecheck, and production build. The proxy tests and Ruff checks
+  passed. Subscription policy and static/live role results remain unchanged.
 
 ## Progress
 
@@ -266,6 +271,13 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
   `sha256:e1d03ac8b14d20112af8e2dc2c2f2a4d3918d27089973e0d043611204bd724ca`.
   Live checks confirmed the SVG MIME type, bridge bundle and no COOP header, production
   `/redirect.html` config, healthy API, and anonymous-session HTTP 401.
+- 2026-07-20: Deployed ready revision `hotel-voice-proxy--0000002` with immutable image digest
+  `sha256:b1ffa0416ec1263e77423cbbd5b96943ae9253acb0c1337d0d1f0887593c786d`.
+  The live Container App now validates v2 access tokens against the API client-ID GUID. The
+  Vite-managed brand asset returns `image/svg+xml`, both screens reference its hashed URL, the
+  synthetic-data header label is absent, health is green, and traffic is 100% on the new revision.
+  Live role verification remains limited to `AcrPull` on ACR and `Azure AI Developer` on the
+  Foundry project.
 
 ### Live Role Verification
 

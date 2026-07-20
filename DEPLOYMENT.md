@@ -135,9 +135,11 @@ The production deployment uses `infra/voice-web.bicep` and these Azure resources
 
 Create a single-tenant API registration that exposes delegated scope `HotelAgent.Access` and a
 single-tenant SPA registration that requests that scope. The API audience is
-`api://<api-application-client-id>`. Register `<deployed-origin>/redirect.html` as the SPA redirect
-URI. The production image uses `VITE_ENTRA_REDIRECT_URI=auto`, which resolves to that exact MSAL v5
-redirect-bridge URI at runtime; local development uses
+the API application client-ID GUID because its `requestedAccessTokenVersion` is `2`; the delegated
+scope URI remains `api://<api-application-client-id>/HotelAgent.Access`. Register
+`<deployed-origin>/redirect.html` as the SPA redirect URI. The production image uses
+`VITE_ENTRA_REDIRECT_URI=auto`, which resolves to that exact MSAL v5 redirect-bridge URI at runtime;
+local development uses
 `http://localhost:5173/redirect.html`.
 
 Export the public `VITE_ENTRA_*` values, then build and deploy the production frontend/proxy image:
@@ -176,10 +178,11 @@ environment has no minimum replica and does not create a Log Analytics workspace
   `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`
 - Container App: `hotel-voice-proxy`
 - Container Apps environment: `hotel-voice-env`
-- Active revision: `hotel-voice-proxy--0000001`
+- Active revision: `hotel-voice-proxy--0000002`
 - Active image digest:
-  `sha256:e1d03ac8b14d20112af8e2dc2c2f2a4d3918d27089973e0d043611204bd724ca`
+  `sha256:b1ffa0416ec1263e77423cbbd5b96943ae9253acb0c1337d0d1f0887593c786d`
 - Entra API client ID: `87b35858-3f43-46f6-b226-3a211eb2df25`
+- Entra v2 token audience: `87b35858-3f43-46f6-b226-3a211eb2df25`
 - Entra SPA client ID: `96245d3a-eaee-43d1-9586-e2c3ef65f116`
 - Entra SPA redirect URI:
   `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io/redirect.html`

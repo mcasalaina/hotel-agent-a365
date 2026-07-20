@@ -44,6 +44,7 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("button", { name: /sign in with microsoft entra/i })).toBeInTheDocument();
+    expect(document.querySelector("img")?.getAttribute("src")).toMatch(/^data:image\/svg\+xml/);
     expect(screen.queryByRole("button", { name: /start voice call/i })).not.toBeInTheDocument();
   });
 
@@ -78,6 +79,8 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByText("Jamie Rivera")).toBeInTheDocument();
+    expect(document.querySelector("img")?.getAttribute("src")).toMatch(/^data:image\/svg\+xml/);
+    expect(screen.queryByText("Synthetic demo data")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /start voice call/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /run headless demo/i })).toBeInTheDocument();
     expect(

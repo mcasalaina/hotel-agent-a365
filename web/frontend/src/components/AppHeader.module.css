@@ -37,13 +37,6 @@
   text-overflow: ellipsis;
 }
 
-.syntheticBadge {
-  font-size: 0.7rem;
-  color: var(--cp-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .userGroup {
   display: flex;
   align-items: center;

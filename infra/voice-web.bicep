@@ -125,7 +125,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'ENTRA_API_AUDIENCE'
-              value: 'api://${entraApiClientId}'
+              value: entraApiClientId
             }
             {
               name: 'ENTRA_REQUIRED_SCOPE'

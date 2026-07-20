@@ -4,6 +4,7 @@
  */
 import styles from "./SignInScreen.module.css";
 import { useAuth } from "../auth/authContext";
+import brandMarkUrl from "../assets/brand-mark.svg";
 
 export function SignInScreen() {
   const { status, errorMessage, signIn } = useAuth();
@@ -13,7 +14,7 @@ export function SignInScreen() {
     <div className={styles.container}>
       <div className={styles.card} role="main" aria-labelledby="sign-in-title">
         <div className={styles.brand}>
-          <img className={styles.brandMark} src="/favicon.svg" alt="" aria-hidden="true" />
+          <img className={styles.brandMark} src={brandMarkUrl} alt="" aria-hidden="true" />
         </div>
         <h1 className={styles.title} id="sign-in-title">
           Lyrenza Hotels Contact Center

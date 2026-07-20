@@ -1,5 +1,6 @@
 import styles from "./AppHeader.module.css";
 import type { SignedInUser } from "../auth/authContext";
+import brandMarkUrl from "../assets/brand-mark.svg";
 
 interface AppHeaderProps {
   hotelBrandName: string;
@@ -11,10 +12,9 @@ export function AppHeader({ hotelBrandName, user, onSignOut }: AppHeaderProps) {
   return (
     <header className={styles.header}>
       <div className={styles.brandGroup}>
-        <img className={styles.brandMark} src="/favicon.svg" alt="" aria-hidden="true" />
+        <img className={styles.brandMark} src={brandMarkUrl} alt="" aria-hidden="true" />
         <div className={styles.brandText}>
           <span className={styles.brandName}>{hotelBrandName}</span>
-          <span className={styles.syntheticBadge}>Synthetic demo data</span>
         </div>
       </div>
       <div className={styles.userGroup}>
