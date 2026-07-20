@@ -254,9 +254,15 @@ def _serve_frontend_if_present(app: web.Application) -> None:
     if audio.is_dir():
         app.router.add_static("/audio", audio)
 
+    async def root_asset(request: web.Request) -> web.FileResponse:
+        return web.FileResponse(dist / request.path.lstrip("/"))
+
     async def index(_request: web.Request) -> web.FileResponse:
         return web.FileResponse(dist / "index.html")
 
+    for filename in ("favicon.svg", "redirect.html"):
+        if (dist / filename).is_file():
+            app.router.add_get(f"/{filename}", root_asset)
     app.router.add_get("/", index)
     app.router.add_get("/{path:(?!api/).*}", index)
 

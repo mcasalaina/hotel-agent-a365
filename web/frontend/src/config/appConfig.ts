@@ -31,7 +31,7 @@ function requireEnv(name: string, value: string | undefined): string {
 
 function resolveRedirectUri(value: string | undefined): string {
   const configured = requireEnv("VITE_ENTRA_REDIRECT_URI", value);
-  return configured === "auto" ? window.location.origin : configured;
+  return configured === "auto" ? `${window.location.origin}/redirect.html` : configured;
 }
 
 let cachedConfig: AppEnvConfig | null = null;

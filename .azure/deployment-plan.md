@@ -2,7 +2,7 @@
 
 ## Status
 
-Deployed and Verified - Phase 3 Voice Live hosted-agent and web application
+Deployed and Verified - Voice web sign-in hotfix
 
 ## Canonical product plan
 
@@ -57,7 +57,8 @@ Deploy the workspace on the existing active East US 2 F16 capacity `cap3iqs5ea83
 - Dedicated Voice web managed identity with `AcrPull` only on the existing registry and
   `Azure AI Developer` only on the existing Foundry project.
 - Single-tenant Entra API registration exposing delegated `HotelAgent.Access`, plus a separate SPA
-  public client using Authorization Code with PKCE and the deployed HTTPS origin as its redirect URI.
+  public client using Authorization Code with PKCE and the deployed
+  `<HTTPS origin>/redirect.html` MSAL v5 redirect bridge as its redirect URI.
 - Browser access tokens remain in memory and are validated by the proxy; the Foundry bearer token
   is acquired only by the proxy managed identity and never reaches the browser.
 
@@ -84,7 +85,8 @@ The prepared web deployment uses:
 - The existing East US Basic registry `ca31c6a7351facr`; no new registry is provisioned.
 - `web/backend/Dockerfile` for the same-origin React frontend and aiohttp proxy image.
 - Single-tenant Entra API and SPA registrations. The production frontend resolves its redirect URI
-  from `window.location.origin`; the exact deployed origin is registered after provisioning.
+  to `<window.location.origin>/redirect.html`; that exact bridge URI is registered after
+  provisioning.
 
 Capacity checks found East US 2 App Service Basic quota is zero, while Container Apps supports the
 region and the subscription has a managed-environment limit of five with one environment currently
@@ -101,6 +103,26 @@ When implementation artifacts are complete:
 3. Resolve all validation findings.
 4. Use the `azure-deploy` workflow for Azure deployment.
 5. Run the live component and phase-gate tests in `PLAN.md`.
+
+## Section 7: Validation Proof
+
+Validated on 2026-07-20 for subscription `27b0139a-16b4-42bf-9ec9-c6db3768245e`,
+tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
+`rg-hotel-agent-a365`, and East US 2:
+
+- `az bicep build --file infra/voice-web.bicep --stdout`: passed.
+- `az deployment group validate ... --template-file infra/voice-web.bicep`: provisioning state
+  `Succeeded` with no error.
+- `az deployment group what-if ... --result-format ResourceIdOnly`: status `Succeeded`; only
+  idempotent `Deploy` operations were reported and no deletes were present.
+- `npm run build`, `npm run lint`, and `npm run typecheck` in `web/frontend`: passed; production
+  output includes isolated `redirect.html`, its MSAL redirect-bridge bundle, and `favicon.svg`.
+- `npm test` in `web/frontend`: 59 tests passed.
+- `pytest tests/unit/test_voice_proxy.py`, Ruff check, and Ruff format check: passed.
+- Subscription policy assignment query returned no assignments at subscription scope.
+- Static role review verified the user-assigned proxy identity receives `AcrPull` only on the
+  existing registry and `Azure AI Developer` only on the existing Foundry project. Both assignments
+  use deterministic names and `ServicePrincipal` principal type.
 
 ## Progress
 
@@ -236,3 +258,19 @@ When implementation artifacts are complete:
   routes; unauthenticated session exchange returned 401. A prerecorded Spanish prompt produced an
   automatic Spanish transcript, Spanish interim speech, and 148,800 audio bytes. Voice mode
   proactively greeted the caller and returned 193,200 audio bytes.
+- 2026-07-20: Fixed the production sign-in defects. The proxy now serves `favicon.svg` as
+  `image/svg+xml`, and the frontend uses the mandatory isolated MSAL v5 redirect bridge at
+  `/redirect.html` instead of running the full React application in the authentication popup. The
+  Entra SPA registration now contains that exact bridge URI.
+- 2026-07-20: Deployed ready revision `hotel-voice-proxy--0000001` with immutable image digest
+  `sha256:e1d03ac8b14d20112af8e2dc2c2f2a4d3918d27089973e0d043611204bd724ca`.
+  Live checks confirmed the SVG MIME type, bridge bundle and no COOP header, production
+  `/redirect.html` config, healthy API, and anonymous-session HTTP 401.
+
+### Live Role Verification
+
+- Identity: `hotel-voice-proxy-identity`
+  (`a0a2277a-4d0b-4c40-9977-bfb9ae81e720`).
+- `AcrPull` is present at the existing `ca31c6a7351facr` registry scope.
+- `Azure AI Developer` is present at the existing `4iq-foundry-project` project scope.
+- Both assignments target the current `ServicePrincipal`; status: pass.

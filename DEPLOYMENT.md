@@ -119,8 +119,9 @@ for a same-origin deployment. Configure these non-secret environment bindings on
 - `VOICE_PROXY_ENVIRONMENT`
 
 Grant the proxy workload identity access to the Foundry project so
-`DefaultAzureCredential` can acquire `https://ai.azure.com/.default`. Register the deployed origin as
-an SPA redirect URI and configure the public frontend values from `web/frontend/.env.example`.
+`DefaultAzureCredential` can acquire `https://ai.azure.com/.default`. Register
+`<deployed-origin>/redirect.html` as an SPA redirect URI and configure the public frontend values
+from `web/frontend/.env.example`.
 Health checks use `/api/health`. The proxy has no anonymous call mode and does not accept browser
 credentials over the WebSocket.
 
@@ -134,9 +135,10 @@ The production deployment uses `infra/voice-web.bicep` and these Azure resources
 
 Create a single-tenant API registration that exposes delegated scope `HotelAgent.Access` and a
 single-tenant SPA registration that requests that scope. The API audience is
-`api://<api-application-client-id>`. Register the deployed HTTPS origin as the SPA redirect URI.
-The production image uses `VITE_ENTRA_REDIRECT_URI=auto`, which resolves to that exact origin at
-runtime; local development continues to use `http://localhost:5173`.
+`api://<api-application-client-id>`. Register `<deployed-origin>/redirect.html` as the SPA redirect
+URI. The production image uses `VITE_ENTRA_REDIRECT_URI=auto`, which resolves to that exact MSAL v5
+redirect-bridge URI at runtime; local development uses
+`http://localhost:5173/redirect.html`.
 
 Export the public `VITE_ENTRA_*` values, then build and deploy the production frontend/proxy image:
 
@@ -174,10 +176,13 @@ environment has no minimum replica and does not create a Log Analytics workspace
   `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`
 - Container App: `hotel-voice-proxy`
 - Container Apps environment: `hotel-voice-env`
+- Active revision: `hotel-voice-proxy--0000001`
 - Active image digest:
-  `sha256:4094eabda5006e1a806693f0bdd388fad96bdc726de73fb4bb140b5637e140fe`
+  `sha256:e1d03ac8b14d20112af8e2dc2c2f2a4d3918d27089973e0d043611204bd724ca`
 - Entra API client ID: `87b35858-3f43-46f6-b226-3a211eb2df25`
 - Entra SPA client ID: `96245d3a-eaee-43d1-9586-e2c3ef65f116`
+- Entra SPA redirect URI:
+  `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io/redirect.html`
 
 The Hosted Agent identity also requires `Cognitive Services User` on the Foundry account and
 `Foundry User` on the Foundry project. These roles authorize the inner Voice Live session and are

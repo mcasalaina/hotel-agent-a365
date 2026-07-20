@@ -2,11 +2,13 @@
  * Microsoft Entra sign-in configuration.
  *
  * Uses @azure/msal-browser's Authorization Code flow with PKCE (the only flow msal-browser
- * implements for SPAs). Tokens are kept in memory only:
- *   - `cacheLocation: "memoryStorage"` means MSAL never touches localStorage, sessionStorage, or
- *     cookies for token/account state. A full page reload requires a fresh interactive or silent
- *     (iframe) sign-in; this is an intentional trade-off for the "tokens in memory only"
- *     requirement.
+ * implements for SPAs). The redirect URI points to the dedicated MSAL v5 bridge entry
+ * (`redirect.html`), which relays popup and silent-flow responses to this page. Tokens are kept in
+ * memory only:
+ *   - `cacheLocation: "memoryStorage"` keeps durable token/account state out of Web Storage.
+ *     MSAL uses sessionStorage only for ephemeral request metadata during an active auth flow, as
+ *     required by its redirect bridge. A full page reload requires a fresh interactive or silent
+ *     (iframe) sign-in.
  *   - No custom code in this app writes tokens or the opaque call-session handle to any Web
  *     Storage or cookie.
  */
@@ -22,8 +24,8 @@ export function buildMsalConfig(): Configuration {
       redirectUri: env.entraRedirectUri,
     },
     cache: {
-      // In-memory only. Never persist tokens to browser storage or cookies. This msal-browser
-      // version has no cookie-backed auth-state option, so there is nothing else to disable here.
+      // Durable tokens and accounts remain in memory. MSAL v5 independently uses sessionStorage
+      // for short-lived request metadata needed by the redirect bridge.
       cacheLocation: "memoryStorage",
     },
     system: {

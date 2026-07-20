@@ -1,7 +1,6 @@
 /**
  * React auth context wrapping a single MSAL `PublicClientApplication`. All Entra tokens returned
- * by MSAL stay inside MSAL's in-memory cache (see `msalConfig.ts`) and inside this React state;
- * nothing here writes to localStorage, sessionStorage, or cookies.
+ * by MSAL stay inside MSAL's in-memory cache (see `msalConfig.ts`) and inside this React state.
  */
 import {
   type AccountInfo,

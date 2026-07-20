@@ -46,7 +46,7 @@ describe("getAppEnvConfig", () => {
     }
     vi.stubEnv("VITE_ENTRA_REDIRECT_URI", "auto");
 
-    expect(getAppEnvConfig().entraRedirectUri).toBe(window.location.origin);
+    expect(getAppEnvConfig().entraRedirectUri).toBe(`${window.location.origin}/redirect.html`);
   });
 
   it("throws a helpful error when a required variable is missing", () => {

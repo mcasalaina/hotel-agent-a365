@@ -50,12 +50,15 @@ Authorization Code + PKCE flow (the only interactive flow msal-browser implement
 Tokens are kept **in memory only**:
 
 - MSAL's `cacheLocation` is set to `"memoryStorage"` (see `src/auth/msalConfig.ts`), so MSAL never
-  writes tokens or account state to `localStorage`, `sessionStorage`, or cookies.
+  writes durable tokens or account state to `localStorage`, `sessionStorage`, or cookies. MSAL v5
+  uses `sessionStorage` only for ephemeral request metadata while an authentication flow is active.
 - No application code in this project persists the Entra access token, ID token, or the opaque
   call-session handle to any Web Storage or cookie. Both live only in React/JS memory for the
   lifetime of the tab.
 - Reloading the page requires a fresh sign-in (interactive or silent-iframe); this is an
   intentional trade-off of the "tokens in memory only" requirement.
+- Popup and silent authentication return through `redirect.html`, the isolated MSAL v5 redirect
+  bridge entry. Its exact deployed URL must be registered as the SPA redirect URI in Entra.
 
 Sign-in is required before any text or voice call session can start — there is no anonymous mode
 (`src/App.tsx`'s `AuthGate` enforces this).
