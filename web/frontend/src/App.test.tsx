@@ -20,6 +20,7 @@ function defaultCallSession() {
     config: null,
     configError: null,
     startCall: vi.fn(),
+    startPrerecorded: vi.fn(),
     sendText: vi.fn(),
     toggleMute: vi.fn(),
     endCall: vi.fn(),

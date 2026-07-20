@@ -64,11 +64,10 @@ export async function createCallSession(
   return (await response.json()) as CreateSessionResponse;
 }
 
-/** Builds the `wss://`/`ws://` URL for the call socket. The opaque handle is a path segment
- * (never a query parameter); see the protocol note in `types/protocol.ts`. */
-export function buildCallSocketUrl(websocketPath: string, opaqueHandle: string): string {
+/** Builds the fixed `wss://`/`ws://` call URL. Authentication is sent only in the first frame. */
+export function buildCallSocketUrl(websocketPath: string): string {
   const base = getAppEnvConfig().backendBaseUrl;
-  const path = `${websocketPath.replace(/\/$/, "")}/${encodeURIComponent(opaqueHandle)}`;
+  const path = websocketPath.replace(/\/$/, "");
   if (base) {
     const url = new URL(path, base);
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";

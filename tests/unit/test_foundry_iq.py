@@ -115,7 +115,10 @@ def test_settings_requires_foundry_iq_configuration(
 ) -> None:
     instructions = tmp_path / "instructions.md"
     instructions.write_text("Instructions", encoding="utf-8")
-    monkeypatch.setenv("FOUNDRY_PROJECT_ENDPOINT", "https://project.example.test")
+    monkeypatch.setenv(
+        "FOUNDRY_PROJECT_ENDPOINT",
+        "https://project.example.test/api/projects/hotel",
+    )
     monkeypatch.setenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-5.4-mini")
     monkeypatch.setenv("AGENT_INSTRUCTIONS_PATH", str(instructions))
     monkeypatch.delenv("AZURE_SEARCH_ENDPOINT", raising=False)

@@ -3,7 +3,8 @@
 This repository contains the source-controlled foundation for a fictional hotel guest-services demo built on Microsoft Foundry, Microsoft Fabric, Foundry IQ, Work IQ, and Agent 365.
 
 The current implementation includes the deployed Fabric data estate, Foundry IQ knowledge base,
-Python Hosted Agent, Agent 365 bot/publication artifacts, and a read-only Work IQ integration.
+Python Hosted Agent, Agent 365 bot/publication artifacts, a read-only Work IQ integration, and an
+authenticated Voice Live web frontend.
 Cloud-changing commands remain operator-invoked; local setup and validation never deploy implicitly.
 
 ## Developer setup
@@ -11,6 +12,7 @@ Cloud-changing commands remain operator-invoked; local setup and validation neve
 Requirements:
 
 - Python 3.13 or later
+- Node.js 22 or later
 - Docker for optional local container builds
 - Azure Developer CLI 1.27 or later with the `azure.ai.agents` extension
 
@@ -33,10 +35,43 @@ Build the root container parity image:
 make docker-build
 ```
 
-The Hosted Agent deploys from source with Foundry remote build and exposes the Responses protocol,
-plus the stable Agent 365 activity endpoint. The Dockerfile provides the equivalent local/container
-path. Phase 3 will add `invocations_ws` to the same agent and compose it over the shared
-`orchestration`, `tools`, and `state` packages.
+The Hosted Agent deploys from source with Foundry remote build and exposes both Responses 2.0 and
+`invocations_ws` 1.0. The Voice Live adapter uses the same hosted hotel agent and its existing
+orchestration and tools.
+
+## Voice Live web frontend
+
+The React frontend and Python proxy are under `web/`. The proxy validates the signed-in user's Entra
+token, exchanges it for a short-lived opaque browser session, obtains its own Foundry service token,
+and relays the duplex WebSocket without exposing service credentials to the browser.
+
+Voice calls use raw PCM16 mono audio at 24 kHz. Voice Live uses
+`en-US-AvaMultilingualNeural`, multilingual semantic VAD, automatic speech-language handling,
+interim responses for tool and latency delays, and a proactive welcome. The UI also accepts
+uncompressed mono or stereo 16-bit PCM WAV prompts and resamples them to the wire format for
+repeatable testing.
+
+Run the backend and Vite development server in separate terminals after configuring
+`web/backend/.env` and `web/frontend/.env.local`:
+
+```bash
+set -a; source web/backend/.env; set +a
+make run-web
+```
+
+```bash
+npm --prefix web/frontend run dev
+```
+
+For a direct hosted-agent smoke test, use a mono, 16-bit, 24 kHz PCM WAV file:
+
+```bash
+.venv/bin/python scripts/run_voice_smoke.py prompt.wav \
+  --project-endpoint "$FOUNDRY_PROJECT_ENDPOINT"
+```
+
+Build the same-origin frontend/proxy image with `make web-docker-build` after exporting the public
+`VITE_ENTRA_*` build values.
 
 See `PLAN.md` for the approved architecture, `DEPLOYMENT.md` for the controlled deployment handoff,
 `docs/foundry-evaluator-rubrics.md` for evaluator creation and portal verification, and

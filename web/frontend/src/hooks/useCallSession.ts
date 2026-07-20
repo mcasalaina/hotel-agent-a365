@@ -18,6 +18,7 @@ import { type AudioCaptureHandle, startAudioCapture } from "../lib/audioCapture"
 import { CallSocket } from "../lib/callSocket";
 import { buildDemoScenario } from "../lib/demoScenario";
 import { generateSilentPcmFrame } from "../lib/pcm";
+import { chunkPcm16, decodePcmWave } from "../lib/wav";
 import type { BackendConfigResponse } from "../types/protocol";
 import { callSessionReducer, initialCallSessionState, type CallMode } from "./callSessionReducer";
 
@@ -26,6 +27,7 @@ export interface UseCallSessionResult {
   config: BackendConfigResponse | null;
   configError: string | null;
   startCall: (mode: CallMode) => Promise<void>;
+  startPrerecorded: (file: File) => Promise<void>;
   sendText: (text: string) => void;
   toggleMute: () => void;
   endCall: () => void;
@@ -56,6 +58,7 @@ export function useCallSession(): UseCallSessionResult {
   const playbackRef = useRef<AudioPlaybackQueue | null>(null);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const demoAbortRef = useRef<{ cancelled: boolean } | null>(null);
+  const pendingPrerecordedRef = useRef<ArrayBuffer | null>(null);
 
   // Mutable snapshots kept current on every render so stable callbacks below never see stale
   // values without needing to be re-created (and re-subscribed) on every state change.
@@ -103,6 +106,7 @@ export function useCallSession(): UseCallSessionResult {
     playbackRef.current = null;
     socketRef.current?.close();
     socketRef.current = null;
+    pendingPrerecordedRef.current = null;
     if (demoAbortRef.current) {
       demoAbortRef.current.cancelled = true;
       demoAbortRef.current = null;
@@ -137,7 +141,7 @@ export function useCallSession(): UseCallSessionResult {
 
   const connectSocket = useCallback(
     (mode: CallMode, opaqueHandle: string, websocketPath: string, isReconnect: boolean) => {
-      const url = buildCallSocketUrl(websocketPath, opaqueHandle);
+      const url = buildCallSocketUrl(websocketPath);
       const socket = new CallSocket(
         url,
         {
@@ -147,7 +151,21 @@ export function useCallSession(): UseCallSessionResult {
           agentSessionId: agentSessionIdRef.current ?? undefined,
         },
         {
-          onMessage: (message) => dispatch({ type: "SERVER_MESSAGE", message }),
+          onMessage: (message) => {
+            dispatch({ type: "SERVER_MESSAGE", message });
+            if (
+              message.type === "auth_ack" &&
+              mode === "prerecorded" &&
+              pendingPrerecordedRef.current
+            ) {
+              const pcm = pendingPrerecordedRef.current;
+              pendingPrerecordedRef.current = null;
+              for (const frame of chunkPcm16(pcm)) {
+                socket.sendAudioFrame(frame);
+              }
+              socket.sendAudioCommit();
+            }
+          },
           onAudioFrame: (frame) => playbackRef.current?.enqueue(frame),
           onStatusChange: () => {
             /* connection lifecycle is surfaced via call_state messages, not raw socket state */
@@ -245,6 +263,37 @@ export function useCallSession(): UseCallSessionResult {
     [acquireApiToken, connectSocket, runDemoScenario],
   );
 
+  const startPrerecorded = useCallback(
+    async (file: File) => {
+      userEndedRef.current = false;
+      dispatch({ type: "MODE_SELECTED", mode: "prerecorded" });
+      const config = configRef.current.config;
+      if (!config?.features.prerecordedAudioEnabled) {
+        dispatch({
+          type: "LOCAL_ERROR",
+          message: "Prerecorded audio testing is not enabled by the backend.",
+        });
+        return;
+      }
+
+      try {
+        const pcm = decodePcmWave(await file.arrayBuffer());
+        pendingPrerecordedRef.current = pcm;
+        dispatch({ type: "PHASE_CHANGE", phase: "connecting" });
+        const accessToken = await acquireApiToken();
+        const session = await createCallSession(accessToken);
+        connectSocket("prerecorded", session.sessionHandle, config.websocketPath, false);
+      } catch (err) {
+        pendingPrerecordedRef.current = null;
+        dispatch({
+          type: "LOCAL_ERROR",
+          message: err instanceof Error ? err.message : "Unable to load the prerecorded prompt.",
+        });
+      }
+    },
+    [acquireApiToken, connectSocket],
+  );
+
   const sendText = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed) {
@@ -312,6 +361,7 @@ export function useCallSession(): UseCallSessionResult {
     config: configState.config,
     configError: configState.error,
     startCall,
+    startPrerecorded,
     sendText,
     toggleMute,
     endCall,

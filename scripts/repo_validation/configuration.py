@@ -44,7 +44,24 @@ EXPECTED_PROJECT_ID = (
     "resourceGroups/rg-aycabas-3iqs/providers/Microsoft.CognitiveServices/"
     "accounts/4iq-foundry-project-resource/projects/4iq-foundry-project"
 )
-EXPECTED_PROTOCOLS = [{"protocol": "responses", "version": "2.0.0"}]
+EXPECTED_PROTOCOLS = [
+    {"protocol": "responses", "version": "2.0.0"},
+    {"protocol": "invocations_ws", "version": "1.0.0"},
+]
+EXPECTED_VOICE_LIVE_ENV = {
+    "VOICE_LIVE_ENDPOINT": "${VOICE_LIVE_ENDPOINT}",
+    "VOICE_LIVE_API_VERSION": "2026-04-10",
+    "VOICE_LIVE_AGENT_NAME": EXPECTED_AGENT_NAME,
+    "VOICE_LIVE_PROJECT_NAME": "${AZURE_AI_PROJECT_NAME}",
+    "VOICE_LIVE_VOICE": "${VOICE_LIVE_VOICE}",
+}
+EXPECTED_MANIFEST_VOICE_LIVE_ENV = {
+    "VOICE_LIVE_ENDPOINT": "{{VOICE_LIVE_ENDPOINT}}",
+    "VOICE_LIVE_API_VERSION": "2026-04-10",
+    "VOICE_LIVE_AGENT_NAME": EXPECTED_AGENT_NAME,
+    "VOICE_LIVE_PROJECT_NAME": "{{AZURE_AI_PROJECT_NAME}}",
+    "VOICE_LIVE_VOICE": "{{VOICE_LIVE_VOICE}}",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,6 +171,13 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
             environment_variables.get(name),
             expected,
         )
+    for name, expected in EXPECTED_VOICE_LIVE_ENV.items():
+        _expect(
+            problems,
+            f"agent.environmentVariables.{name}",
+            environment_variables.get(name),
+            expected,
+        )
     if "FOUNDRY_PROJECT_ENDPOINT" in environment_variables:
         problems.append(
             ConfigurationProblem(
@@ -180,6 +204,13 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         *EXPECTED_OBSERVABILITY_ENV,
     ):
         expected = EXPECTED_OBSERVABILITY_ENV.get(name, f"{{{{{name}}}}}")
+        _expect(
+            problems,
+            f"manifest.template.environment_variables.{name}",
+            manifest_environment_variables.get(name),
+            expected,
+        )
+    for name, expected in EXPECTED_MANIFEST_VOICE_LIVE_ENV.items():
         _expect(
             problems,
             f"manifest.template.environment_variables.{name}",

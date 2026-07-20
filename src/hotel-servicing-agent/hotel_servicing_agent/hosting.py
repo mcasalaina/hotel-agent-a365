@@ -4,9 +4,15 @@ from collections.abc import AsyncIterable
 from contextvars import ContextVar, Token
 from typing import Any
 
+from agent_framework import Agent
 from agent_framework_foundry_hosting import ResponsesHostServer
+from azure.ai.agentserver.invocations import InvocationAgentServerHost
 from azure.ai.agentserver.responses import ResponseContext
 from azure.ai.agentserver.responses.models import CreateResponse, ResponseStreamEvent
+from azure.core.credentials_async import AsyncTokenCredential
+
+from hotel_servicing_agent.config import Settings
+from hotel_servicing_agent.voice_live import VoiceLiveBridge
 
 _agent_user_id: ContextVar[str | None] = ContextVar("agent_user_id", default=None)
 
@@ -32,3 +38,17 @@ class Agent365ResponsesHostServer(ResponsesHostServer):  # type: ignore[misc]
                 yield event
         finally:
             _agent_user_id.reset(token)
+
+
+class VoiceLiveAgentHost(InvocationAgentServerHost, Agent365ResponsesHostServer):
+    """Hosts Responses and duplex Voice Live traffic in one Foundry container."""
+
+    def __init__(
+        self,
+        agent: Agent,
+        settings: Settings,
+        voice_credential: AsyncTokenCredential,
+    ) -> None:
+        super().__init__(agent=agent)
+        self._voice_bridge = VoiceLiveBridge(settings, voice_credential)
+        self.ws_handler(self._voice_bridge.handle)

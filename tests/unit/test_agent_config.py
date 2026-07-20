@@ -14,7 +14,10 @@ def test_settings_load_required_values(
 ) -> None:
     instructions = tmp_path / "instructions.md"
     instructions.write_text("Test instructions", encoding="utf-8")
-    monkeypatch.setenv("FOUNDRY_PROJECT_ENDPOINT", "https://example.test/projects/hotel")
+    monkeypatch.setenv(
+        "FOUNDRY_PROJECT_ENDPOINT",
+        "https://example.test/api/projects/hotel",
+    )
     monkeypatch.setenv("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-5.4-mini")
     monkeypatch.setenv("AZURE_SEARCH_ENDPOINT", "https://search.example.test")
     monkeypatch.setenv("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME", "hotel-foundryiq")
@@ -43,8 +46,11 @@ def test_settings_load_required_values(
 
     settings = Settings.from_environment()
 
-    assert settings.project_endpoint == "https://example.test/projects/hotel"
+    assert settings.project_endpoint == "https://example.test/api/projects/hotel"
     assert settings.model_deployment == "gpt-5.4-mini"
+    assert settings.voice_live_endpoint == "https://example.test"
+    assert settings.voice_live_project_name == "hotel"
+    assert settings.voice_live_voice == "en-US-AvaMultilingualNeural"
     assert settings.search_endpoint == "https://search.example.test"
     assert settings.knowledge_base_name == "hotel-foundryiq"
     assert settings.fabric_data_agent_mcp_url.endswith("/dataagents/agent/agent")

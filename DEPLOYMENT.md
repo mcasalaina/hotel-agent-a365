@@ -90,15 +90,50 @@ role assignment exists.
 ## Hosted Agent contract
 
 - Service name: `hotel-servicing-agent`
-- Current protocol: `responses` version `2.0.0`
+- Protocols: `responses` version `2.0.0` and `invocations_ws` version `1.0.0`
 - Container resources: 1 CPU and 2 GiB memory
 - Deployment: Python 3.13 source ZIP with remote dependency resolution
 - Local/container startup command: `./startup.sh`
 - Model deployment: configured through `AZURE_AI_MODEL_DEPLOYMENT_NAME`
 - Project endpoint: injected by Foundry in the hosted container
 - Search endpoint and knowledge-base name: injected from azd environment values
+- Voice Live endpoint and multilingual voice: `VOICE_LIVE_ENDPOINT` and `VOICE_LIVE_VOICE`
 
-Phase 3 adds `invocations_ws` version `1.0.0` to both `azure.yaml` and `src/hotel-servicing-agent/agent.manifest.yaml`, then adds the WebSocket adapter without replacing the shared orchestration.
+The WebSocket adapter uses Voice Live agent mode, PCM16 audio at 24 kHz, multilingual semantic VAD,
+Azure speech transcription without a fixed locale, deep noise suppression, echo cancellation,
+barge-in, LLM interim responses, and a proactive welcome. The default voice is
+`en-US-AvaMultilingualNeural`. Confirm Voice Live and model availability in the target region before
+deploying the new hosted-agent version. Proxy connections use the current
+`/api/projects/{project}/agents/{agent}/endpoint/protocols/invocations_ws?api-version=v1` route.
+
+## Voice web deployment
+
+`web/backend/Dockerfile` builds the React app and packages it with the authenticated aiohttp proxy
+for a same-origin deployment. Configure these non-secret environment bindings on the container:
+
+- `ENTRA_TENANT_ID`
+- `ENTRA_API_AUDIENCE`
+- `ENTRA_REQUIRED_SCOPE`
+- `FOUNDRY_PROJECT_ENDPOINT`
+- `FOUNDRY_AGENT_NAME`
+- `VOICE_PROXY_ENVIRONMENT`
+
+Grant the proxy workload identity access to the Foundry project so
+`DefaultAzureCredential` can acquire `https://ai.azure.com/.default`. Register the deployed origin as
+an SPA redirect URI and configure the public frontend values from `web/frontend/.env.example`.
+Health checks use `/api/health`. The proxy has no anonymous call mode and does not accept browser
+credentials over the WebSocket.
+
+Export the public `VITE_ENTRA_*` values from `web/frontend/.env.example`, then build the production
+frontend/proxy image with:
+
+```bash
+make web-docker-build
+```
+
+Run `scripts/run_voice_smoke.py` with a mono, 16-bit, 24 kHz PCM WAV after deploying the hosted-agent
+version. The command fails unless it receives a final user transcript, a final agent transcript, and
+synthesized audio.
 
 ## Live development deployment
 

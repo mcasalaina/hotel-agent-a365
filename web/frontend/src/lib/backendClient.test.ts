@@ -62,16 +62,17 @@ describe("backendClient", () => {
     expect(JSON.parse(options.body)).not.toHaveProperty("accessToken");
   });
 
-  it("buildCallSocketUrl places the opaque handle as a path segment, never a query parameter", () => {
+  it("buildCallSocketUrl keeps the opaque handle out of the URL", () => {
     stubRequiredEnv("https://backend.example");
-    const url = buildCallSocketUrl("/api/calls", "opaque-handle-xyz");
-    expect(url).toBe("wss://backend.example/api/calls/opaque-handle-xyz");
+    const url = buildCallSocketUrl("/api/calls");
+    expect(url).toBe("wss://backend.example/api/calls");
+    expect(url).not.toContain("opaque-handle-xyz");
     expect(url).not.toContain("?");
   });
 
-  it("buildCallSocketUrl percent-encodes the opaque handle", () => {
-    stubRequiredEnv("https://backend.example");
-    const url = buildCallSocketUrl("/api/calls", "value with spaces");
-    expect(url).toContain("value%20with%20spaces");
+  it("buildCallSocketUrl uses the current origin for same-origin deployments", () => {
+    stubRequiredEnv();
+    const url = buildCallSocketUrl("/api/calls/");
+    expect(url).toBe("ws://localhost:3000/api/calls");
   });
 });

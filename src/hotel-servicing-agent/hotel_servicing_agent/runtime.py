@@ -7,8 +7,11 @@ from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
 
 from hotel_servicing_agent.config import Settings
-from hotel_servicing_agent.credentials import select_azure_credential
-from hotel_servicing_agent.hosting import Agent365ResponsesHostServer
+from hotel_servicing_agent.credentials import (
+    select_async_azure_credential,
+    select_azure_credential,
+)
+from hotel_servicing_agent.hosting import VoiceLiveAgentHost
 from hotel_servicing_agent.tools import (
     WORK_IQ_AGENT_TOOLS,
     AgenticUserTokenProvider,
@@ -102,8 +105,9 @@ def _instructions_with_current_utc_date(
 
 async def run() -> None:
     settings = Settings.from_environment()
-    async with create_agent(settings) as agent:
-        server = Agent365ResponsesHostServer(agent)
+    voice_credential = select_async_azure_credential()
+    async with voice_credential, create_agent(settings) as agent:
+        server = VoiceLiveAgentHost(agent, settings, voice_credential)
         await server.run_async()
 
 

@@ -25,6 +25,7 @@ function ContactCenterApp() {
     config,
     configError,
     startCall,
+    startPrerecorded,
     sendText,
     toggleMute,
     endCall,
@@ -80,6 +81,9 @@ function ContactCenterApp() {
             features={config?.features ?? null}
             onStartCall={(mode) => {
               void startCall(mode);
+            }}
+            onStartPrerecorded={(file) => {
+              void startPrerecorded(file);
             }}
             onToggleMute={toggleMute}
             onBargeIn={bargeIn}

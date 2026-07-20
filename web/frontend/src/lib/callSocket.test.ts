@@ -40,6 +40,11 @@ class FakeWebSocket {
     this.readyState = FakeWebSocket.OPEN;
     this.emit("open", {});
   }
+
+  triggerClose(code: number) {
+    this.readyState = 3;
+    this.emit("close", { code });
+  }
 }
 
 describe("CallSocket", () => {
@@ -55,7 +60,7 @@ describe("CallSocket", () => {
   it("sends the auth frame as the first message once the socket opens", () => {
     const onStatusChange = vi.fn();
     const socket = new CallSocket(
-      "wss://backend.example/api/calls/opaque-handle-123",
+      "wss://backend.example/api/calls",
       { type: "auth", opaqueHandle: "opaque-handle-123", mode: "text" },
       {
         onMessage: vi.fn(),
@@ -67,7 +72,7 @@ describe("CallSocket", () => {
 
     socket.connect();
     const fake = FakeWebSocket.instances[0];
-    expect(fake.url).not.toMatch(/[?&]/); // no query string at all -- handle is a path segment
+    expect(fake.url).not.toContain("opaque-handle-123");
     fake.triggerOpen();
 
     expect(fake.sent).toHaveLength(1);
@@ -78,13 +83,13 @@ describe("CallSocket", () => {
 
   it("never sends the opaque handle or an access token in the socket URL", () => {
     const socket = new CallSocket(
-      "wss://backend.example/api/calls/opaque-handle-123",
+      "wss://backend.example/api/calls",
       { type: "auth", opaqueHandle: "opaque-handle-123", mode: "voice" },
       { onMessage: vi.fn(), onAudioFrame: vi.fn(), onStatusChange: vi.fn(), onSocketError: vi.fn() },
     );
     socket.connect();
     const fake = FakeWebSocket.instances[0];
-    expect(fake.url).toContain("opaque-handle-123"); // present as a path segment, per design
+    expect(fake.url).not.toContain("opaque-handle-123");
     expect(fake.url).not.toContain("?");
     expect(fake.url).not.toContain("access_token");
   });
@@ -93,7 +98,7 @@ describe("CallSocket", () => {
     const onMessage = vi.fn();
     const onAudioFrame = vi.fn();
     const socket = new CallSocket(
-      "wss://backend.example/api/calls/h1",
+      "wss://backend.example/api/calls",
       { type: "auth", opaqueHandle: "h1", mode: "voice" },
       { onMessage, onAudioFrame, onStatusChange: vi.fn(), onSocketError: vi.fn() },
     );
@@ -113,7 +118,7 @@ describe("CallSocket", () => {
     const onMessage = vi.fn();
     const onSocketError = vi.fn();
     const socket = new CallSocket(
-      "wss://backend.example/api/calls/h1",
+      "wss://backend.example/api/calls",
       { type: "auth", opaqueHandle: "h1", mode: "text" },
       { onMessage, onAudioFrame: vi.fn(), onStatusChange: vi.fn(), onSocketError },
     );
@@ -131,7 +136,7 @@ describe("CallSocket", () => {
 
   it("sends a cancel_output frame for barge-in without any rollback claim in the payload", () => {
     const socket = new CallSocket(
-      "wss://backend.example/api/calls/h1",
+      "wss://backend.example/api/calls",
       { type: "auth", opaqueHandle: "h1", mode: "voice" },
       { onMessage: vi.fn(), onAudioFrame: vi.fn(), onStatusChange: vi.fn(), onSocketError: vi.fn() },
     );
@@ -146,7 +151,7 @@ describe("CallSocket", () => {
 
   it("only sends binary audio frames while the socket is open", () => {
     const socket = new CallSocket(
-      "wss://backend.example/api/calls/h1",
+      "wss://backend.example/api/calls",
       { type: "auth", opaqueHandle: "h1", mode: "voice" },
       { onMessage: vi.fn(), onAudioFrame: vi.fn(), onStatusChange: vi.fn(), onSocketError: vi.fn() },
     );
@@ -161,5 +166,28 @@ describe("CallSocket", () => {
     fake.sent = [];
     socket.sendAudioFrame(frame);
     expect(fake.sent).toEqual([frame]);
+  });
+
+  it("reports an unexpected close once and ignores an intentional close", () => {
+    const onSocketError = vi.fn();
+    const socket = new CallSocket(
+      "wss://backend.example/api/calls",
+      { type: "auth", opaqueHandle: "h1", mode: "voice" },
+      { onMessage: vi.fn(), onAudioFrame: vi.fn(), onStatusChange: vi.fn(), onSocketError },
+    );
+    socket.connect();
+    const fake = FakeWebSocket.instances[0];
+    fake.emit("error", {});
+    fake.triggerClose(1006);
+    expect(onSocketError).toHaveBeenCalledTimes(1);
+
+    const intentional = new CallSocket(
+      "wss://backend.example/api/calls",
+      { type: "auth", opaqueHandle: "h2", mode: "voice" },
+      { onMessage: vi.fn(), onAudioFrame: vi.fn(), onStatusChange: vi.fn(), onSocketError },
+    );
+    intentional.connect();
+    intentional.close();
+    expect(onSocketError).toHaveBeenCalledTimes(1);
   });
 });

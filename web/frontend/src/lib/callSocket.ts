@@ -1,8 +1,6 @@
 /**
- * Typed WebSocket client for `/api/calls/{opaqueHandle}` on the private backend proxy. This
- * client never connects to Foundry directly and never places the Entra access token or the
- * opaque session handle in a query string; see the protocol note at the top of
- * `types/protocol.ts` for how the handle is transmitted.
+ * Typed WebSocket client for `/api/calls` on the private backend proxy. This client never connects
+ * to Foundry directly and sends the opaque session handle only in its first JSON frame.
  */
 import {
   parseServerCallMessage,
@@ -26,6 +24,8 @@ export class CallSocket {
   private readonly url: string;
   private readonly authFrame: ClientCallMessage;
   private readonly callbacks: CallSocketCallbacks;
+  private closedByClient = false;
+  private failureReported = false;
 
   constructor(url: string, authFrame: ClientCallMessage, callbacks: CallSocketCallbacks) {
     this.url = url;
@@ -34,6 +34,8 @@ export class CallSocket {
   }
 
   connect(): void {
+    this.closedByClient = false;
+    this.failureReported = false;
     this.setStatus("connecting");
     const socket = new WebSocket(this.url);
     socket.binaryType = "arraybuffer";
@@ -54,11 +56,14 @@ export class CallSocket {
     });
 
     socket.addEventListener("error", () => {
-      this.callbacks.onSocketError("The call connection had a problem.");
+      this.reportSocketError("The call connection had a problem.");
     });
 
-    socket.addEventListener("close", () => {
+    socket.addEventListener("close", (event) => {
       this.setStatus("closed");
+      if (!this.closedByClient && event.code !== 1000) {
+        this.reportSocketError("The call connection closed unexpectedly.");
+      }
     });
   }
 
@@ -81,6 +86,14 @@ export class CallSocket {
     this.callbacks.onStatusChange(status);
   }
 
+  private reportSocketError(message: string): void {
+    if (this.failureReported) {
+      return;
+    }
+    this.failureReported = true;
+    this.callbacks.onSocketError(message);
+  }
+
   private sendJson(message: ClientCallMessage): void {
     this.socket?.send(JSON.stringify(message));
   }
@@ -95,6 +108,10 @@ export class CallSocket {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(frame);
     }
+  }
+
+  sendAudioCommit(): void {
+    this.sendJson({ type: "audio_commit" });
   }
 
   sendMicState(muted: boolean): void {
@@ -116,6 +133,7 @@ export class CallSocket {
   }
 
   close(): void {
+    this.closedByClient = true;
     this.socket?.close();
     this.socket = null;
   }

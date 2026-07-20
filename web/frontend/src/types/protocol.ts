@@ -5,19 +5,10 @@
  * *private backend proxy* (never the Foundry service directly). All data in this demo represents
  * a fictional hotel chain and synthetic guests; nothing here is a real reservation system.
  *
- * -----------------------------------------------------------------------------------------------
- * Protocol assumption (documented deviation): the task brief lists the WebSocket route as
- * `/api/calls/{opaqueHandle}` (handle as a path segment), but also requires that the opaque
- * handle never appear in a query string and that a first JSON auth frame be preferred for
- * authentication because the browser `WebSocket` API cannot set headers. This client satisfies
- * both constraints at once: it opens the socket at `/api/calls/{opaqueHandle}` (the handle is a
- * path segment, not a query parameter, so it matches the literal route contract) and then, as the
- * very first frame sent after `onopen`, transmits a `ClientAuthFrame` that restates the handle.
- * The backend is expected to treat the connection as unauthenticated (queued, no call operations
- * permitted) until that first frame is received and validated, then bind the socket to the
- * signed-in subject for the remainder of its lifetime. If a future backend contract removes the
- * path segment entirely, only `buildCallSocketUrl` below needs to change.
- * -----------------------------------------------------------------------------------------------
+ * The socket opens at the fixed `/api/calls` path. Because the browser WebSocket API cannot set
+ * headers, its first frame is a `ClientAuthFrame` containing the opaque session handle. The backend
+ * permits no call operation before validating that frame. The handle is never placed in a URL,
+ * browser storage, or query parameter.
  */
 
 /** Response body for `GET /api/config`. Contains no secrets; safe to expose to the browser. */
@@ -33,6 +24,7 @@ export interface BackendConfigResponse {
     voiceEnabled: boolean;
     textEnabled: boolean;
     headlessDemoEnabled: boolean;
+    prerecordedAudioEnabled: boolean;
   };
   /** Path prefix (no host) used to construct the call WebSocket URL, e.g. "/api/calls". */
   websocketPath: string;
@@ -59,10 +51,11 @@ export interface CreateSessionResponse {
   agentSessionId?: string;
 }
 
-/** Discriminated union of every message the client sends to `/api/calls/{opaqueHandle}`. */
+/** Discriminated union of every message the client sends to `/api/calls`. */
 export type ClientCallMessage =
   | ClientAuthFrame
   | ClientTextTurnFrame
+  | ClientAudioCommitFrame
   | ClientMicStateFrame
   | ClientConfirmationResponseFrame
   | ClientCancelOutputFrame
@@ -74,7 +67,7 @@ export interface ClientAuthFrame {
   opaqueHandle: string;
   /** Present when resuming a dropped call so the backend can restore session-visible status. */
   agentSessionId?: string;
-  mode: "voice" | "text" | "headless";
+  mode: "voice" | "text" | "headless" | "prerecorded";
 }
 
 /** A typed text turn, used in text-input mode and in headless/prerecorded test mode. */
@@ -82,6 +75,11 @@ export interface ClientTextTurnFrame {
   type: "text_turn";
   text: string;
   timestamp: string;
+}
+
+/** Commits all previously sent PCM frames as one prerecorded utterance. */
+export interface ClientAudioCommitFrame {
+  type: "audio_commit";
 }
 
 /** Reports local microphone mute state; does not stop the call. */

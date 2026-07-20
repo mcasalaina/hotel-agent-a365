@@ -8,6 +8,7 @@ interface CallControlsProps {
   micMuted: boolean;
   features: BackendConfigResponse["features"] | null;
   onStartCall: (mode: CallMode) => void;
+  onStartPrerecorded: (file: File) => void;
   onToggleMute: () => void;
   onBargeIn: () => void;
   onEndCall: () => void;
@@ -22,6 +23,7 @@ export function CallControls({
   micMuted,
   features,
   onStartCall,
+  onStartPrerecorded,
   onToggleMute,
   onBargeIn,
   onEndCall,
@@ -59,10 +61,30 @@ export function CallControls({
           >
             Run headless demo
           </button>
+          <label
+            className={`${styles.modeButton} ${
+              features && !features.prerecordedAudioEnabled ? styles.modeButtonDisabled : ""
+            }`}
+          >
+            Test prerecorded WAV
+            <input
+              className={styles.fileInput}
+              type="file"
+              accept=".wav,audio/wav"
+              disabled={features ? !features.prerecordedAudioEnabled : false}
+              onChange={(event) => {
+                const file = event.currentTarget.files?.[0];
+                if (file) {
+                  onStartPrerecorded(file);
+                }
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
         </div>
         <p className={styles.hint}>
-          Headless demo mode plays a scripted, synthetic call with no microphone and no network
-          connection, useful for validating the interface without a live backend.
+          Upload a 16-bit PCM WAV to exercise the live Voice Live path without a microphone.
+          Headless demo remains fully offline.
         </p>
       </section>
     );

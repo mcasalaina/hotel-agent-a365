@@ -14,6 +14,7 @@ describe("CallControls", () => {
         micMuted={false}
         features={null}
         onStartCall={onStartCall}
+        onStartPrerecorded={vi.fn()}
         onToggleMute={vi.fn()}
         onBargeIn={vi.fn()}
         onEndCall={vi.fn()}
@@ -33,8 +34,14 @@ describe("CallControls", () => {
         phase="idle"
         mode={null}
         micMuted={false}
-        features={{ voiceEnabled: false, textEnabled: true, headlessDemoEnabled: true }}
+        features={{
+          voiceEnabled: false,
+          textEnabled: true,
+          headlessDemoEnabled: true,
+          prerecordedAudioEnabled: true,
+        }}
         onStartCall={vi.fn()}
+        onStartPrerecorded={vi.fn()}
         onToggleMute={vi.fn()}
         onBargeIn={vi.fn()}
         onEndCall={vi.fn()}
@@ -56,6 +63,7 @@ describe("CallControls", () => {
         micMuted={false}
         features={null}
         onStartCall={vi.fn()}
+        onStartPrerecorded={vi.fn()}
         onToggleMute={onToggleMute}
         onBargeIn={onBargeIn}
         onEndCall={onEndCall}
@@ -80,11 +88,37 @@ describe("CallControls", () => {
         micMuted={false}
         features={null}
         onStartCall={vi.fn()}
+        onStartPrerecorded={vi.fn()}
         onToggleMute={vi.fn()}
         onBargeIn={vi.fn()}
         onEndCall={vi.fn()}
       />,
     );
     expect(screen.queryByRole("button", { name: /mute microphone/i })).not.toBeInTheDocument();
+  });
+
+  it("accepts a prerecorded WAV prompt", async () => {
+    const onStartPrerecorded = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <CallControls
+        phase="idle"
+        mode={null}
+        micMuted={false}
+        features={null}
+        onStartCall={vi.fn()}
+        onStartPrerecorded={onStartPrerecorded}
+        onToggleMute={vi.fn()}
+        onBargeIn={vi.fn()}
+        onEndCall={vi.fn()}
+      />,
+    );
+
+    const file = new File([new ArrayBuffer(44)], "spanish-prompt.wav", {
+      type: "audio/wav",
+    });
+    await user.upload(screen.getByLabelText(/test prerecorded wav/i), file);
+
+    expect(onStartPrerecorded).toHaveBeenCalledWith(file);
   });
 });

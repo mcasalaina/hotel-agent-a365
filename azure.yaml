@@ -77,10 +77,22 @@ services:
               value: ${WORK_IQ_TEAMS_MCP_AUDIENCE}
             - name: AGENT_INSTRUCTIONS_PATH
               value: agent-instructions.md
+            - name: VOICE_LIVE_ENDPOINT
+              value: ${VOICE_LIVE_ENDPOINT}
+            - name: VOICE_LIVE_API_VERSION
+              value: "2026-04-10"
+            - name: VOICE_LIVE_AGENT_NAME
+              value: hotel-servicing-agent
+            - name: VOICE_LIVE_PROJECT_NAME
+              value: ${AZURE_AI_PROJECT_NAME}
+            - name: VOICE_LIVE_VOICE
+              value: ${VOICE_LIVE_VOICE}
         kind: hosted
         name: hotel-servicing-agent
         protocols:
             - protocol: responses
               version: 2.0.0
+            - protocol: invocations_ws
+              version: 1.0.0
 infra:
     provider: microsoft.foundry

@@ -19,18 +19,30 @@ jobs:
             src/hotel-servicing-agent/pyproject.toml
             evaluation/assert/pyproject.toml
             evaluation/assert/assert-source.lock.json
+            web/backend/pyproject.toml
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/frontend/package-lock.json
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e "./src/hotel-servicing-agent[dev]"
+          python -m pip install -e "./web/backend[dev]"
           python scripts/bootstrap_assert.py --install
+          npm --prefix web/frontend ci
       - name: Run repository checks
         run: |
-          python -m ruff check src scripts tests evaluation/assert/src evaluation/assert/tests
-          python -m ruff format --check src scripts tests evaluation/assert/src evaluation/assert/tests
-          python -m mypy src/hotel-servicing-agent/hotel_servicing_agent scripts evaluation/assert/src
+          python -m ruff check src web/backend scripts tests evaluation/assert/src evaluation/assert/tests
+          python -m ruff format --check src web/backend scripts tests evaluation/assert/src evaluation/assert/tests
+          python -m mypy src/hotel-servicing-agent/hotel_servicing_agent web/backend/hotel_voice_proxy scripts evaluation/assert/src
           python -m pytest
           python -m pytest evaluation/assert/tests
           python scripts/validate_technical_naming.py
           python scripts/validate_configuration.py
           python scripts/run_assert_evaluation.py validate
+          npm --prefix web/frontend test
+          npm --prefix web/frontend run lint
+          npm --prefix web/frontend run typecheck
+          npm --prefix web/frontend run build

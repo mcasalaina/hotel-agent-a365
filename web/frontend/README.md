@@ -5,9 +5,8 @@ desk for the fictional **Lyrenza Hotels** brand. Every guest, reservation, and f
 in this app is **synthetic** demo data; it is not connected to a real hotel chain or real customer
 records.
 
-This app is the browser client for Phase 3 of the project. It does not talk to Azure AI Foundry
-directly — it only ever connects to a private backend proxy that is expected to run alongside it
-(see [Backend protocol assumptions](#backend-protocol-assumptions) below).
+This app is the browser client for Phase 3 of the project. It never talks to Foundry directly. It
+connects only to the Python proxy in `web/backend`, which is deployed with the production frontend.
 
 ## Requirements
 
@@ -69,6 +68,7 @@ The main screen simulates a live contact-center call:
 - Connection/call state badge (idle, connecting, active, reconnecting, ended) with a reconnect
   indicator and elapsed-call timer
 - Voice mode: microphone capture with mute control; Text mode: a typed message input
+- Prerecorded mode: upload an uncompressed 16-bit PCM WAV prompt for repeatable live testing
 - A live, screen-reader-friendly transcript of the caller's and agent's turns
 - A friendly activity timeline of progress/tool/data-source events (no raw backend errors or
   internal details are ever shown)
@@ -90,25 +90,27 @@ capture happens at whatever rate the browser grants and is resampled afterward. 
 received from the backend are decoded and scheduled back-to-back for gapless playback
 (`src/lib/audioPlayback.ts`).
 
-## Backend protocol assumptions
+Uploaded WAV prompts may be mono or stereo and use any sample rate. The browser validates 16-bit PCM,
+downmixes stereo, resamples to 24 kHz, sends deterministic binary chunks, and finishes with an
+`audio_commit` control frame.
 
-No real backend exists in this repository yet, so the client below documents the exact contract it
-expects. **These are assumptions the real backend must satisfy** — see the header comment in
-[`src/types/protocol.ts`](./src/types/protocol.ts) for the full, authoritative type-level contract.
+## Backend protocol
+
+The Python backend implements this contract. See the header comment in
+[`src/types/protocol.ts`](./src/types/protocol.ts) for the full authoritative type-level contract.
 
 - **`GET /api/config`** — unauthenticated. Returns non-secret runtime configuration: environment
   label, hotel brand name, synthetic-data notice text, feature flags (voice/text/headless demo
-  enabled), the WebSocket path prefix, and reconnect tuning values.
+  enabled), the prerecorded-audio flag, the WebSocket path prefix, and reconnect tuning values.
 - **`POST /api/auth/session`** — requires an `Authorization: Bearer <Entra access token>` header.
   Exchanges the signed-in user's Entra token for a short-lived **opaque session handle**. The
   Entra token is never sent anywhere else, and never placed in a URL or query string.
-- **`WebSocket /api/calls/{opaqueHandle}`** — the opaque handle is placed as a **path segment**,
-  never a query parameter. Because a browser `WebSocket` cannot set custom headers, the very first
-  frame the client sends after the socket opens is a JSON auth frame
+- **`WebSocket /api/calls`** - uses a fixed URL so the opaque handle does not enter access logs.
+  Because a browser `WebSocket` cannot set custom headers, the very first frame the client sends
+  after the socket opens is a JSON auth frame
   (`{"type":"auth","opaqueHandle": "...", "mode": "voice" | "text" | "headless"}`) that restates
-  the handle. The backend should treat the connection as unauthenticated until that frame is
-  received and validated. If a future backend contract removes the path segment, only
-  `buildCallSocketUrl` in `src/lib/backendClient.ts` needs to change.
+  the handle. The backend treats the connection as unauthenticated until that frame is received and
+  validated.
 - All other JSON message shapes exchanged on the socket (server call-state updates, transcript
   partials/finals, timeline/tool events, confirmation requests, result cards, disposition, and the
   client's text turns, mic-state, confirmation responses, cancel-output/barge-in, and end-call

@@ -19,7 +19,7 @@ export type CallPhase =
   | "ended"
   | "error";
 
-export type CallMode = "voice" | "text" | "headless";
+export type CallMode = "voice" | "text" | "headless" | "prerecorded";
 
 export interface TranscriptEntry {
   id: string;
