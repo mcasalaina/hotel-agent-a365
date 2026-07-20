@@ -2,7 +2,7 @@
 
 ## Status
 
-Deployed - Voice proxy managed-identity hotfix
+Deployed - Hosted Agent version 47 pinned for Voice Live
 
 ## Canonical product plan
 
@@ -154,6 +154,35 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
   lint, and resource-group validation passed. What-if showed the intended environment addition with
   no deletion; authentication, subscription policy, and static/live least-privilege role checks
   passed.
+- Revalidated on 2026-07-20 for the Hosted Agent protocol-routing hotfix:
+  - Foundry session `d4067374c62d42f8b330d6e214984c64` resolved to version 46, whose live
+    definition exposes only `responses`; the agent endpoint routes 100% of traffic to `@latest`.
+    This proves the HTTP 400 occurs before application dispatch because `invocations_ws` is absent
+    from the latest version.
+  - The current `azure.yaml` and `agent.manifest.yaml` both declare `responses` 2.0.0 and
+    `invocations_ws` 1.0.0.
+  - `azd package hotel-servicing-agent --no-prompt` passed.
+  - The 13 focused Voice Live and proxy tests passed; Ruff check and format verification passed.
+  - Bicep build and lint passed for `infra/main.bicep` and `infra/voice-web.bicep`.
+  - Resource-group validation of the deployed Voice web template returned `Succeeded`.
+  - `azd ai agent doctor` confirmed authentication, project access, developer RBAC, and active
+    Hosted Agent status. Its obsolete `agent.yaml` check is not applicable because the initialized
+    project is defined by `azure.yaml`; the Foundry azd guidance explicitly states that
+    `agent.manifest.yaml` is a seed format and is not retained by `azd ai agent init`.
+  - `azd provision --preview` is not applicable to this application-only Hosted Agent deployment:
+    the Microsoft Foundry provider injects its own generic Bicep parameters into the repository's
+    separately managed subscription template. No infrastructure provisioning will be executed.
+  - Azure CLI and azd authentication target subscription
+    `27b0139a-16b4-42bf-9ec9-c6db3768245e`, tenant
+    `a9d9510e-7131-4355-8b7e-37e7b1e99862`; the user reconfirmed that subscription and the existing
+    Foundry resource group's East US location. No subscription-scope policy assignments exist.
+  - `azd deploy hotel-servicing-agent --no-prompt` published active version 47 with both protocols.
+    The endpoint now routes 100% to version 47 and exposes `activity`, `responses`, and `invocations`.
+  - Two prerecorded Voice Live smoke calls completed through the public `invocations_ws` endpoint.
+    The pinned-version run received `auth_ack`, a final user transcript, an agent transcript, and
+    129,600 bytes of synthesized audio. Hosted logs show `GET /invocations_ws` returned 101.
+  - Container App revision `hotel-voice-proxy--0000005` remains healthy and running at
+    `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`.
 
 ## Progress
 

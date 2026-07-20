@@ -98,6 +98,7 @@ role assignment exists.
 - Project endpoint: injected by Foundry in the hosted container
 - Search endpoint and knowledge-base name: injected from azd environment values
 - Voice Live endpoint and multilingual voice: `VOICE_LIVE_ENDPOINT` and `VOICE_LIVE_VOICE`
+- Production routing: 100% pinned to verified dual-protocol version `47`
 
 The WebSocket adapter uses Voice Live agent mode, PCM16 audio at 24 kHz, multilingual semantic VAD,
 Azure speech transcription without a fixed locale, deep noise suppression, echo cancellation,
@@ -202,6 +203,11 @@ Run `scripts/run_voice_smoke.py` with a mono, 16-bit, 24 kHz PCM WAV after deplo
 version. The command fails unless it receives a final user transcript, a final agent transcript, and
 synthesized audio.
 
+The production endpoint is pinned to version `47` instead of `@latest`. A Responses-only version 46
+was published after the original voice deployment and removed `invocations_ws`, causing Foundry to
+reject every voice handshake with HTTP 400. Keep the endpoint pinned until a newer dual-protocol
+version has passed the prerecorded smoke test, then move the fixed-ratio route deliberately.
+
 ## Live development deployment
 
 - Search indexes: `hotel-properties-index`, `hotel-policies-index`,
@@ -209,7 +215,7 @@ synthesized audio.
 - Knowledge sources: one `hotel-*-ks` source per index
 - Knowledge base: `hotel-foundryiq`
 - Source archive: 95 Markdown blobs in `hotel-docs`
-- Hosted Agent: `hotel-servicing-agent`, active version 42
+- Hosted Agent: `hotel-servicing-agent`, active and production-routed version 47
 - Agent Search access: **Search Index Data Reader**
 - Fabric workspace: `HotelAgent.Workspace`
   (`660ed238-54b7-42bd-8b1b-cf2ee47a11ba`)
