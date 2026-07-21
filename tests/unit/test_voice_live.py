@@ -6,8 +6,11 @@ from pathlib import Path
 import jwt
 import pytest
 from azure.ai.voicelive.models import (
+    ResponseFunctionCallItem,
     ServerEventConversationItemInputAudioTranscriptionCompleted,
     ServerEventConversationItemInputAudioTranscriptionDelta,
+    ServerEventResponseOutputItemAdded,
+    ServerEventResponseOutputItemDone,
 )
 from hotel_servicing_agent.config import Settings, _voice_live_defaults
 from hotel_servicing_agent.voice_live import VoiceLiveBridge
@@ -73,6 +76,29 @@ def test_voice_session_uses_multilingual_speech_and_interim_response(
     assert payload["input_audio_transcription"]["model"] == "azure-speech"
     assert payload["interim_response"]["type"] == "llm_interim_response"
     assert set(payload["interim_response"]["triggers"]) == {"tool", "latency"}
+    interim_instructions = payload["interim_response"]["instructions"]
+    assert "established conversation language" in interim_instructions
+    assert "Names, hotel or place names" in interim_instructions
+    assert "complete utterance is clearly and predominantly" in interim_instructions
+    assert "instructions" not in payload
+
+
+def test_agent_instructions_require_stable_language_selection() -> None:
+    instructions = (
+        Path(__file__).parents[2] / "src/hotel-servicing-agent/agent-instructions.md"
+    ).read_text(encoding="utf-8")
+    normalized = " ".join(instructions.split())
+
+    assert "established conversation language" in normalized
+    assert "Names, hotel or place names" in normalized
+    assert "complete utterance is clearly and predominantly" in normalized
+    assert "one to three short, conversational sentences" in normalized
+    assert "Do not use Markdown, bullets, numbered lists, tables" in normalized
+    assert "Ask at most one focused question at a time" in normalized
+    assert "ask only for the next missing detail" in normalized
+    assert '"Any reservations" or reservations "on file"' in normalized
+    assert "query reservations by that ID" in normalized
+    assert "historical or cancelled reservations" in normalized
 
 
 def test_prerecorded_session_disables_automatic_vad_response(tmp_path: Path) -> None:
@@ -151,6 +177,85 @@ def test_voice_event_deltas_are_forwarded_as_accumulated_transcripts(
         "Buenos dias",
     ]
     assert connection.response.create_calls == 1
+
+
+def test_voice_tool_calls_are_forwarded_as_safe_timeline_events(tmp_path: Path) -> None:
+    class FakeConnection:
+        class FakeResponse:
+            async def create(self) -> None:
+                raise AssertionError("The test must not create a response")
+
+        def __init__(self) -> None:
+            self.response = self.FakeResponse()
+
+        def __aiter__(self) -> FakeConnection:
+            fabric_call = ResponseFunctionCallItem(
+                name="query_hotel_operations_data",
+                call_id="fabric-call",
+                arguments='{"question":"secret details"}',
+                status="in_progress",
+            )
+            self._events = iter(
+                [
+                    ServerEventResponseOutputItemAdded(
+                        response_id="response-1",
+                        output_index=0,
+                        item=fabric_call,
+                    ),
+                    ServerEventResponseOutputItemDone(
+                        response_id="response-1",
+                        output_index=0,
+                        item=ResponseFunctionCallItem(
+                            name="query_hotel_operations_data",
+                            call_id="fabric-call",
+                            arguments='{"question":"secret details"}',
+                            status="completed",
+                        ),
+                    ),
+                    ServerEventResponseOutputItemAdded(
+                        response_id="response-1",
+                        output_index=1,
+                        item=ResponseFunctionCallItem(
+                            name="query_work_context",
+                            call_id="work-iq-call",
+                            arguments='{"question":"private context"}',
+                            status="in_progress",
+                        ),
+                    ),
+                ]
+            )
+            return self
+
+        async def __anext__(self) -> object:
+            try:
+                return next(self._events)
+            except StopIteration as exc:
+                raise StopAsyncIteration from exc
+
+    class FakeWebSocket:
+        def __init__(self) -> None:
+            self.messages: list[dict[str, object]] = []
+
+        async def send_json(self, message: dict[str, object]) -> None:
+            self.messages.append(message)
+
+    bridge = VoiceLiveBridge(_settings(tmp_path), _UnusedCredential())  # type: ignore[arg-type]
+    websocket = FakeWebSocket()
+    asyncio.run(
+        bridge._relay_voice_events(  # type: ignore[arg-type]
+            FakeConnection(),  # type: ignore[arg-type]
+            websocket,
+            "session-1",
+            "voice",
+        )
+    )
+
+    assert [(message["category"], message["message"]) for message in websocket.messages] == [
+        ("data_source", "Querying hotel operations and reservations in Fabric."),
+        ("data_source", "Querying Microsoft 365 work context with Work IQ."),
+    ]
+    assert all("secret" not in str(message) for message in websocket.messages)
+    assert all("private" not in str(message) for message in websocket.messages)
 
 
 def test_foundry_websocket_url_uses_current_route_and_session() -> None:

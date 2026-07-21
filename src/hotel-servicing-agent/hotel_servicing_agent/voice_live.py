@@ -27,12 +27,15 @@ from azure.ai.voicelive.models import (
     OutputTextContentPart,
     RequestSession,
     ResponseCreateParams,
+    ResponseFunctionCallItem,
     ServerEventConversationItemInputAudioTranscriptionCompleted,
     ServerEventConversationItemInputAudioTranscriptionDelta,
     ServerEventError,
     ServerEventResponseAudioDelta,
     ServerEventResponseAudioTranscriptDelta,
     ServerEventResponseAudioTranscriptDone,
+    ServerEventResponseOutputItemAdded,
+    ServerEventResponseOutputItemDone,
     ServerEventResponseTextDone,
     ServerEventSessionUpdated,
     ServerEventType,
@@ -46,6 +49,36 @@ from hotel_servicing_agent.config import Settings
 logger = logging.getLogger(__name__)
 
 _ALLOWED_MODES = frozenset({"voice", "text", "prerecorded"})
+_TOOL_ACTIVITY: dict[str, tuple[str, str]] = {
+    "search_hotel_knowledge": (
+        "data_source",
+        "Searching approved hotel knowledge in Foundry IQ.",
+    ),
+    "query_hotel_operations_data": (
+        "data_source",
+        "Querying hotel operations and reservations in Fabric.",
+    ),
+    "manage_reservation": (
+        "tool",
+        "Updating reservation data in Fabric.",
+    ),
+    "check_work_context_access": (
+        "tool",
+        "Checking Microsoft 365 work-context access.",
+    ),
+    "query_work_context": (
+        "data_source",
+        "Querying Microsoft 365 work context with Work IQ.",
+    ),
+    "send_email": (
+        "tool",
+        "Sending an email with Work IQ.",
+    ),
+    "reply_to_email": (
+        "tool",
+        "Replying to an email with Work IQ.",
+    ),
+}
 
 
 class VoiceLiveBridge:
@@ -150,7 +183,11 @@ class VoiceLiveBridge:
                 latency_threshold_ms=750,
                 model="gpt-4.1-mini",
                 instructions=(
-                    "Use the same language as the caller's most recent utterance. "
+                    "Use the caller's established conversation language, starting in English. "
+                    "Keep that language unless the caller explicitly requests another language or "
+                    "a complete utterance is clearly and predominantly in another language. "
+                    "Names, hotel or place names, accents, and isolated foreign words must not "
+                    "trigger a language change. "
                     "In eight words or fewer, say only that you are checking the requested "
                     "hotel information. Never invent progress or a result."
                 ),
@@ -283,6 +320,7 @@ class VoiceLiveBridge:
         greeting_sent = False
         user_transcript = ""
         agent_transcript = ""
+        announced_tool_calls: set[str] = set()
         async for event in connection:
             if isinstance(event, ServerEventSessionUpdated):
                 agent_config = event.session.agent
@@ -346,6 +384,30 @@ class VoiceLiveBridge:
 
             if isinstance(event, ServerEventResponseAudioDelta):
                 await websocket.send_bytes(event.delta)
+                continue
+
+            if isinstance(
+                event,
+                (ServerEventResponseOutputItemAdded, ServerEventResponseOutputItemDone),
+            ):
+                item = event.item
+                if (
+                    isinstance(item, ResponseFunctionCallItem)
+                    and item.call_id not in announced_tool_calls
+                ):
+                    announced_tool_calls.add(item.call_id)
+                    category, message = _TOOL_ACTIVITY.get(
+                        item.name,
+                        ("tool", "Using a backend service."),
+                    )
+                    await websocket.send_json(
+                        {
+                            "type": "timeline_event",
+                            "category": category,
+                            "message": message,
+                            "timestamp": _utc_timestamp(),
+                        }
+                    )
                 continue
 
             if event.type == ServerEventType.INPUT_AUDIO_BUFFER_SPEECH_STARTED:

@@ -44,6 +44,10 @@ def test_fabric_data_tool_queries_published_mcp_endpoint() -> None:
     assert captured["headers"] == {"Authorization": "Bearer fabric-token"}
     assert captured["question"].startswith(f"Find reservation RES-1{PROPERTY_CONTEXT_DIRECTIVE}")
     assert "official property name" in PROPERTY_CONTEXT_DIRECTIVE
+    assert "first resolve the exact guest_id" in PROPERTY_CONTEXT_DIRECTIVE
+    assert "'any reservations' or reservations 'on file'" in PROPERTY_CONTEXT_DIRECTIVE
+    assert "all dates and statuses" in PROPERTY_CONTEXT_DIRECTIVE
+    assert "only filter to active or upcoming" in PROPERTY_CONTEXT_DIRECTIVE
     assert "always return the exact guest_id" in PROPERTY_CONTEXT_DIRECTIVE
     assert "exact property_id and room_type_id" in PROPERTY_CONTEXT_DIRECTIVE
     assert "exactly 20 rows" in PROPERTY_CONTEXT_DIRECTIVE

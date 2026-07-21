@@ -14,9 +14,13 @@ FABRIC_TOKEN_SCOPE = "https://api.fabric.microsoft.com/.default"
 PROPERTY_CONTEXT_DIRECTIVE = (
     " Always include the exact internal property_id with the official property name in this tool "
     "response. The identifier is required for tool coordination but must not be recommended for "
-    "display to the user. For a guest lookup, always return the exact guest_id. For a hotel and "
-    "room lookup, always return the exact property_id and room_type_id needed by the write tool, "
-    "and limit the result to the requested hotel. "
+    "display to the user. For a named guest reservation lookup, first resolve the exact guest_id "
+    "from the guest's first and last name, then join reservations on that guest_id. A request for "
+    "'any reservations' or reservations 'on file' means all dates and statuses, including "
+    "completed and cancelled; only filter to active or upcoming reservations when the question "
+    "explicitly asks for that filter. For a guest lookup, always return the exact guest_id. For a "
+    "hotel and room lookup, always return the exact property_id and room_type_id needed by the "
+    "write tool, and limit the result to the requested hotel. "
     "For a chain-wide aggregation, query the complete property roster, return an overall total and "
     "a Markdown table with exactly 20 rows using property name and count only, and include "
     "properties with zero matching records. Never collapse zero-count rows into an 'all other "
@@ -59,8 +63,10 @@ class FabricDataAgentTool:
             description=(
                 "Query governed hotel operations and guest-services data across both Fabric "
                 "sources. Resolve hotels to their official names and return complete chain-wide "
-                "breakdowns when requested. Internal identifiers are for tool coordination only "
-                "and must not be shown to the user."
+                "breakdowns when requested. For named guests, resolve the exact guest ID before "
+                "querying reservations, and search all statuses unless the caller explicitly asks "
+                "for active or upcoming records. Internal identifiers are for tool coordination "
+                "only and must not be shown to the user."
             ),
             func=self.query,
         )

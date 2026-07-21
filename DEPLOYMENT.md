@@ -98,7 +98,7 @@ role assignment exists.
 - Project endpoint: injected by Foundry in the hosted container
 - Search endpoint and knowledge-base name: injected from azd environment values
 - Voice Live endpoint and multilingual voice: `VOICE_LIVE_ENDPOINT` and `VOICE_LIVE_VOICE`
-- Production routing: 100% pinned to verified dual-protocol version `47`
+- Production routing: 100% pinned to verified dual-protocol version `55`
 
 The WebSocket adapter uses Voice Live agent mode, PCM16 audio at 24 kHz, multilingual semantic VAD,
 Azure speech transcription without a fixed locale, deep noise suppression, echo cancellation,
@@ -201,9 +201,11 @@ revision can become healthy, preventing a deployment with a broken Foundry ident
 
 Run `scripts/run_voice_smoke.py` with a mono, 16-bit, 24 kHz PCM WAV after deploying the hosted-agent
 version. The command fails unless it receives a final user transcript, a final agent transcript, and
-synthesized audio.
+synthesized audio. Add `--expect-activity` for prompts that must call a backend service; the harness
+then also requires a `tool` or `data_source` timeline event and the final agent response that follows
+that activity.
 
-The production endpoint is pinned to version `47` instead of `@latest`. A Responses-only version 46
+The production endpoint is pinned to version `55` instead of `@latest`. A Responses-only version 46
 was published after the original voice deployment and removed `invocations_ws`, causing Foundry to
 reject every voice handshake with HTTP 400. Keep the endpoint pinned until a newer dual-protocol
 version has passed the prerecorded smoke test, then move the fixed-ratio route deliberately.
@@ -215,7 +217,7 @@ version has passed the prerecorded smoke test, then move the fixed-ratio route d
 - Knowledge sources: one `hotel-*-ks` source per index
 - Knowledge base: `hotel-foundryiq`
 - Source archive: 95 Markdown blobs in `hotel-docs`
-- Hosted Agent: `hotel-servicing-agent`, active and production-routed version 47
+- Hosted Agent: `hotel-servicing-agent`, active and production-routed version 55
 - Agent Search access: **Search Index Data Reader**
 - Fabric workspace: `HotelAgent.Workspace`
   (`660ed238-54b7-42bd-8b1b-cf2ee47a11ba`)

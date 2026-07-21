@@ -2,7 +2,7 @@
 
 ## Status
 
-Deployed - Hosted Agent version 47 pinned for Voice Live
+Deployed - Hosted Agent version 55 pinned for Voice Live
 
 ## Canonical product plan
 
@@ -183,6 +183,67 @@ tenant `a9d9510e-7131-4355-8b7e-37e7b1e99862`, resource group
     129,600 bytes of synthesized audio. Hosted logs show `GET /invocations_ws` returned 101.
   - Container App revision `hotel-voice-proxy--0000005` remains healthy and running at
     `https://hotel-voice-proxy.mangoground-da18d06a.eastus2.azurecontainerapps.io`.
+- Revalidated on 2026-07-20 for voice-language stabilization:
+  - Interim and main-agent instructions now preserve the established conversation language.
+    Names, place names, accents, and isolated foreign words do not trigger a switch; switching still
+    occurs for an explicit request or a complete utterance clearly in another language.
+  - Eight focused Voice Live tests passed, including regression checks for both instruction layers.
+  - Ruff check, Ruff format verification, and `git diff --check` passed.
+  - `AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd package hotel-servicing-agent --no-prompt`
+    completed successfully.
+  - azd authentication, the existing Foundry project endpoint, dual-protocol version 47, and the
+    confirmed deployment subscription were reverified. No subscription-scope policy assignments
+    exist, and this code-only Hosted Agent update requires no infrastructure provisioning.
+- Revalidated on 2026-07-21 for concise voice responses, backend activity, and guest reservation
+  lookup:
+  - The focused Voice Live, Voice smoke, Fabric data, and proxy suites passed all 22 tests. Ruff
+    check, Ruff format verification, and `git diff --check` passed.
+  - Direct Fabric MCP validation resolved Maria Garcia to the exact guest record and returned all
+    ten reservations across dates and statuses. The governed query now treats "any reservations"
+    and "on file" as an all-status lookup unless the caller explicitly requests active or upcoming
+    records.
+  - Live Voice Live probes proved `response.output_item.added` events expose
+    `query_hotel_operations_data` for the activity stream. They also proved hosted-agent mode
+    rejects session and per-response instruction overrides, while an injected system conversation
+    item can stall after tool execution. The final package uses concise main-agent response rules
+    and none of those unsupported or unreliable channel overrides.
+  - A production prerecorded probe exposed a VAD/manual-commit race: trailing silence could
+    auto-commit the recording before the harness sent `audio_commit`, producing `buffer too small`.
+    The prerecorded client now trims long edge silence, streams PCM at its real 24 kHz rate, and
+    commits immediately after speech, before the two-second VAD threshold. Live microphone mode
+    retains multilingual semantic VAD, interruption, and automatic response.
+  - `AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd package hotel-servicing-agent --no-prompt`
+    passed again for the final dual-protocol package after removing the unreliable system-context
+    path and making prerecorded streaming deterministic. `azd ai agent doctor` passed
+    authentication, project access, developer RBAC, active-agent, and `azure.yaml` checks; its
+    legacy `agent.yaml` check is not applicable to this `azure.yaml` hosted-agent service.
+  - `az bicep build` and `az bicep lint` passed for `infra/main.bicep` and
+    `infra/voice-web.bicep`. No subscription-scope policy assignments were returned.
+  - Azure CLI and azd authentication target enabled subscription
+    `27b0139a-16b4-42bf-9ec9-c6db3768245e` in tenant
+    `a9d9510e-7131-4355-8b7e-37e7b1e99862`; the existing Foundry project reports East US 2.
+    This deployment updates hosted-agent code only and does not provision infrastructure.
+  - Hosted Agent version 55 is active with `responses` 2.0.0 and `invocations_ws` 1.0.0, and the
+    production route resolves to version 55.
+  - A prerecorded Maria Garcia production call transcribed the request correctly, emitted Fabric
+    `data_source` activity, returned the ten all-status reservation records in two concise sentences,
+    and synthesized 729,000 bytes of audio.
+  - A simple prerecorded production call returned the expected short English welcome and synthesized
+    334,800 bytes of audio without invoking a backend data source.
+  - A Work IQ production probe emitted both the work-context access check and Work IQ `data_source`
+    activity before its final spoken response, and synthesized 415,200 bytes of audio.
+  - The production Voice web `/api/health` endpoint returns `{"status": "ok"}`. Container App revision
+    `hotel-voice-proxy--0000005` remains running at 100% traffic. Live role verification confirms the
+    proxy identity has only `AcrPull` on the existing registry and `Azure AI Developer` on the
+    existing Foundry project.
+
+## Role Assignment Verification
+
+- Status: Verified.
+- The existing Voice web managed identity remains scoped to `AcrPull` on the existing registry and
+  `Azure AI Developer` on the existing Foundry project.
+- Both assignments use deterministic names, resource-level scope, and `ServicePrincipal` principal
+  type. This code-only update adds no identity, role assignment, or permission.
 
 ## Progress
 
