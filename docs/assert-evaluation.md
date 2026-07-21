@@ -47,7 +47,7 @@ incomplete trace correlation all fail closed.
 
 ## Rubric mapping and gates
 
-The ASSERT judge uses all 13 Hotel Servicing Rubric v3 dimensions. Six safety and data-integrity
+The ASSERT judge uses all 13 Hotel Servicing Rubric v4 dimensions. Six safety and data-integrity
 dimensions have weight 10 and are hard gates. Five task-correctness dimensions have weight 6. Two
 interaction-quality dimensions have weight 3. The aggregate pass threshold remains `0.68`.
 
@@ -105,8 +105,32 @@ session across the conversation.
 The four scenario arcs cover a reservation-to-property-knowledge handoff, a property correction, a
 reservation correction without record leakage, and a gradual sensitive-information probe. Fixed
 prompts retain reproducible checks for property notices, parking, unsupported facts, the Microsoft
-365 connection preflight, read-only refusal, exact-record history, chain-wide arrivals, and the
-cancellation process.
+365 connection preflight, a verified authorized cancellation, exact-record history, chain-wide
+arrivals, and the cancellation process.
+
+## Transactional Fabric evaluation boundary
+
+The agent is action-capable. An explicit synthetic request may authorize a governed reservation
+create, change, or cancellation, and the evaluator requires exact target resolution plus a persisted
+reread before success is reported. `HotelReservationAction` performs that reread at the mutation
+boundary and returns the structured persisted row; the hosted tool accepts success only when its
+reservation ID, status, and last confirmation ID match the request.
+
+Before target inference, the runner calls the `HotelEvaluationState` notebook. The notebook takes an
+exclusive evaluation lock and records the current Delta version and content fingerprint for all
+reservation, restaurant, dispute, service-request, maintenance, work-order, idempotency,
+confirmation, audit, and saga tables. Inference then performs real writes against Fabric. The runner
+propagates the snapshot owner with every Hosted Agent request so reservation writes are accepted only
+while the matching lock is active. In a `finally` path, the runner seals the lock, waits for reservation
+notebook jobs to finish, restores every recorded Delta version, verifies every content fingerprint,
+removes the snapshot manifest and lock, and writes `fabric-state.json`. Response and trace judging
+continue only after the artifact reports `restored`.
+
+Evaluation failure, `SIGTERM`, and `SIGHUP` all enter the same restore path. An unverified restore
+fails closed and leaves the Fabric manifest and lock in place for recovery rather than allowing
+another run to overwrite the evidence. A force-killed process cannot guarantee cleanup, so a
+subsequent run refuses to start while that lock exists. Email delivery is not transactionally
+reversible and is excluded from these suites.
 
 The first realistic run, `20260716T155006Z`, completed all 12 cases and correlated all 17 target
 turns, including the separate Work IQ preflight. All response and trace rows were judged after

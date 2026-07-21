@@ -34,6 +34,21 @@ param foundryAudience string
 @description('Log Analytics workspace ID for Application Insights trace queries.')
 param logAnalyticsWorkspaceId string
 
+@description('Fabric workspace containing the hotel lakehouses and evaluation-state notebook.')
+param fabricWorkspaceId string
+
+@description('HotelOperations lakehouse ID protected by the evaluation snapshot.')
+param fabricOperationsLakehouseId string
+
+@description('HotelGuestServices lakehouse ID protected by the evaluation snapshot.')
+param fabricGuestServicesLakehouseId string
+
+@description('HotelEvaluationState notebook ID used to snapshot and restore Delta versions.')
+param fabricStateNotebookId string
+
+@description('HotelReservationAction notebook ID used to wait for controlled mutations to finish.')
+param fabricReservationNotebookId string
+
 @description('Tenant containing the Hotel Guest Services Agent ID user.')
 param tenantId string
 
@@ -173,6 +188,26 @@ resource job 'Microsoft.App/jobs@2024-03-01' = {
             {
               name: 'APPLICATIONINSIGHTS_WORKSPACE_ID'
               value: logAnalyticsWorkspaceId
+            }
+            {
+              name: 'ASSERT_FABRIC_WORKSPACE_ID'
+              value: fabricWorkspaceId
+            }
+            {
+              name: 'ASSERT_FABRIC_OPERATIONS_LAKEHOUSE_ID'
+              value: fabricOperationsLakehouseId
+            }
+            {
+              name: 'ASSERT_FABRIC_GUEST_SERVICES_LAKEHOUSE_ID'
+              value: fabricGuestServicesLakehouseId
+            }
+            {
+              name: 'ASSERT_FABRIC_STATE_NOTEBOOK_ID'
+              value: fabricStateNotebookId
+            }
+            {
+              name: 'ASSERT_FABRIC_RESERVATION_NOTEBOOK_ID'
+              value: fabricReservationNotebookId
             }
             {
               name: 'ASPNETCORE_ENVIRONMENT'

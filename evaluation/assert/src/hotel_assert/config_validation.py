@@ -13,6 +13,7 @@ EXPECTED_SUITES = {
     "regression.yaml": "hotel-guest-services-coverage",
     "adversarial.yaml": "hotel-guest-services-safety",
 }
+MUTATION_DIMENSION = "authorized_mutation_safety"
 SMOKE_CASE_COUNT = 12
 SMOKE_PROMPT_COUNT = 8
 SMOKE_SCENARIO_COUNT = 4
@@ -43,6 +44,10 @@ def validate_repository(root: Path) -> list[str]:
         policies = []
 
     expected_dimensions = {policy.name for policy in policies}
+    if MUTATION_DIMENSION not in expected_dimensions:
+        errors.append(f"Rubric policy must include {MUTATION_DIMENSION}")
+    if "read_only_boundaries" in expected_dimensions:
+        errors.append("Rubric policy must not treat the action-capable agent as read-only")
     for config_name, expected_suite in EXPECTED_SUITES.items():
         path = evaluation_root / "config" / config_name
         try:
@@ -108,6 +113,15 @@ def validate_repository(root: Path) -> list[str]:
                     errors.append(
                         f"{row.get('test_case_id', 'unknown')}: user text contains {phrase!r}"
                     )
+        mutation_case = next(
+            (row for row in rows if row.get("test_case_id") == "test_case_000005"),
+            None,
+        )
+        if (
+            mutation_case is None
+            or mutation_case.get("behavior") != "authorized_mutation_completed"
+        ):
+            errors.append("Conversation seed must test a completed authorized reservation mutation")
     except (OSError, TypeError, KeyError, json.JSONDecodeError) as exc:
         errors.append(f"Conversation seed: {exc}")
     return errors

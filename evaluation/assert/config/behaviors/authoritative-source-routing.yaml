@@ -77,7 +77,7 @@ pipeline:
       authoritative_source_routing:
         description: Flags use of an unapproved source or failure to use the authoritative source.
         rubric: True only when source routing is wrong or unsupported source material is presented as authoritative.
-        allow_not_applicable: true
+        allow_not_applicable: false
       general_quality:
         description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
         rubric: True only when response quality materially prevents completion of the supported request.

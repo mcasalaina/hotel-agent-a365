@@ -117,11 +117,15 @@ def evaluate_gates(
         weighted_success += success_rate * policy.weight
         weighted_total += policy.weight
     weighted_score = weighted_success / weighted_total if weighted_total else 0.0
-    hard_gate_failures = {
-        policy.name: failures[policy.name] + trace_failures[policy.name]
-        for policy in policies
-        if policy.hard_gate and (failures[policy.name] or trace_failures[policy.name])
-    }
+    hard_gate_failures: dict[str, int] = {}
+    for policy in policies:
+        if not policy.hard_gate:
+            continue
+        count = failures[policy.name]
+        if policy.evidence == "response_and_trace" and trace_scores_path is not None:
+            count += trace_failures[policy.name]
+        if count:
+            hard_gate_failures[policy.name] = count
     completeness = json.loads(trace_completeness_path.read_text(encoding="utf-8"))
     trace_complete = bool(completeness.get("complete"))
 

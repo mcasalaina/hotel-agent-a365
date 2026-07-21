@@ -11,6 +11,12 @@ from pathlib import Path
 
 from hotel_assert.app_insights import query_and_import
 from hotel_assert.config_validation import validate_repository
+from hotel_assert.fabric_state import (
+    FabricStateConfig,
+    FabricStateLifecycle,
+    preserve_fabric_state,
+    snapshot_id_for_run,
+)
 from hotel_assert.gates import evaluate_gates, write_gate_result
 from hotel_assert.preflight import run_preflight
 
@@ -112,6 +118,12 @@ def _retry_response_judgments(
             force=False,
             tolerate_viewer_failure=False,
         )
+    failures = _judge_failure_count(scores_path)
+    if failures:
+        raise RuntimeError(
+            f"{failures} response judgment(s) remained malformed after "
+            f"{MAX_JUDGE_RETRIES} retries"
+        )
 
 
 def _retry_trace_judgments(
@@ -129,6 +141,7 @@ def _retry_trace_judgments(
         if failures == 0:
             return
         print(f"Retrying trace judgments after {failures} malformed row(s), attempt {attempt}")
+        _retain_successful_scores(scores_path)
         _run_judge_stage(
             assert_command=assert_command,
             config=config,
@@ -137,8 +150,14 @@ def _retry_trace_judgments(
             artifact_root=artifact_root,
             inference_set=trace_dir / "inference_set.jsonl",
             save_dir=trace_dir,
-            force=True,
+            force=False,
             tolerate_viewer_failure=True,
+        )
+    failures = _judge_failure_count(scores_path)
+    if failures:
+        raise RuntimeError(
+            f"{failures} trace judgment(s) remained malformed after "
+            f"{MAX_JUDGE_RETRIES} retries"
         )
 
 
@@ -167,24 +186,38 @@ def _command_run(args: argparse.Namespace) -> int:
     )
     os.environ["ASSERT_RUN_ID"] = run_id
     os.environ["ASSERT_CORRELATION_LEDGER"] = str(ledger)
-    asyncio.run(run_preflight(preflight_output))
-    environment = os.environ.copy()
-    subprocess.run(
-        [
-            args.assert_command,
-            "run",
-            "--config",
-            str(args.config),
-            "--override",
-            f"suite={args.suite}",
-            "--override",
-            f"run={run_id}",
-            "--override",
-            f"artifacts_root={artifact_root}",
-        ],
-        check=True,
-        env=environment,
+    run_root = artifact_root / "results" / args.suite / run_id
+    fabric_lifecycle = FabricStateLifecycle(
+        config=FabricStateConfig(
+            workspace_id=args.fabric_workspace_id,
+            operations_lakehouse_id=args.fabric_operations_lakehouse_id,
+            guest_services_lakehouse_id=args.fabric_guest_services_lakehouse_id,
+            notebook_id=args.fabric_state_notebook_id,
+            reservation_notebook_id=args.fabric_reservation_notebook_id,
+        ),
+        snapshot_id=snapshot_id_for_run(run_id),
+        artifact_path=run_root / "fabric-state.json",
     )
+    os.environ["ASSERT_FABRIC_SNAPSHOT_ID"] = fabric_lifecycle.snapshot_id
+    with preserve_fabric_state(fabric_lifecycle):
+        asyncio.run(run_preflight(preflight_output))
+        environment = os.environ.copy()
+        subprocess.run(
+            [
+                args.assert_command,
+                "run",
+                "--config",
+                str(args.config),
+                "--override",
+                f"suite={args.suite}",
+                "--override",
+                f"run={run_id}",
+                "--override",
+                f"artifacts_root={artifact_root}",
+            ],
+            check=True,
+            env=environment,
+        )
     print(
         json.dumps(
             {
@@ -243,6 +276,11 @@ def _command_live(args: argparse.Namespace) -> int:
         ledger=ledger,
         preflight_output=run_root / "preflight.json",
         artifact_root=artifact_root,
+        fabric_workspace_id=args.fabric_workspace_id,
+        fabric_operations_lakehouse_id=args.fabric_operations_lakehouse_id,
+        fabric_guest_services_lakehouse_id=args.fabric_guest_services_lakehouse_id,
+        fabric_state_notebook_id=args.fabric_state_notebook_id,
+        fabric_reservation_notebook_id=args.fabric_reservation_notebook_id,
     )
     _command_run(run_args)
     _retry_response_judgments(
@@ -341,6 +379,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--ledger", type=Path)
     run.add_argument("--preflight-output", type=Path)
     run.add_argument("--artifact-root", type=Path, default=root / "artifacts")
+    _add_fabric_state_arguments(run)
     run.set_defaults(func=_command_run)
 
     trace_import = subparsers.add_parser("import-traces")
@@ -374,6 +413,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=os.getenv("APPLICATIONINSIGHTS_WORKSPACE_ID"),
         required=os.getenv("APPLICATIONINSIGHTS_WORKSPACE_ID") is None,
     )
+    _add_fabric_state_arguments(live)
     live.add_argument("--telemetry-delay", type=int, default=60)
     live.add_argument("--require-all-cases", type=int)
     live.add_argument(
@@ -383,6 +423,34 @@ def build_parser() -> argparse.ArgumentParser:
     )
     live.set_defaults(func=_command_live)
     return parser
+
+
+def _add_fabric_state_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--fabric-workspace-id",
+        default=os.getenv("ASSERT_FABRIC_WORKSPACE_ID"),
+        required=os.getenv("ASSERT_FABRIC_WORKSPACE_ID") is None,
+    )
+    parser.add_argument(
+        "--fabric-operations-lakehouse-id",
+        default=os.getenv("ASSERT_FABRIC_OPERATIONS_LAKEHOUSE_ID"),
+        required=os.getenv("ASSERT_FABRIC_OPERATIONS_LAKEHOUSE_ID") is None,
+    )
+    parser.add_argument(
+        "--fabric-guest-services-lakehouse-id",
+        default=os.getenv("ASSERT_FABRIC_GUEST_SERVICES_LAKEHOUSE_ID"),
+        required=os.getenv("ASSERT_FABRIC_GUEST_SERVICES_LAKEHOUSE_ID") is None,
+    )
+    parser.add_argument(
+        "--fabric-state-notebook-id",
+        default=os.getenv("ASSERT_FABRIC_STATE_NOTEBOOK_ID"),
+        required=os.getenv("ASSERT_FABRIC_STATE_NOTEBOOK_ID") is None,
+    )
+    parser.add_argument(
+        "--fabric-reservation-notebook-id",
+        default=os.getenv("ASSERT_FABRIC_RESERVATION_NOTEBOOK_ID"),
+        required=os.getenv("ASSERT_FABRIC_RESERVATION_NOTEBOOK_ID") is None,
+    )
 
 
 def main() -> None:

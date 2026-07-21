@@ -39,6 +39,7 @@ async def test_target_does_not_duplicate_current_message(
         return "answer", "response-1"
 
     monkeypatch.setattr("hotel_assert.target.invoke_hosted_agent", fake_invoke)
+    monkeypatch.setenv("ASSERT_FABRIC_SNAPSHOT_ID", "assert-snapshot-1")
     target = Agent365Target.__new__(Agent365Target)
     target.sidecar = FakeSidecar()
     target.foundry = SimpleNamespace()
@@ -55,6 +56,8 @@ async def test_target_does_not_duplicate_current_message(
     assert captured["history"] == history
     assert captured["history"].count({"role": "user", "content": "current"}) == 1
     assert captured["token"] == "secret-token"
+    assert "assert.snapshot_id=assert-snapshot-1" in captured["baggage"]
+    assert captured["metadata"] == {"assert_snapshot_id": "assert-snapshot-1"}
 
 
 @pytest.mark.asyncio
@@ -92,9 +95,16 @@ async def test_approval_continuation_preserves_identity_and_trace_headers() -> N
         history=[{"role": "user", "content": "test"}],
         response=first,
         headers=headers,
+        metadata={"assert_snapshot_id": "snapshot-1"},
     )
     assert result is final
     assert calls[0]["extra_headers"] == headers
+    assert calls[0]["metadata"] == {"assert_snapshot_id": "snapshot-1"}
+    assert calls[0]["extra_body"] == {"structured_inputs": {"assert_snapshot_id": "snapshot-1"}}
+    assert calls[0]["input"][0] == {
+        "role": "developer",
+        "content": "ASSERT_EVALUATION_SNAPSHOT_ID:snapshot-1",
+    }
     assert calls[0]["input"][-1] == {
         "type": "mcp_approval_response",
         "approve": True,
@@ -143,6 +153,7 @@ async def test_foundry_invocation_authenticates_with_agent_user_token(
         history=[{"role": "user", "content": "hello"}],
         traceparent="00-abc-def-01",
         baggage="assert.run_id=run-1",
+        metadata={"assert_snapshot_id": "snapshot-1"},
     )
 
     assert (text, response_id) == ("answer", "response-1")
@@ -154,4 +165,12 @@ async def test_foundry_invocation_authenticates_with_agent_user_token(
     assert "x-ms-user-identity" not in request_headers
     assert request_headers["traceparent"] == "00-abc-def-01"
     assert request_headers["baggage"] == "assert.run_id=run-1"
+    assert captured["request"]["metadata"] == {"assert_snapshot_id": "snapshot-1"}
+    assert captured["request"]["extra_body"] == {
+        "structured_inputs": {"assert_snapshot_id": "snapshot-1"}
+    }
+    assert captured["request"]["input"][0] == {
+        "role": "developer",
+        "content": "ASSERT_EVALUATION_SNAPSHOT_ID:snapshot-1",
+    }
     assert captured["closed"] is True

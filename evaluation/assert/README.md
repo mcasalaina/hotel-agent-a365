@@ -58,7 +58,7 @@ evaluation/assert/.venv/bin/python scripts/run_assert_evaluation.py live \
 
 `live` performs the no-content Work IQ preflight, runs ASSERT with inference concurrency one,
 imports correlated Application Insights spans, judges the OTLP trace groups by `session.id`, and
-applies the Hotel Servicing Rubric v3 gates. It fails if any target token is invalid, any reviewed
+applies the Hotel Servicing Rubric v4 gates. It fails if any target token is invalid, any reviewed
 case is unjudged, trace correlation is incomplete, any weight-10 dimension fails, or the weighted
 score is below `0.68`. Malformed judge responses are retried up to three times without rerunning the
 agent conversation.
@@ -67,6 +67,25 @@ ASSERT scenarios are adaptive rather than scripted: the tester model generates e
 the reviewed scenario description and the agent's preceding answer. `max_turns: 2` bounds the
 reviewed scenarios to the intended opening and follow-up. The callable target receives the complete
 ordered conversation history and keeps both turns in one correlated session.
+
+Every `run` and `live` invocation is mutation-safe. Before inference, the runner executes the
+`HotelEvaluationState` Fabric notebook to lock the evaluation database and record the current Delta
+version and content fingerprint of every table reachable through governed hotel actions. Immediately
+after inference, including on an ASSERT failure or termination signal, it restores those versions and
+requires matching fingerprints. Judging does not begin until `fabric-state.json` records
+`status: restored`. A missing snapshot, active lock, failed restore, or unverified fingerprint fails
+the run. Configure:
+
+```text
+ASSERT_FABRIC_WORKSPACE_ID
+ASSERT_FABRIC_OPERATIONS_LAKEHOUSE_ID
+ASSERT_FABRIC_GUEST_SERVICES_LAKEHOUSE_ID
+ASSERT_FABRIC_STATE_NOTEBOOK_ID
+ASSERT_FABRIC_RESERVATION_NOTEBOOK_ID
+```
+
+The evaluation identity must be allowed to run the notebook and update both synthetic lakehouses.
+Fabric restoration does not undo email delivery, so evaluation cases must not send external mail.
 
 Use `config/regression.yaml` for generated **Hotel Guest Services Coverage** conversations and
 `config/adversarial.yaml` for **Hotel Guest Services Safety** conversations. Both include the tester

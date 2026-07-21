@@ -2,20 +2,22 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime
 from typing import Any
+from urllib.parse import urlparse
 from uuid import NAMESPACE_URL, uuid5
 
 import httpx
 from agent_framework import FunctionTool
 
+from hotel_servicing_agent.hosting import current_evaluation_snapshot_id
+
 FABRIC_API_SCOPE = "https://api.fabric.microsoft.com/.default"
 JOB_TYPE = "RunNotebook"
 TERMINAL_JOB_STATUSES = {"Completed", "Failed", "Cancelled", "Deduped"}
-VERIFICATION_ATTEMPTS = 6
-VERIFICATION_RETRY_SECONDS = 20
 NEGATIVE_VERIFICATION_PHRASES = (
     "could not be found",
     "does not exist",
@@ -106,22 +108,12 @@ class FabricReservationMutationTool:
         )
         verification_question = (
             f"Find reservation {resolved_reservation_id} using its complete record history and "
-            "return its current persisted reservation details, including the exact last "
-            f"confirmation ID. The expected confirmation ID is {confirmation_id}."
+            "return its current persisted reservation details, including its status and the exact "
+            "last confirmation ID."
         )
-        if normalized_action == "create":
-            existing_verification = await self._verifier(verification_question)
-            if _verification_confirms_reservation(
-                existing_verification,
-                resolved_reservation_id,
-                confirmation_id,
-            ):
-                return _mutation_result(
-                    "idempotent_replay",
-                    resolved_reservation_id,
-                    confirmation_id,
-                    existing_verification,
-                )
+        expected_persisted_status = (
+            "cancelled" if normalized_action == "cancel" else status.strip().casefold()
+        )
         request_timestamp = (
             datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
         )
@@ -159,6 +151,15 @@ class FabricReservationMutationTool:
                 "type": "Text",
             },
         ]
+        evaluation_snapshot_id = current_evaluation_snapshot_id()
+        if evaluation_snapshot_id:
+            parameters.append(
+                {
+                    "name": "evaluation_snapshot_id",
+                    "value": evaluation_snapshot_id,
+                    "type": "Text",
+                }
+            )
         if expected_record_version is not None:
             parameters.insert(
                 3,
@@ -181,6 +182,7 @@ class FabricReservationMutationTool:
                 verification_question,
                 resolved_reservation_id,
                 confirmation_id,
+                expected_persisted_status,
             )
             if recovered_verification:
                 return _mutation_result(
@@ -195,6 +197,7 @@ class FabricReservationMutationTool:
                 verification_question,
                 resolved_reservation_id,
                 confirmation_id,
+                expected_persisted_status,
             )
             if recovered_verification:
                 return _mutation_result(
@@ -205,21 +208,22 @@ class FabricReservationMutationTool:
                 )
             raise RuntimeError(f"Fabric reservation job did not complete: {job.get('status')}")
 
-        verification = await self._verify_persisted_mutation(
-            verification_question,
+        notebook_result = _parse_exit_value(job.get("exitValue"))
+        persisted_record = _verified_notebook_record(
+            notebook_result,
             resolved_reservation_id,
             confirmation_id,
+            expected_persisted_status,
         )
-        if not verification:
+        if persisted_record is None:
             raise RuntimeError(
                 "Fabric write completed but the persisted reservation could not be verified"
             )
-        notebook_result = _parse_exit_value(job.get("exitValue"))
         return _mutation_result(
             str(notebook_result.get("status", "committed")),
             resolved_reservation_id,
             confirmation_id,
-            verification,
+            persisted_record,
         )
 
     async def _verify_persisted_mutation(
@@ -227,17 +231,16 @@ class FabricReservationMutationTool:
         verification_question: str,
         reservation_id: str,
         confirmation_id: str,
+        expected_status: str,
     ) -> str:
-        for attempt in range(VERIFICATION_ATTEMPTS):
-            verification = await self._verifier(verification_question)
-            if _verification_confirms_reservation(
-                verification,
-                reservation_id,
-                confirmation_id,
-            ):
-                return verification
-            if attempt + 1 < VERIFICATION_ATTEMPTS:
-                await asyncio.sleep(VERIFICATION_RETRY_SECONDS)
+        verification = await self._verifier(verification_question)
+        if _verification_confirms_reservation(
+            verification,
+            reservation_id,
+            confirmation_id,
+            expected_status,
+        ):
+            return verification
         return ""
 
 
@@ -260,22 +263,49 @@ def _verification_confirms_reservation(
     verification: str,
     reservation_id: str,
     confirmation_id: str,
+    expected_status: str,
 ) -> bool:
-    normalized = verification.strip().casefold()
-    if (
-        not normalized
-        or reservation_id.casefold() not in normalized
-        or confirmation_id.casefold() not in normalized
-    ):
+    normalized = " ".join(verification.casefold().split())
+    if not normalized or reservation_id.casefold() not in normalized:
         return False
-    return not any(phrase in normalized for phrase in NEGATIVE_VERIFICATION_PHRASES)
+    if any(phrase in normalized for phrase in NEGATIVE_VERIFICATION_PHRASES):
+        return False
+    confirmation_pattern = (
+        r"\blast\s+confirmation\s+(?:id|identifier)\s*[:#-]?\s*"
+        + re.escape(confirmation_id.casefold())
+        + r"\b"
+    )
+    return bool(
+        re.search(confirmation_pattern, normalized)
+        and re.search(rf"\b{re.escape(expected_status.casefold())}\b", normalized)
+    )
+
+
+def _verified_notebook_record(
+    notebook_result: dict[str, object],
+    reservation_id: str,
+    confirmation_id: str,
+    expected_status: str,
+) -> dict[str, object] | None:
+    persisted_record = notebook_result.get("persisted_record")
+    if not isinstance(persisted_record, dict):
+        return None
+    normalized_record = {str(key): value for key, value in persisted_record.items()}
+    if normalized_record.get("reservation_id") != reservation_id:
+        return None
+    if normalized_record.get("last_confirmation_id") != confirmation_id:
+        return None
+    status = normalized_record.get("status")
+    if not isinstance(status, str) or status.casefold() != expected_status.casefold():
+        return None
+    return normalized_record
 
 
 def _mutation_result(
     status: str,
     reservation_id: str,
     confirmation_id: str,
-    verification: str,
+    verification: object,
 ) -> str:
     return json.dumps(
         {
@@ -307,12 +337,19 @@ async def _run_reservation_notebook(
         location = response.headers.get("Location")
         if not location:
             raise RuntimeError("Fabric reservation job response did not include a Location header")
+        job_id = urlparse(location).path.rstrip("/").rsplit("/", 1)[-1]
+        if not job_id:
+            raise RuntimeError("Fabric reservation job response did not include a job instance ID")
+        status_url = (
+            f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}"
+            f"/notebooks/{notebook_id}/jobs/execute/instances/{job_id}"
+        )
 
         deadline = time.monotonic() + 900
         retry_after = _retry_after(response)
         while time.monotonic() < deadline:
             await asyncio.sleep(retry_after)
-            status_response = await client.get(location, params={"beta": "true"})
+            status_response = await client.get(status_url, params={"beta": "true"})
             if status_response.status_code == httpx.codes.TOO_MANY_REQUESTS:
                 retry_after = _retry_after(status_response)
                 continue
@@ -329,6 +366,9 @@ async def _run_reservation_notebook(
             if status != "Completed":
                 reason = job.get("failureReason") or "No failure details were returned"
                 raise RuntimeError(f"Fabric reservation job {status}: {reason}")
+            properties = job.get("properties")
+            if "exitValue" not in job and isinstance(properties, dict):
+                job["exitValue"] = properties.get("exitValue")
             return job
     raise TimeoutError("Fabric reservation job did not finish within 15 minutes")
 

@@ -119,6 +119,13 @@
       "displayName": "HotelValidation"
     },
     {
+      "contractKey": "HotelEvaluationState",
+      "defaultLakehouse": "HotelGuestServices",
+      "definitionPath": "fabric/notebooks/evaluation_state.ipynb",
+      "description": "Snapshot and restore exact Delta versions for every table reachable through governed hotel actions.",
+      "displayName": "HotelEvaluationState"
+    },
+    {
       "contractKey": "HotelReservationAction",
       "defaultLakehouse": "HotelGuestServices",
       "definitionPath": "fabric/notebooks/reservation_action.ipynb",

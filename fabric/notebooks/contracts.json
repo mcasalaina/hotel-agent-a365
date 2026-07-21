@@ -170,6 +170,45 @@
       }
     ]
   },
+  "HotelEvaluationState": {
+    "parameters": [
+      {
+        "name": "action",
+        "description": "Evaluation state operation.",
+        "required": true,
+        "type": "Text",
+        "allowedValues": [
+          "snapshot",
+          "seal",
+          "restore"
+        ]
+      },
+      {
+        "name": "snapshot_id",
+        "description": "Unique ASSERT run identifier that owns the snapshot and evaluation lock.",
+        "required": true,
+        "type": "Text"
+      },
+      {
+        "name": "workspace_id",
+        "description": "Workspace identifier that owns both lakehouses.",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "name": "hotel_operations_lakehouse_id",
+        "description": "HotelOperations lakehouse identifier.",
+        "required": true,
+        "type": "Guid"
+      },
+      {
+        "name": "hotel_guest_services_lakehouse_id",
+        "description": "HotelGuestServices lakehouse identifier.",
+        "required": true,
+        "type": "Guid"
+      }
+    ]
+  },
   "HotelReservationAction": {
     "parameters": [
       {
@@ -224,6 +263,12 @@
         "description": "HotelGuestServices lakehouse identifier.",
         "required": true,
         "type": "Guid"
+      },
+      {
+        "name": "evaluation_snapshot_id",
+        "description": "ASSERT snapshot owner used to fence controlled evaluation writes.",
+        "required": false,
+        "type": "Text"
       }
     ]
   },

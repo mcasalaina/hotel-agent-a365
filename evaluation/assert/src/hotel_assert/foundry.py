@@ -32,6 +32,26 @@ def _response_history(history: Sequence[dict[str, str]]) -> ResponseInputParam:
     return result
 
 
+def _snapshot_marker(metadata: dict[str, str] | None) -> dict[str, str] | None:
+    if not metadata:
+        return None
+    snapshot_id = metadata.get("assert_snapshot_id", "").strip()
+    if not snapshot_id:
+        return None
+    return {
+        "role": "developer",
+        "content": f"ASSERT_EVALUATION_SNAPSHOT_ID:{snapshot_id}",
+    }
+
+
+def _with_snapshot_marker(
+    response_input: Sequence[Any],
+    metadata: dict[str, str] | None,
+) -> list[Any]:
+    marker = _snapshot_marker(metadata)
+    return ([marker] if marker else []) + list(response_input)
+
+
 @dataclass(frozen=True)
 class FoundryTargetConfig:
     endpoint: str
@@ -65,6 +85,7 @@ async def _complete_approvals(
     history: Sequence[dict[str, str]],
     response: Any,
     headers: dict[str, str],
+    metadata: dict[str, str] | None,
 ) -> Any:
     for _ in range(MAX_APPROVAL_ROUNDS):
         approvals = [
@@ -85,8 +106,10 @@ async def _complete_approvals(
         )
         response = await client.responses.create(
             model=model,
-            input=list(history) + approval_input,
+            input=_with_snapshot_marker(list(history) + approval_input, metadata),
             extra_headers=headers,
+            metadata=metadata,
+            extra_body={"structured_inputs": metadata} if metadata else None,
         )
     raise FoundryInvocationError("Hosted Agent exceeded the MCP approval limit")
 
@@ -98,6 +121,7 @@ async def invoke_hosted_agent(
     history: Sequence[dict[str, str]],
     traceparent: str,
     baggage: str,
+    metadata: dict[str, str] | None = None,
 ) -> tuple[str, str]:
     headers = {
         "Authorization": f"Bearer {token}",
@@ -114,8 +138,10 @@ async def invoke_hosted_agent(
     try:
         response = await client.responses.create(
             model=config.model,
-            input=_response_history(history),
+            input=_with_snapshot_marker(_response_history(history), metadata),
             extra_headers=headers,
+            metadata=metadata,
+            extra_body={"structured_inputs": metadata} if metadata else None,
         )
         response = await _complete_approvals(
             client,
@@ -123,6 +149,7 @@ async def invoke_hosted_agent(
             history=history,
             response=response,
             headers=headers,
+            metadata=metadata,
         )
     finally:
         await client.close()

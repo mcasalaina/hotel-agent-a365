@@ -3,18 +3,47 @@ from __future__ import annotations
 import asyncio
 import json
 from typing import Any
+from uuid import NAMESPACE_URL, uuid5
 
 import pytest
+from hotel_servicing_agent.tools import fabric_mutation
 from hotel_servicing_agent.tools.fabric_mutation import FabricReservationMutationTool
 
 
-def _confirmation_id_from_question(question: str) -> str:
-    return question.rsplit(" ", 1)[-1].rstrip(".")
+def _confirmation_id(request_reference: str) -> str:
+    return str(uuid5(NAMESPACE_URL, f"confirmation:{request_reference}"))
 
 
-def test_reservation_mutation_runs_notebook_and_rereads_persisted_record() -> None:
+def _completed_job(
+    parameters: list[dict[str, object]],
+    reservation_id: str,
+    status: str,
+    *,
+    result_status: str = "committed",
+) -> dict[str, Any]:
+    values = {str(item["name"]): item["value"] for item in parameters}
+    return {
+        "status": "Completed",
+        "exitValue": json.dumps(
+            {
+                "status": result_status,
+                "reservation_id": reservation_id,
+                "confirmation_id": values["confirmation_id"],
+                "persisted_record": {
+                    "reservation_id": reservation_id,
+                    "status": status,
+                    "last_confirmation_id": values["confirmation_id"],
+                    "record_version": 2,
+                },
+            }
+        ),
+    }
+
+
+def test_reservation_mutation_runs_notebook_and_rereads_persisted_record(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, Any] = {}
-    verification_calls = 0
 
     async def fake_job_runner(
         workspace_id: str,
@@ -28,24 +57,17 @@ def test_reservation_mutation_runs_notebook_and_rereads_persisted_record() -> No
             credential=credential,
             parameters=parameters,
         )
-        return {
-            "status": "Completed",
-            "exitValue": json.dumps({"status": "committed", "reservation_id": "RES-TEST"}),
-        }
+        return _completed_job(parameters, "RES-TEST", "future")
 
     async def fake_verifier(question: str) -> str:
-        nonlocal verification_calls
-        verification_calls += 1
-        captured["verification_question"] = question
-        if verification_calls == 1:
-            return "No data was found for reservation RES-TEST."
-        confirmation_id = _confirmation_id_from_question(question)
-        return (
-            "Reservation RES-TEST is for Maria Garcia at Lyrenza Buenos Aires. "
-            f"Last confirmation ID: {confirmation_id}."
-        )
+        raise AssertionError("completed notebook result should be authoritative")
 
     credential = object()
+    monkeypatch.setattr(
+        fabric_mutation,
+        "current_evaluation_snapshot_id",
+        lambda: "assert-snapshot-1",
+    )
     tool = FabricReservationMutationTool(
         workspace_id="00000000-0000-0000-0000-000000000001",
         guest_services_lakehouse_id="00000000-0000-0000-0000-000000000002",
@@ -83,18 +105,18 @@ def test_reservation_mutation_runs_notebook_and_rereads_persisted_record() -> No
     assert parameters["action"]["value"] == "create"
     assert parameters["confirmation_id"]["type"] == "Text"
     assert parameters["idempotency_key"]["type"] == "Text"
+    assert parameters["evaluation_snapshot_id"]["value"] == "assert-snapshot-1"
     assert payload["reservation_id"] == "RES-TEST"
     assert payload["property_id"] == "HTL-016"
-    assert "Find reservation RES-TEST" in captured["verification_question"]
     assert result["status"] == "committed"
     assert result["reservation_id"] == "RES-TEST"
-    assert "Lyrenza Buenos Aires" in result["persisted_record"]
+    assert result["persisted_record"]["status"] == "future"
+    assert result["persisted_record"]["record_version"] == 2
     assert tool.as_function_tool().name == "manage_reservation"
 
 
 def test_reservation_mutation_uses_stable_ids_for_retries() -> None:
     calls: list[list[dict[str, object]]] = []
-    persisted_reservation_id = ""
 
     async def fake_job_runner(
         workspace_id: str,
@@ -103,16 +125,26 @@ def test_reservation_mutation_uses_stable_ids_for_retries() -> None:
         parameters: list[dict[str, object]],
     ) -> dict[str, Any]:
         calls.append(parameters)
-        return {"status": "Completed"}
+        reservation_id = str(
+            json.loads(
+                str(
+                    next(
+                        item["value"]
+                        for item in parameters
+                        if item["name"] == "request_payload_json"
+                    )
+                )
+            )["reservation_id"]
+        )
+        return _completed_job(
+            parameters,
+            reservation_id,
+            "future",
+            result_status="committed" if len(calls) == 1 else "idempotent_replay",
+        )
 
     async def fake_verifier(question: str) -> str:
-        nonlocal persisted_reservation_id
-        reservation_id = question.split()[2]
-        if not persisted_reservation_id:
-            persisted_reservation_id = reservation_id
-            return f"No data was found for reservation {reservation_id}."
-        confirmation_id = _confirmation_id_from_question(question)
-        return f"Persisted reservation {reservation_id}. Last confirmation ID: {confirmation_id}."
+        raise AssertionError("completed notebook result should be authoritative")
 
     tool = FabricReservationMutationTool(
         workspace_id="00000000-0000-0000-0000-000000000001",
@@ -146,37 +178,34 @@ def test_reservation_mutation_uses_stable_ids_for_retries() -> None:
     assert first_parameters["confirmation_id"] == first["confirmation_id"]
     assert first_parameters["idempotency_key"]
     assert second["status"] == "idempotent_replay"
-    assert len(calls) == 1
+    assert len(calls) == 2
 
 
-def test_reservation_mutation_retries_until_record_is_visible(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    verification_calls = 0
-
+def test_reservation_mutation_rejects_unverified_notebook_result() -> None:
     async def fake_job_runner(
         workspace_id: str,
         notebook_id: str,
         credential: Any,
         parameters: list[dict[str, object]],
     ) -> dict[str, Any]:
-        return {"status": "Completed"}
+        return {
+            "status": "Completed",
+            "exitValue": json.dumps(
+                {
+                    "status": "committed",
+                    "reservation_id": "RES-TEST",
+                    "persisted_record": {
+                        "reservation_id": "RES-TEST",
+                        "status": "future",
+                        "last_confirmation_id": "wrong-confirmation",
+                    },
+                }
+            ),
+        }
 
     async def fake_verifier(question: str) -> str:
-        nonlocal verification_calls
-        verification_calls += 1
-        if verification_calls < 3:
-            return "No data was found for reservation RES-TEST."
-        confirmation_id = _confirmation_id_from_question(question)
-        return (
-            "Reservation RES-TEST is future and persisted. "
-            f"Last confirmation ID: {confirmation_id}."
-        )
+        raise AssertionError("completed notebook result should be authoritative")
 
-    async def no_wait(seconds: float) -> None:
-        return None
-
-    monkeypatch.setattr(asyncio, "sleep", no_wait)
     tool = FabricReservationMutationTool(
         workspace_id="workspace",
         guest_services_lakehouse_id="lakehouse",
@@ -186,7 +215,7 @@ def test_reservation_mutation_retries_until_record_is_visible(
         job_runner=fake_job_runner,
     )
 
-    result = json.loads(
+    with pytest.raises(RuntimeError, match="could not be verified"):
         asyncio.run(
             tool.mutate(
                 action="create",
@@ -204,14 +233,10 @@ def test_reservation_mutation_retries_until_record_is_visible(
                 cancellation_policy="flexible",
             )
         )
-    )
-
-    assert "Reservation RES-TEST is future and persisted." in result["persisted_record"]
 
 
 def test_create_does_not_replay_an_unrelated_existing_reservation() -> None:
     job_calls = 0
-    verification_calls = 0
 
     async def fake_job_runner(
         workspace_id: str,
@@ -221,20 +246,10 @@ def test_create_does_not_replay_an_unrelated_existing_reservation() -> None:
     ) -> dict[str, Any]:
         nonlocal job_calls
         job_calls += 1
-        return {"status": "Completed"}
+        return _completed_job(parameters, "RES-EXISTING", "future")
 
     async def fake_verifier(question: str) -> str:
-        nonlocal verification_calls
-        verification_calls += 1
-        if verification_calls == 1:
-            return (
-                "Reservation RES-EXISTING belongs to another request. "
-                "Last confirmation ID: unrelated-confirmation."
-            )
-        confirmation_id = _confirmation_id_from_question(question)
-        return (
-            f"Reservation RES-EXISTING is now persisted. Last confirmation ID: {confirmation_id}."
-        )
+        raise AssertionError("completed notebook result should be authoritative")
 
     tool = FabricReservationMutationTool(
         workspace_id="workspace",
@@ -269,27 +284,22 @@ def test_create_does_not_replay_an_unrelated_existing_reservation() -> None:
     assert job_calls == 1
 
 
-def test_change_rejects_an_unchanged_persisted_record(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_change_rejects_an_unchanged_persisted_record() -> None:
     async def fake_job_runner(
         workspace_id: str,
         notebook_id: str,
         credential: Any,
         parameters: list[dict[str, object]],
     ) -> dict[str, Any]:
-        return {"status": "Completed"}
+        result = _completed_job(parameters, "RES-OLD", "future")
+        notebook_result = json.loads(str(result["exitValue"]))
+        notebook_result["persisted_record"]["last_confirmation_id"] = "prior-confirmation"
+        result["exitValue"] = json.dumps(notebook_result)
+        return result
 
     async def fake_verifier(question: str) -> str:
-        return (
-            "Reservation RES-OLD still has its original values. "
-            "Last confirmation ID: prior-confirmation."
-        )
+        raise AssertionError("completed notebook result should be authoritative")
 
-    async def no_wait(seconds: float) -> None:
-        return None
-
-    monkeypatch.setattr(asyncio, "sleep", no_wait)
     tool = FabricReservationMutationTool(
         workspace_id="workspace",
         guest_services_lakehouse_id="lakehouse",
@@ -319,6 +329,52 @@ def test_change_rejects_an_unchanged_persisted_record(
         )
 
 
+def test_cancel_rejects_an_echoed_expected_confirmation() -> None:
+    async def fake_job_runner(
+        workspace_id: str,
+        notebook_id: str,
+        credential: Any,
+        parameters: list[dict[str, object]],
+    ) -> dict[str, Any]:
+        raise RuntimeError("Fabric status polling failed")
+
+    async def fake_verifier(question: str) -> str:
+        confirmation_id = _confirmation_id("cancel-request")
+        return (
+            "Reservation RES-CANCEL has status future. "
+            "Last confirmation ID: No confirmation ID is currently persisted. "
+            f"Expected confirmation ID: {confirmation_id}."
+        )
+
+    tool = FabricReservationMutationTool(
+        workspace_id="workspace",
+        guest_services_lakehouse_id="lakehouse",
+        reservation_notebook_id="notebook",
+        credential=object(),
+        verifier=fake_verifier,
+        job_runner=fake_job_runner,
+    )
+
+    with pytest.raises(RuntimeError, match="polling failed"):
+        asyncio.run(
+            tool.mutate(
+                action="cancel",
+                request_reference="cancel-request",
+                reservation_id="RES-CANCEL",
+                guest_id="guest",
+                property_id="property",
+                room_type_id="room-type",
+                check_in="2026-08-01",
+                check_out="2026-08-03",
+                room_count=1,
+                rate_total=200,
+                currency="USD",
+                channel="direct",
+                cancellation_policy="flexible",
+            )
+        )
+
+
 def test_change_recovers_when_polling_fails_after_the_write() -> None:
     async def failing_job_runner(
         workspace_id: str,
@@ -329,9 +385,9 @@ def test_change_recovers_when_polling_fails_after_the_write() -> None:
         raise RuntimeError("Fabric status polling failed")
 
     async def fake_verifier(question: str) -> str:
-        confirmation_id = _confirmation_id_from_question(question)
+        confirmation_id = _confirmation_id("change-request")
         return (
-            "Reservation RES-CHANGE has the requested new dates. "
+            "Reservation RES-CHANGE has the requested new dates and future status. "
             f"Last confirmation ID: {confirmation_id}."
         )
 

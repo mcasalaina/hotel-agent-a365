@@ -81,17 +81,24 @@ class Agent365Target:
         context = self.correlation.begin_turn(history)
         identity = await self.sidecar.acquire()
         bounded_history = history[-MAX_HISTORY_MESSAGES:]
-        baggage = (
-            f"assert.run_id={quote(str(context['run_id']))},"
-            f"assert.case_id={quote(str(context['case_id']))},"
-            f"session.id={quote(str(context['session_id']))}"
-        )
+        baggage_items = [
+            f"assert.run_id={quote(str(context['run_id']))}",
+            f"assert.case_id={quote(str(context['case_id']))}",
+            f"session.id={quote(str(context['session_id']))}",
+        ]
+        snapshot_id = os.getenv("ASSERT_FABRIC_SNAPSHOT_ID", "").strip()
+        metadata: dict[str, str] | None = None
+        if snapshot_id:
+            baggage_items.append(f"assert.snapshot_id={quote(snapshot_id)}")
+            metadata = {"assert_snapshot_id": snapshot_id}
+        baggage = ",".join(baggage_items)
         text, response_id = await invoke_hosted_agent(
             config=self.foundry,
             token=identity.token,
             history=bounded_history,
             traceparent=str(context["traceparent"]),
             baggage=baggage,
+            metadata=metadata,
         )
         self.correlation.ledger.append(
             CorrelationRecord(

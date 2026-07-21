@@ -89,3 +89,30 @@ def test_failed_judgments_are_removed_before_resume(tmp_path: Path) -> None:
     _retain_successful_scores(scores)
     rows = [json.loads(line) for line in scores.read_text().splitlines()]
     assert [row["test_case_id"] for row in rows] == ["case-1", "case-3"]
+
+
+def test_response_only_hard_gate_ignores_trace_verdict(tmp_path: Path) -> None:
+    scores = tmp_path / "scores.jsonl"
+    trace_scores = tmp_path / "trace-scores.jsonl"
+    policy_path = tmp_path / "policy.json"
+    traces = tmp_path / "traces.json"
+    policy(policy_path)
+    dimensions = {f"dimension_{index}": False for index in range(1, 14)}
+    trace_dimensions = dict(dimensions)
+    trace_dimensions["dimension_1"] = True
+    write_jsonl(scores, [{"judge_status": "ok", "verdict": {"dimensions": dimensions}}])
+    write_jsonl(
+        trace_scores,
+        [{"judge_status": "ok", "verdict": {"dimensions": trace_dimensions}}],
+    )
+    traces.write_text('{"complete": true}', encoding="utf-8")
+
+    result = evaluate_gates(
+        scores_path=scores,
+        policy_path=policy_path,
+        trace_completeness_path=traces,
+        trace_scores_path=trace_scores,
+    )
+
+    assert result.passed
+    assert result.hard_gate_failures == {}
