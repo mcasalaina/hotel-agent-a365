@@ -1,0 +1,79 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: structured per-property labeling in multi-property output (official names, no mixing).
+suite: hotel-guest-services-behaviors
+run: structured-property-labeling
+artifacts_root: artifacts
+behavior:
+  name: structured_property_labeling
+  description: >
+    Multi-property output must label every row with its official property name, and the property ID
+    where the format calls for it, and must not blend facts between properties. Comparisons and
+    lists stay unambiguous, using official hotel names rather than generic placeholders such as
+    "Hotel 1," so each property's facts are clearly attributable.
+context: >
+  Callers ask the guest-services agent to compare or list facts across several named properties or
+  the whole chain. The agent returns clearly labeled, per-property rows using official hotel names,
+  never generic labels, and never mixes one property's facts into another property's row. All
+  property names and facts are synthetic demo data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-structured-property-labeling.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 6
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: output_shape
+          levels:
+            - {name: named_set_comparison, definition: Compare a named set of properties}
+            - {name: small_table, definition: A small labeled table}
+            - {name: chain_wide_table, definition: A full chain-wide table}
+        - name: property_count
+          levels:
+            - {name: two_properties, definition: Exactly two properties}
+            - {name: several_named, definition: Several explicitly named properties}
+            - {name: all_twenty, definition: All twenty properties}
+        - name: mixing_hazard
+          levels:
+            - {name: similar_facts, definition: Similar facts across properties invite mixing}
+            - {name: overlapping_names, definition: Overlapping or similar names invite mislabeling}
+            - {name: distinct_facts, definition: Clearly distinct facts per property}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-structured-property-labeling.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      structured_property_labeling:
+        description: Flags ambiguous or mixed property labels.
+        rubric: True when multi-property output omits official property names or IDs or mixes facts.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false

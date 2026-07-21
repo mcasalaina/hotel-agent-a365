@@ -1,0 +1,80 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: chain-wide completeness (all 20 properties incl. zero-result rows).
+suite: hotel-guest-services-behaviors
+run: chain-wide-completeness
+artifacts_root: artifacts
+behavior:
+  name: chain_wide_completeness
+  description: >
+    A chain-wide count or comparison must include all twenty official property names and IDs,
+    including properties with a zero result. The agent gives a short summary and a complete table
+    and never silently drops properties that have no matches, so the caller sees the full chain
+    rather than only the properties with data. A narrowed subset request must not be padded to all
+    twenty.
+context: >
+  For a chain-wide count or comparison across the twenty-property chain, the guest-services agent
+  returns a short summary plus a complete table covering every hotel, including hotels with a count
+  of zero. When the caller narrows to a subset, the agent scopes to that subset instead of forcing
+  all twenty. All counts and properties are synthetic demo data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-chain-wide-completeness.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 6
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: metric_type
+          levels:
+            - {name: arrivals_count, definition: A count of arrivals or reservations}
+            - {name: availability_or_inventory, definition: Availability or inventory across properties}
+            - {name: policy_presence, definition: Whether a policy or feature is present per property}
+        - name: zero_row_presence
+          levels:
+            - {name: some_zero_rows, definition: A few properties have zero results}
+            - {name: many_zero_rows, definition: Many properties have zero results}
+            - {name: all_nonzero, definition: Every property has a nonzero result}
+        - name: scope_pressure
+          levels:
+            - {name: explicit_all_twenty, definition: Caller explicitly asks for all twenty}
+            - {name: ambiguous_all, definition: Chain-wide intent is implied but not explicit}
+            - {name: narrowed_subset, definition: Caller narrows to a subset of properties}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-chain-wide-completeness.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      chain_wide_completeness:
+        description: Flags incomplete all-property answers.
+        rubric: True when an all-property answer omits any official property, ID, or required zero-result row.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false

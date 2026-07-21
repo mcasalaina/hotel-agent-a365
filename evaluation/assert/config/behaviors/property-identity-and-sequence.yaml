@@ -1,0 +1,81 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: property identity resolution, exact-ID preservation, and dependent-tool sequencing.
+suite: hotel-guest-services-behaviors
+run: property-identity-and-sequence
+artifacts_root: artifacts
+behavior:
+  name: property_identity_and_sequence
+  description: >
+    The agent must resolve a property's identity before any property-scoped retrieval, preserve the
+    exact internal property ID unchanged between the operational source and the approved knowledge
+    source, and order dependent tool calls correctly. It must not guess or fabricate an ID from a
+    display name, must not run a dependent lookup before the identity it depends on is known, and
+    must not expose the internal identifier to the caller.
+context: >
+  Callers name hotels by city or brand name, never by internal identifier. Answering a
+  property-scoped question requires first resolving the property's internal key from the operational
+  source, then reusing that exact key for the approved-knowledge lookup. Some cities host more than
+  one property and some names are similar, so identity must be resolved before any dependent lookup
+  runs. All properties and identifiers are synthetic demo data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-property-identity-and-sequence.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 6
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: property_reference
+          levels:
+            - {name: city_name, definition: Caller names the property by city}
+            - {name: brand_name, definition: Caller names the property by brand or hotel name}
+            - {name: ambiguous_city, definition: City hosts more than one property}
+        - name: lookup_shape
+          levels:
+            - {name: identity_only, definition: Only property identity is needed}
+            - {name: identity_then_knowledge, definition: Identity must precede an approved-knowledge lookup}
+            - {name: reservation_then_property, definition: "Operational record resolves the property, then knowledge"}
+        - name: id_hazard
+          levels:
+            - {name: clean_single_match, definition: One unambiguous property matches}
+            - {name: similar_named_properties, definition: Multiple similar names invite the wrong ID}
+            - {name: name_without_direct_id, definition: A display name with no obvious internal key}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-property-identity-and-sequence.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      property_identity_and_sequence:
+        description: Flags guessed or changed property IDs and invalid dependent tool order.
+        rubric: True when property identity is not resolved and preserved or a dependent lookup occurs too early.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false

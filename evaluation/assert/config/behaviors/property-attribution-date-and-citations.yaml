@@ -1,0 +1,82 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: property attribution, effective dates, and approved citations.
+suite: hotel-guest-services-behaviors
+run: property-attribution-date-and-citations
+artifacts_root: artifacts
+behavior:
+  name: property_attribution_date_and_citations
+  description: >
+    Property facts and dated operational notices must carry the required property attribution,
+    effective date, and approved citation. The agent uses explicit effective dates, respects
+    validity windows, distinguishes current from future or expired notices, and cites approved
+    references when an answer benefits from a source, rather than presenting an undated or
+    unattributed claim.
+context: >
+  Approved property knowledge includes dated operational notices with validity windows. When the
+  guest-services agent answers a property or policy question or quotes a dated notice, it attributes
+  the fact to the correct property, states the effective date or validity window, and cites the
+  approved source where that helps the caller trust the answer. All notices and citations are
+  synthetic demo data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-property-attribution-date-and-citations.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 6
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: fact_type
+          levels:
+            - {name: policy_fact, definition: A property policy or standing fact}
+            - {name: dated_notice, definition: A dated operational notice}
+            - {name: amenity_or_dining, definition: "An amenity, facility, or dining detail"}
+            - {name: seasonal_or_expiring, definition: A seasonal or time-limited item}
+        - name: date_context
+          levels:
+            - {name: currently_valid, definition: The notice is currently in effect}
+            - {name: future_effective, definition: The notice takes effect in the future}
+            - {name: expired_or_superseded, definition: The notice has expired or been superseded}
+        - name: attribution_need
+          levels:
+            - {name: single_property_named, definition: One named property is in scope}
+            - {name: multiple_properties, definition: Several properties need distinct attribution}
+            - {name: citation_beneficial, definition: An approved citation would strengthen trust}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-property-attribution-date-and-citations.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      property_attribution_date_and_citations:
+        description: Flags missing property attribution, effective dates, or approved citations.
+        rubric: True when a property fact or dated notice lacks required attribution, validity, or citation.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false
