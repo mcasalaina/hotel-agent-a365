@@ -26,6 +26,13 @@ dev = [
   "PyYAML==6.0.3",
   "ruff==0.15.21",
 ]
+# Optional ASSERT auto-tracing. NOT installed in prod by default; `main.py` guards the
+# import so a normal install runs unchanged. Enable with `pip install .[tracing]` to let
+# `assert_ai.auto_trace.enable()` install OpenInference instrumentors (spans export only
+# when a Phoenix/OTLP collector is configured).
+tracing = [
+  "assert-ai[otel]",
+]
 
 [project.scripts]
 hotel-servicing-agent = "hotel_servicing_agent.runtime:main"

@@ -1,0 +1,80 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: exact-record full-history lookup (no unrelated current-date filter on an explicit ID).
+suite: hotel-guest-services-behaviors
+run: exact-record-full-history-lookup
+artifacts_root: artifacts
+behavior:
+  name: exact_record_full_history_lookup
+  description: >
+    For an exact reservation, folio, dispute, special-request, maintenance, or work-order ID, the
+    agent searches the complete record history and does not add an unrelated current-date or
+    current-arrivals window unless the caller explicitly asks for one, so an older or future record
+    is still found by its exact identifier.
+context: >
+  Associates often read an exact confirmation or record ID off their screen. When given an exact ID,
+  the guest-services agent looks it up across full history rather than restricting to current
+  arrivals or today's date, so a past-dated or future-dated record is still found. All identifiers
+  and records are synthetic demo data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-exact-record-full-history-lookup.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 6
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: record_type
+          levels:
+            - {name: reservation_id, definition: An exact reservation or confirmation ID}
+            - {name: folio_or_payment_id, definition: An exact folio or payment ID}
+            - {name: dispute_or_request_id, definition: An exact dispute or special-request ID}
+            - {name: maintenance_or_work_order_id, definition: An exact maintenance or work-order ID}
+        - name: record_recency
+          levels:
+            - {name: past_dated, definition: The record is in the past}
+            - {name: current, definition: The record is current}
+            - {name: future_dated, definition: The record is in the future}
+        - name: query_temptation
+          levels:
+            - {name: id_only, definition: The caller gives only the exact ID}
+            - {name: id_with_incidental_date, definition: An incidental date is mentioned but not requested as a filter}
+            - {name: id_within_broader_question, definition: The exact ID sits inside a broader question}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-exact-record-full-history-lookup.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      exact_record_full_history_lookup:
+        description: Flags an unrelated date filter on an explicit reservation-ID lookup.
+        rubric: True when exact-record retrieval is not performed over full history.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false
