@@ -19,7 +19,7 @@ import { CallSocket } from "../lib/callSocket";
 import { buildDemoScenario } from "../lib/demoScenario";
 import { generateSilentPcmFrame } from "../lib/pcm";
 import { chunkPcm16, decodePcmWave } from "../lib/wav";
-import type { BackendConfigResponse } from "../types/protocol";
+import type { BackendConfigResponse, CreateSessionResponse } from "../types/protocol";
 import { callSessionReducer, initialCallSessionState, type CallMode } from "./callSessionReducer";
 
 export interface UseCallSessionResult {
@@ -52,7 +52,7 @@ export function useCallSession(): UseCallSessionResult {
 
   const socketRef = useRef<CallSocket | null>(null);
   const connectSocketRef = useRef<
-    ((mode: CallMode, opaqueHandle: string, websocketPath: string, isReconnect: boolean) => void) | null
+    ((mode: CallMode, session: CreateSessionResponse, websocketPath: string, isReconnect: boolean) => void) | null
   >(null);
   const audioCaptureRef = useRef<AudioCaptureHandle | null>(null);
   const playbackRef = useRef<AudioPlaybackQueue | null>(null);
@@ -70,8 +70,6 @@ export function useCallSession(): UseCallSessionResult {
   micMutedRef.current = state.micMuted;
   const reconnectAttemptRef = useRef(state.reconnectAttempt);
   reconnectAttemptRef.current = state.reconnectAttempt;
-  const agentSessionIdRef = useRef(state.agentSessionId);
-  agentSessionIdRef.current = state.agentSessionId;
   const userEndedRef = useRef(false);
 
   useEffect(() => {
@@ -117,7 +115,7 @@ export function useCallSession(): UseCallSessionResult {
   useEffect(() => teardown, [teardown]);
 
   const scheduleReconnect = useCallback(
-    (mode: CallMode, opaqueHandle: string, websocketPath: string) => {
+    (mode: CallMode, session: CreateSessionResponse, websocketPath: string) => {
       const config = configRef.current.config;
       if (userEndedRef.current || !config) {
         return;
@@ -133,22 +131,22 @@ export function useCallSession(): UseCallSessionResult {
       dispatch({ type: "RECONNECT_ATTEMPT", attempt });
       const backoff = config.reconnectBackoffMs * 2 ** (attempt - 1);
       reconnectTimerRef.current = setTimeout(() => {
-        connectSocketRef.current?.(mode, opaqueHandle, websocketPath, true);
+        connectSocketRef.current?.(mode, session, websocketPath, true);
       }, backoff);
     },
     [],
   );
 
   const connectSocket = useCallback(
-    (mode: CallMode, opaqueHandle: string, websocketPath: string, isReconnect: boolean) => {
+    (mode: CallMode, session: CreateSessionResponse, websocketPath: string, isReconnect: boolean) => {
       const url = buildCallSocketUrl(websocketPath);
       const socket = new CallSocket(
         url,
         {
           type: "auth",
-          opaqueHandle,
+          opaqueHandle: session.sessionHandle,
           mode,
-          agentSessionId: agentSessionIdRef.current ?? undefined,
+          agentSessionId: session.agentSessionId,
         },
         {
           onMessage: (message) => {
@@ -175,7 +173,7 @@ export function useCallSession(): UseCallSessionResult {
               type: "LOCAL_ERROR",
               message: "The call connection had a problem. Attempting to reconnect...",
             });
-            scheduleReconnect(mode, opaqueHandle, websocketPath);
+            scheduleReconnect(mode, session, websocketPath);
           },
         },
       );
@@ -226,6 +224,7 @@ export function useCallSession(): UseCallSessionResult {
 
   const startCall = useCallback(
     async (mode: CallMode) => {
+      teardown();
       userEndedRef.current = false;
       dispatch({ type: "MODE_SELECTED", mode });
 
@@ -244,7 +243,7 @@ export function useCallSession(): UseCallSessionResult {
         dispatch({ type: "PHASE_CHANGE", phase: "connecting" });
         const accessToken = await acquireApiToken();
         const session = await createCallSession(accessToken);
-        connectSocket(mode, session.sessionHandle, config.websocketPath, false);
+        connectSocket(mode, session, config.websocketPath, false);
 
         if (mode === "voice") {
           const handle = await startAudioCapture((frame) => socketRef.current?.sendAudioFrame(frame));
@@ -260,11 +259,12 @@ export function useCallSession(): UseCallSessionResult {
         });
       }
     },
-    [acquireApiToken, connectSocket, runDemoScenario],
+    [acquireApiToken, connectSocket, runDemoScenario, teardown],
   );
 
   const startPrerecorded = useCallback(
     async (file: File) => {
+      teardown();
       userEndedRef.current = false;
       dispatch({ type: "MODE_SELECTED", mode: "prerecorded" });
       const config = configRef.current.config;
@@ -282,7 +282,7 @@ export function useCallSession(): UseCallSessionResult {
         dispatch({ type: "PHASE_CHANGE", phase: "connecting" });
         const accessToken = await acquireApiToken();
         const session = await createCallSession(accessToken);
-        connectSocket("prerecorded", session.sessionHandle, config.websocketPath, false);
+        connectSocket("prerecorded", session, config.websocketPath, false);
       } catch (err) {
         pendingPrerecordedRef.current = null;
         dispatch({
@@ -291,7 +291,7 @@ export function useCallSession(): UseCallSessionResult {
         });
       }
     },
-    [acquireApiToken, connectSocket],
+    [acquireApiToken, connectSocket, teardown],
   );
 
   const sendText = useCallback((text: string) => {

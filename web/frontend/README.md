@@ -135,9 +135,11 @@ The Python backend implements this contract. See the header comment in
 - **`WebSocket /api/calls`** - uses a fixed URL so the opaque handle does not enter access logs.
   Because a browser `WebSocket` cannot set custom headers, the very first frame the client sends
   after the socket opens is a JSON auth frame
-  (`{"type":"auth","opaqueHandle": "...", "mode": "voice" | "text" | "headless"}`) that restates
-  the handle. The backend treats the connection as unauthenticated until that frame is received and
-  validated.
+  (`{"type":"auth","opaqueHandle": "...","agentSessionId":"...","mode":"voice" | "text" | "prerecorded"}`)
+  that binds the handle to the session ID returned by the same session-creation response.
+  A new call gets a fresh pair and clears the previous call's guest data from the UI.
+  Reconnects reuse only their own call's pair; starting another call cancels old reconnect timers.
+  The backend treats the connection as unauthenticated until that frame is received and validated.
 - All other JSON message shapes exchanged on the socket (server call-state updates, transcript
   partials/finals, timeline/tool events, confirmation requests, result cards, disposition, and the
   client's text turns, mic-state, confirmation responses, cancel-output/barge-in, and end-call

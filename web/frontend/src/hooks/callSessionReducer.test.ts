@@ -17,6 +17,27 @@ describe("callSessionReducer", () => {
     expect(state.mode).toBe("voice");
   });
 
+  it.each(["voice", "text", "prerecorded", "headless"] as const)(
+    "starts a fresh %s call without previous guest data or session identity",
+    (mode) => {
+      let old = callSessionReducer(initialCallSessionState, {
+        type: "SERVER_MESSAGE",
+        message: { type: "auth_ack", agentSessionId: "previous-session" },
+      });
+      old = callSessionReducer(old, {
+        type: "SERVER_MESSAGE",
+        message: { type: "transcript", speaker: "user", text: "Previous guest", isFinal: true, timestamp: "t1" },
+      });
+      old = { ...old, micMuted: true, phase: "ended", reconnectAttempt: 3, errorMessage: "Old error" };
+      expect(callSessionReducer(old, { type: "MODE_SELECTED", mode })).toEqual({
+        ...initialCallSessionState,
+        micMuted: true,
+        mode,
+        phase: "starting",
+      });
+    },
+  );
+
   it("maps call_state messages to the matching UI phase", () => {
     const connecting = callSessionReducer(initialCallSessionState, {
       type: "SERVER_MESSAGE",

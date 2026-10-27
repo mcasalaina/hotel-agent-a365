@@ -160,7 +160,12 @@ export function callSessionReducer(
       return { ...state, phase: action.phase };
 
     case "MODE_SELECTED":
-      return { ...state, mode: action.mode, phase: "starting" };
+      return {
+        ...initialCallSessionState,
+        micMuted: state.micMuted,
+        mode: action.mode,
+        phase: "starting",
+      };
 
     case "SET_MIC_MUTED":
       return { ...state, micMuted: action.muted };
