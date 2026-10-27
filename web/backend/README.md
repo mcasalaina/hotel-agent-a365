@@ -9,6 +9,13 @@ short-lived opaque handle. The handle can have only one active WebSocket connect
 Foundry authentication uses `DefaultAzureCredential` and the `https://ai.azure.com/.default` scope.
 No Entra or Foundry token is placed in a WebSocket URL or sent to the hosted agent.
 
+Browser-session handles are process-local. Run one application process per replica and enable
+Container Apps session affinity in single-revision HTTP ingress mode, as `infra/voice-web.bicep`
+does. This keeps session creation, WebSocket upgrade and reconnect on the same replica. The
+platform routing cookie is not an authentication token or the browser-session handle.
+A replica restart loses its handles, so affected calls must start a fresh session. Multiple
+application workers require a shared session store rather than ingress affinity alone.
+
 ## Local run
 
 Install dependencies from the repository root:
