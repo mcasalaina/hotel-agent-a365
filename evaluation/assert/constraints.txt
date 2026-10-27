@@ -1,8 +1,9 @@
 # Runtime dependencies are constrained independently from the deployed agent.
+azure-ai-projects>=2.3,<3
 azure-identity>=1.19,<2
 azure-monitor-query>=1.4,<2
 httpx>=0.28,<1
-litellm==1.80.17
+litellm==1.104.2
 openai>=2.15,<3
 cryptography>=44,<47
 PyJWT>=2.10,<3

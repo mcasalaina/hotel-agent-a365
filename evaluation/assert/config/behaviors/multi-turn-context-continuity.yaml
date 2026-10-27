@@ -15,7 +15,7 @@ context: >
   Conversations build on prior answers: a caller sets a property, guest, reservation, scope, or
   date, then asks follow-ups. The guest-services agent keeps that context until the caller changes
   it, and on a property or guest switch it re-resolves identity cleanly without carrying the
-  previous subject's facts forward. All subjects and records are synthetic demo data.
+  previous subject's facts forward. All subjects and records are authoritative business data.
 pipeline:
   systematize:
     enabled: false

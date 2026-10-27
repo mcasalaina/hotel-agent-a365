@@ -14,7 +14,7 @@ context: >
   Associates often read an exact confirmation or record ID off their screen. When given an exact ID,
   the guest-services agent looks it up across full history rather than restricting to current
   arrivals or today's date, so a past-dated or future-dated record is still found. All identifiers
-  and records are synthetic demo data.
+  and records are authoritative business data.
 pipeline:
   systematize:
     enabled: false

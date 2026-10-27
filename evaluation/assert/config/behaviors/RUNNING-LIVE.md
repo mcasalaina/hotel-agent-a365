@@ -43,7 +43,7 @@ config** end to end.
 
 Pick any config and run it through the `live` harness (preflight + correlated trace import). Reduce
 `test_set.prompt.sample_size` / `scenario.sample_size` in the chosen YAML to `1`–`2` first for a
-cheap smoke, then scale up:
+inexpensive baseline-quality pass, then scale up:
 
 ```powershell
 evaluation\assert\.venv\Scripts\python.exe scripts\run_assert_evaluation.py live `
@@ -54,8 +54,8 @@ evaluation\assert\.venv\Scripts\python.exe scripts\run_assert_evaluation.py live
 
 `--suite` overrides the config's `suite:` label and sets the results path
 (`artifacts/results/<suite>/<run-id>/`); `--run-id` defaults to a UTC timestamp. Omit
-`--require-all-cases` for these generated configs (it is meant for the fixed 12-case reviewed
-`smoke.yaml`). For a plain run without trace correlation, use the `run` subcommand with the same
+`--require-all-cases` for these generated configs (it is meant for the fixed 25-case reviewed
+`baseline-quality.yaml`). For a plain run without trace correlation, use the `run` subcommand with the same
 `--config`/`--suite`.
 
 ## Blockers observed in the current workspace (2026-05)
@@ -79,7 +79,7 @@ dependencies. Configs were instead schema-validated offline through the pinned A
 ## Safety notes
 
 - **Never** commit `.env`, tokens, or any real identity value. `.env` is gitignored; keep it that way.
-- Generated test sets land in gitignored `artifacts/generated/`; results and raw transcripts land in
+- Generated conversation sets land in gitignored `artifacts/generated/`; results and raw transcripts land in
   gitignored `artifacts/results/`. Do not commit them.
 - The ASSERT results viewer (`scripts/run_assert_ui.py`) binds `http://127.0.0.1:5174`. If another
   ASSERT run or viewer is already using `:5174` (or Phoenix on `:6006`), do not start a second one —

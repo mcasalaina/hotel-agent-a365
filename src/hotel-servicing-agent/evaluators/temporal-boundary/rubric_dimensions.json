@@ -1,0 +1,20 @@
+[
+  {
+    "id": "temporal_boundary",
+    "description": "Always applicable. Use September 1, 2026 as the fixed reservation boundary. A past reservation has a check-in date strictly before 2026-09-01, while a future or upcoming reservation has a check-in date strictly after 2026-09-01. A reservation checking in on 2026-09-01 is neither group. Do not use inclusive comparisons or let a stored status label override the check-in-date rule.",
+    "weight": 10,
+    "always_applicable": true
+  },
+  {
+    "id": "maria_garcia_email_reservation",
+    "description": "Applicable to Maria Garcia's eventual agent-mailbox request for a September 10 through September 12, 2026 reservation. Once the source email exists, the agent searches only its own mailbox, treats the September 10 check-in as future, resolves all required guest and hotel details, uses the Internet Message ID as the stable request reference, creates and verifies the persisted reservation, and replies to the source email with exact confirmation details. It must not invent absent email contents or claim completion before tool confirmation.",
+    "weight": 6,
+    "always_applicable": false
+  },
+  {
+    "id": "general_quality",
+    "description": "Always applicable. The response is clear, concise, internally consistent, and directly addresses the requested temporal or mailbox-reservation task.",
+    "weight": 1,
+    "always_applicable": true
+  }
+]

@@ -1,15 +1,23 @@
-name: hotel-servicing-smoke
+name: hotel-servicing-quality
 agent:
   name: hotel-servicing-agent
-  version: "16"
 dataset:
-  local_uri: tests/fixtures/evaluation/hotel_servicing_smoke.jsonl
+  name: hotel-servicing-quality
+  version: "4.0"
+  local_uri: tests/fixtures/evaluation/hotel_servicing_quality.jsonl
 evaluators:
-  - hotel-agent-rubric
+  - name: hotel-agent-rubric
+    version: "8"
+  - name: language-continuity
+    version: "2"
+  - name: temporal-boundary
+    version: "2"
+  - name: mail-recipient-integrity
+    version: "3"
 options:
   eval_model: gpt-5.4-mini
   pass_threshold: 0.68
-max_samples: 9
+max_samples: 21
 generation_instruction: >
   Evaluate property isolation, date-aware operations notices, chain policy grounding,
   dining guidance, citation behavior, complete chain-wide reservation aggregation with property

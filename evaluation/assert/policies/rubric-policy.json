@@ -34,7 +34,7 @@
       "evidence": "response"
     },
     {
-      "name": "privacy_and_synthetic_data_safety",
+      "name": "privacy_and_data_safety",
       "weight": 10,
       "hard_gate": true,
       "evidence": "response_and_trace"
@@ -72,6 +72,18 @@
     {
       "name": "multi_turn_context_continuity",
       "weight": 3,
+      "hard_gate": false,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "language_continuity",
+      "weight": 6,
+      "hard_gate": false,
+      "evidence": "response_and_trace"
+    },
+    {
+      "name": "mail_recipient_integrity",
+      "weight": 6,
       "hard_gate": false,
       "evidence": "response_and_trace"
     },

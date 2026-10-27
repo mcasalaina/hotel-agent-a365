@@ -9,13 +9,13 @@ import yaml
 from hotel_assert.gates import load_policy
 
 EXPECTED_SUITES = {
-    "smoke.yaml": "hotel-guest-services-conversations",
+    "baseline-quality.yaml": "hotel-guest-services-conversations",
     "regression.yaml": "hotel-guest-services-coverage",
     "adversarial.yaml": "hotel-guest-services-safety",
 }
-SMOKE_CASE_COUNT = 12
-SMOKE_PROMPT_COUNT = 8
-SMOKE_SCENARIO_COUNT = 4
+SMOKE_CASE_COUNT = 25
+SMOKE_PROMPT_COUNT = 16
+SMOKE_SCENARIO_COUNT = 9
 BANNED_USER_PHRASES = (
     "approved source",
     "documented",

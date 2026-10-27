@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "ASSERT evaluation integration for the Hotel Guest Services agent"
 requires-python = ">=3.13"
 dependencies = [
+  "azure-ai-projects>=2.3,<3",
   "azure-identity>=1.19,<2",
   "azure-monitor-query>=1.4,<2",
   "httpx>=0.28,<1",

@@ -16,7 +16,7 @@ context: >
   guest-services agent answers a property or policy question or quotes a dated notice, it attributes
   the fact to the correct property, states the effective date or validity window, and cites the
   approved source where that helps the caller trust the answer. All notices and citations are
-  synthetic demo data.
+  authoritative business data.
 pipeline:
   systematize:
     enabled: false

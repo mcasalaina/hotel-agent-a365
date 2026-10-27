@@ -1,0 +1,32 @@
+[
+  {
+    "id": "mail_recipient_integrity",
+    "description": "Always applicable. Preserve every explicitly requested To, CC, and BCC recipient in the correct field for new messages and replies. Verify the successful send or reply result and recipient metadata before claiming completion. Maria Garcia must remain the To recipient and Marco Casalaina must be included in CC when requested. Omission, field reassignment, or an unverified success claim is a failure.",
+    "weight": 10,
+    "always_applicable": true
+  },
+  {
+    "id": "reply_thread_integrity",
+    "description": "Applicable to replies. Locate the exact inbound message, reply in that thread, preserve requested CC recipients, include the confirmed reservation details, and do not claim a reply exists before both the inbound message and successful reply are confirmed.",
+    "weight": 6,
+    "always_applicable": false
+  },
+  {
+    "id": "mail_orchestration_completion",
+    "description": "Applicable to combined or split mail workflows. Preserve the exact message identity and ordered search, read, reservation-grounding, and reply state across tools and turns. Complete all required steps in one turn when requested. If grounding fails, stop before replying, retain the thread for retry, and report the incomplete step.",
+    "weight": 8,
+    "always_applicable": false
+  },
+  {
+    "id": "reply_readback_integrity",
+    "description": "Applicable after a reply. Verify delivery and To/CC fields from available reply or Sent Items metadata. If Sent Items readback or a Graph reply ID is unavailable, distinguish confirmed delivery from unavailable readback and never fabricate an identifier or verification claim.",
+    "weight": 8,
+    "always_applicable": false
+  },
+  {
+    "id": "general_quality",
+    "description": "Always applicable. The response is clear, concise, and accurately reports the message action and confirmed recipient fields.",
+    "weight": 1,
+    "always_applicable": true
+  }
+]

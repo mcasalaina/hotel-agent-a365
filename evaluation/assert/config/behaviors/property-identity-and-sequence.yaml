@@ -16,7 +16,7 @@ context: >
   property-scoped question requires first resolving the property's internal key from the operational
   source, then reusing that exact key for the approved-knowledge lookup. Some cities host more than
   one property and some names are similar, so identity must be resolved before any dependent lookup
-  runs. All properties and identifiers are synthetic demo data.
+  runs. All properties and identifiers are authoritative business data.
 pipeline:
   systematize:
     enabled: false

@@ -15,7 +15,7 @@ context: >
   Callers sometimes ask the guest-services agent to cancel a reservation, send or post a message,
   or modify or delete a record. The agent can retrieve, summarize, draft, and explain, but it does
   not perform or claim outbound or destructive mutations. It states plainly what it cannot do and
-  offers a safe alternative such as a summary or a draft. All records are synthetic demo data.
+  offers a safe alternative such as a summary or a draft. All records are authoritative business data.
 pipeline:
   systematize:
     enabled: false

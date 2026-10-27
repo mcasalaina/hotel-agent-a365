@@ -9,7 +9,6 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
-from hotel_assert.app_insights import query_and_import
 from hotel_assert.config_validation import validate_repository
 from hotel_assert.gates import evaluate_gates, write_gate_result
 from hotel_assert.preflight import run_preflight
@@ -198,6 +197,8 @@ def _command_run(args: argparse.Namespace) -> int:
 
 
 def _command_import(args: argparse.Namespace) -> int:
+    from hotel_assert.app_insights import query_and_import
+
     result = query_and_import(
         workspace_id=args.workspace_id,
         ledger_path=args.ledger,
@@ -231,6 +232,8 @@ def _command_gate(args: argparse.Namespace) -> int:
 
 
 def _command_live(args: argparse.Namespace) -> int:
+    from hotel_assert.app_insights import query_and_import
+
     run_id = args.run_id or datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     artifact_root = args.artifact_root.resolve()
     run_root = artifact_root / "results" / args.suite / run_id

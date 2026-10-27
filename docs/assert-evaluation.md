@@ -2,7 +2,17 @@
 
 ## Purpose and identity boundary
 
-ASSERT evaluates the deployed Hotel Guest Services Hosted Agent as the Agent 365 agent user. The
+The local ASSERT contracts, Foundry catalog publication, and hosted-response evaluation are
+separate validation paths. Source-only checks never publish evaluators or invoke an agent.
+Catalog publication depends on the root and agent-root `eval.yaml` files, the three quality
+datasets, the four portable evaluator dimension files, and the reviewed behavior/policy sources
+under `evaluation/assert/`. Static multilingual evaluator validation is not live agent acceptance.
+The hosted eight-case verdict reports the primary Hotel rubric separately from the unchanged
+quality definition's aggregate, including failures from inapplicable mail/temporal graders.
+Preserve failed official judgments even when local evidence suggests a classification issue.
+
+ASSERT evaluates the deployed Hotel Guest Services Hosted Agent as the Agent 365 instance
+`Lyrenza Hotel Guest Services`. The template remains `Hotel Guest Services`. The
 runner's workload identity is used only for judge models, Application Insights, encrypted artifact
 storage, and controlled job execution. It is never accepted as the target identity.
 
@@ -18,8 +28,8 @@ The implementation validates:
 
 - the approved tenant and Foundry audience;
 - `idtyp=user`;
-- the Hotel Guest Services agent-user object ID in `oid`;
-- the Hotel Guest Services agent identity in `azp` or `appid`;
+- the Lyrenza Hotel Guest Services agent-user object ID in `oid`;
+- the Lyrenza Hotel Guest Services instance identity in `azp` or `appid`;
 - agent-user facet `13` in `xms_sub_fct`;
 - agent-identity facet `11` in `xms_act_fct`;
 - the parent blueprint in `xms_par_app_azp`;

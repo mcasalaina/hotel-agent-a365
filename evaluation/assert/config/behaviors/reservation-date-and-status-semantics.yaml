@@ -1,21 +1,20 @@
 # One behavior per YAML — see behaviors/README.md.
-# Behavior: reservation date/status semantics (check-in field, inclusive window, future/arriving status).
+# Behavior: reservation date/status semantics, including the fixed September 1, 2026 boundary.
 suite: hotel-guest-services-behaviors
 run: reservation-date-and-status-semantics
 artifacts_root: artifacts
 behavior:
   name: reservation_date_and_status_semantics
   description: >
-    Forward-looking arrival questions must use the check-in date field over an inclusive window with
-    the documented future or arriving status set. The agent uses the authoritative current date from
-    the runtime, applies inclusive date boundaries, does not conflate check-in with stay nights or
-    booking date, and explains plainly that booking-date reporting is unavailable when asked for
-    newly booked reservations.
+    Temporal classification uses the fixed 2026-09-01 boundary: past check-in dates are strictly
+    before it and future or upcoming check-in dates are strictly after it. A same-day check-in is
+    neither classification. Explicit arrival windows remain inclusive at their requested edges. The
+    agent does not conflate check-in with stay nights, booking date, or stored status labels.
 context: >
-  Forward-looking arrival questions map to reservations whose check-in date falls in an inclusive
-  seven-day window with a future or arriving status. The guest-services agent uses the authoritative
-  current date from the runtime, gives the date range when it helps, and does not conflate check-in
-  with stay nights or booking date. All reservations are synthetic demo data.
+  Past and future reservation questions are anchored to September 1, 2026 with strict inequalities
+  and no ambiguous same-day classification. Explicit arrival ranges use their requested inclusive
+  edges. The guest-services agent gives the date rule when it helps and does not let a stored status
+  value replace the temporal rule. All reservations are authoritative business data.
 pipeline:
   systematize:
     enabled: false
@@ -40,11 +39,14 @@ pipeline:
             - {name: specific_date_range, definition: A specific explicit date range}
             - {name: currently_in_house, definition: Guests currently in house}
             - {name: newly_booked, definition: Newly booked reservations (booking-date reporting)}
+            - {name: fixed_past, definition: Past reservations strictly before 2026-09-01}
+            - {name: fixed_future, definition: Future reservations strictly after 2026-09-01}
         - name: window_edge
           levels:
             - {name: inclusive_boundary, definition: The inclusive first or last day matters}
             - {name: single_day, definition: A single-day window}
             - {name: multi_week, definition: A window spanning multiple weeks}
+            - {name: fixed_boundary_day, definition: A 2026-09-01 check-in is neither past nor future}
         - name: status_mix
           levels:
             - {name: future_and_arriving, definition: Only future and arriving statuses}
@@ -72,8 +74,8 @@ pipeline:
       max_tokens: 8192
     dimensions:
       reservation_date_and_status_semantics:
-        description: Flags incorrect reservation date fields, status sets, or inclusive windows.
-        rubric: True when reservation interpretation or date/status semantics are wrong.
+        description: Flags incorrect reservation date fields, status sets, windows, or fixed-boundary temporal classification.
+        rubric: True when reservation semantics are wrong, including treating check-in on 2026-09-01 as past or future instead of requiring past dates strictly before and future dates strictly after that boundary.
         allow_not_applicable: true
       general_quality:
         description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.

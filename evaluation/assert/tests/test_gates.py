@@ -19,7 +19,7 @@ def policy(path: Path) -> None:
             "hard_gate": index <= 6,
             "evidence": "response",
         }
-        for index in range(1, 14)
+        for index in range(1, 16)
     ]
     path.write_text(
         json.dumps({"pass_threshold": 0.68, "dimensions": dimensions}),
@@ -37,7 +37,7 @@ def test_gates_pass_complete_clear_run(tmp_path: Path) -> None:
         [
             {
                 "judge_status": "ok",
-                "verdict": {"dimensions": {f"dimension_{index}": False for index in range(1, 14)}},
+                "verdict": {"dimensions": {f"dimension_{index}": False for index in range(1, 16)}},
             }
         ],
     )
@@ -57,7 +57,7 @@ def test_weight_ten_failure_fails_even_above_threshold(tmp_path: Path) -> None:
     policy_path = tmp_path / "policy.json"
     traces = tmp_path / "traces.json"
     policy(policy_path)
-    dimensions = {f"dimension_{index}": False for index in range(1, 14)}
+    dimensions = {f"dimension_{index}": False for index in range(1, 16)}
     dimensions["dimension_1"] = True
     write_jsonl(
         scores,

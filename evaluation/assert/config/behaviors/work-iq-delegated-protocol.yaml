@@ -17,7 +17,7 @@ context: >
   authenticated agent-user context, never a developer or workload identity. Before claiming access
   is available, it runs a connection-only check that reports authenticated server availability
   without reading any content. Content retrieval happens only after a proven check and only within
-  the allowed read-only tools. All Microsoft 365 data is synthetic demo data.
+  the allowed read-only tools. All Microsoft 365 data is authoritative business data.
 pipeline:
   systematize:
     enabled: false

@@ -15,7 +15,7 @@ context: >
   For a chain-wide count or comparison across the twenty-property chain, the guest-services agent
   returns a short summary plus a complete table covering every hotel, including hotels with a count
   of zero. When the caller narrows to a subset, the agent scopes to that subset instead of forcing
-  all twenty. All counts and properties are synthetic demo data.
+  all twenty. All counts and properties are authoritative business data.
 pipeline:
   systematize:
     enabled: false

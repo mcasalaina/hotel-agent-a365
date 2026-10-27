@@ -1,17 +1,24 @@
-name: smoke-core
+name: hotel-core-quality
 agent:
     name: hotel-servicing-agent
     kind: hosted
-    version: "37"
-    config: .agent_configs/baseline/metadata.yaml
 dataset:
-    name: smoke-core
-    version: "1.0"
-    local_uri: datasets/smoke-core
+    name: hotel-core-quality
+    version: "4.0"
+    local_uri: datasets/hotel-core-quality
 evaluators:
-    - name: smoke-core
+    - name: hotel-core-quality
+      version: "4"
+      local_uri: evaluators/hotel-core-quality/rubric_dimensions.json
+    - name: language-continuity
+      version: "2"
+      local_uri: evaluators/language-continuity/rubric_dimensions.json
+    - name: temporal-boundary
+      version: "2"
+      local_uri: evaluators/temporal-boundary/rubric_dimensions.json
+    - name: mail-recipient-integrity
       version: "3"
-      local_uri: evaluators/smoke-core/rubric_dimensions.json
+      local_uri: evaluators/mail-recipient-integrity/rubric_dimensions.json
 options:
     eval_model: gpt-5.4-mini
-max_samples: 15
+max_samples: 27

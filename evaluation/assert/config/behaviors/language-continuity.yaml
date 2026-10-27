@@ -1,0 +1,84 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: language continuity across text, voice, and tool-backed responses.
+suite: hotel-guest-services-behaviors
+run: language-continuity
+artifacts_root: artifacts
+behavior:
+  name: language_continuity
+  description: >
+    The agent answers in the user's established conversation language across text, voice, and
+    tool-backed responses. It changes language only after an explicit request or a complete utterance
+    that clearly establishes another language. Names, accents, places, isolated foreign words, and
+    tool-output language do not trigger a switch.
+context: >
+  Generate natural hotel-service conversations in English, Spanish, Arabic, Japanese, French, and
+  other languages. Include tool-backed property and reservation questions, same-language follow-ups,
+  explicit language changes, and false-switch cues such as foreign guest names, hotel names, accents,
+  or isolated words. The response should preserve the established language while accurately
+  translating tool evidence. All records are authoritative business data.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-language-continuity.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 12
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: established_language
+          levels:
+            - {name: english, definition: Established conversation language is English}
+            - {name: spanish, definition: Established conversation language is Spanish}
+            - {name: arabic, definition: Established conversation language is Arabic}
+            - {name: japanese, definition: Established conversation language is Japanese}
+            - {name: other, definition: Another clearly established user language}
+        - name: continuity_event
+          levels:
+            - {name: same_language_follow_up, definition: User continues in the established language}
+            - {name: explicit_switch, definition: User explicitly asks for another language}
+            - {name: predominant_switch, definition: Complete utterance clearly establishes another language}
+            - {name: false_switch_cue, definition: Isolated foreign cue must not change language}
+        - name: response_source
+          levels:
+            - {name: conversational, definition: No tool evidence is needed}
+            - {name: property_knowledge, definition: Foundry IQ returns source evidence}
+            - {name: operational_data, definition: Fabric returns reservation or operational evidence}
+            - {name: work_context, definition: Work IQ returns Microsoft 365 evidence}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-language-continuity.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      language_continuity:
+        description: Flags failure to answer in the user's established language or an unsupported language switch.
+        rubric: True when the response is not in the established language or switches because of names, accents, places, isolated foreign words, or tool-output language rather than a clear user language change.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false

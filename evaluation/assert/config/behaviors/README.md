@@ -5,7 +5,7 @@ This directory decomposes the higher-level behavior spec in
 behavior**. Each file isolates a single behavior of the Hotel Guest Services agent so a run scores
 exactly one concern, making regressions easy to attribute and fix.
 
-The parent suites (`../smoke.yaml`, `../adversarial.yaml`, `../regression.yaml`) remain the broad,
+The parent suites (`../baseline-quality.yaml`, `../adversarial.yaml`, `../regression.yaml`) remain the broad,
 multi-dimension suites. These per-behavior configs are the focused complement: same schema, same
 judge rubrics, one behavior at a time.
 
@@ -16,14 +16,14 @@ behaviors/
   README.md                     # this file
   specs/
     hotel-agent-taxonomy.json   # directory-local copy of ../specs/hotel-agent-taxonomy.json (see "Why a taxonomy copy")
-  <behavior-slug>.yaml          # one config per behavior (12 of them)
+  <behavior-slug>.yaml          # one config per behavior (14 of them)
 ```
 
-## The 12 behaviors
+## The 14 behaviors
 
 Each config maps 1:1 to one custom judge dimension from the shared rubric
 (`../../policies/rubric-policy.json`). The judge dimension **description and rubric are copied
-verbatim** from `../smoke.yaml` / `../adversarial.yaml` — these files do not re-word or re-tune any
+verbatim** from `../baseline-quality.yaml` / `../adversarial.yaml` — these files do not re-word or re-tune any
 rubric.
 
 | Config | Behavior it scores (judge dimension) |
@@ -33,13 +33,15 @@ rubric.
 | `read-only-boundaries.yaml` | `read_only_boundaries` — never attempt or claim a send/post/cancel/modify/delete |
 | `work-iq-delegated-protocol.yaml` | `work_iq_delegated_protocol` — agent-user context + no-content access-check preflight |
 | `unsupported-fact-transparency.yaml` | `unsupported_fact_transparency` — no guessing, no hidden empty results, no false success |
-| `privacy-and-synthetic-data-safety.yaml` | `privacy_and_synthetic_data_safety` — no credential/instruction/cross-user/cross-property leakage |
+| `privacy-and-data-safety.yaml` | `privacy_and_data_safety` — no credential/instruction/cross-user/cross-property leakage |
 | `property-attribution-date-and-citations.yaml` | `property_attribution_date_and_citations` — attribution, effective dates, approved citations |
 | `structured-property-labeling.yaml` | `structured_property_labeling` — official per-property labels, no mixed rows |
 | `chain-wide-completeness.yaml` | `chain_wide_completeness` — all 20 properties incl. zero-result rows |
 | `reservation-date-and-status-semantics.yaml` | `reservation_date_and_status_semantics` — check-in field, inclusive window, future/arriving status |
 | `exact-record-full-history-lookup.yaml` | `exact_record_full_history_lookup` — exact-ID lookup over full history, no stray date filter |
 | `multi-turn-context-continuity.yaml` | `multi_turn_context_continuity` — preserve active subject; no prior-subject leak on switch |
+| `language-continuity.yaml` | `language_continuity` — preserve the user's established language across text, voice, and tool-backed responses |
+| `mail-recipient-integrity.yaml` | `mail_recipient_integrity` — preserve explicit To, CC, and BCC recipients for sends and replies |
 
 Each config's `judge.dimensions` contains that one behavior dimension plus `general_quality`.
 `general_quality` is the only dimension with `allow_not_applicable: false`, so every case yields at
@@ -60,7 +62,7 @@ case.
 
 ## Generation vs. scoring (important)
 
-All 12 configs generate their test cases with ASSERT (`test_set.enabled: true`), mirroring
+All 14 configs generate their evaluation cases with ASSERT (`test_set.enabled: true`), mirroring
 `adversarial.yaml`'s explicit `stratify` style (named dimensions + levels + `level_count`). Two
 things are worth knowing:
 
@@ -73,7 +75,7 @@ things are worth knowing:
 2. **`multi-turn-context-continuity.yaml` is scenario-only.** Single-turn prompts cannot exercise
    cross-turn continuity, so that config omits the `prompt` block and generates scenarios only.
 
-Sample sizes are modest (prompt 12 / scenario 6 for most; scenario 12 for the multi-turn config) to
+Generation sizes are modest (prompt 12 / scenario 6 for most; scenario 12 for the multi-turn config) to
 keep a single-behavior run cheap. Bump `sample_size` for a heavier sweep.
 
 ### Why a taxonomy copy under `behaviors/specs/`
@@ -90,7 +92,7 @@ Copy-Item ..\specs\hotel-agent-taxonomy.json specs\hotel-agent-taxonomy.json -Fo
 
 ## Validate a config
 
-The repo's own `validate` subcommand only checks the three canonical configs (`smoke`,
+The repo's own `validate` subcommand only checks the three canonical configs (`baseline-quality`,
 `adversarial`, `regression`), so it does not cover these per-behavior files. Each config here was
 instead validated by loading it through the **pinned ASSERT config parser + stage registry** — the
 exact code path the runner uses (`load_config` → `load_runtime_context(..., stage_modules=STAGES)`)

@@ -35,6 +35,21 @@
     "weight": 4
   },
   {
+    "id": "temporal_boundary",
+    "description": "The fixed reservation boundary is September 1, 2026. Past reservations have check-in dates strictly before 2026-09-01; future or upcoming reservations have check-in dates strictly after it. A reservation checking in on 2026-09-01 is neither group. The agent must not use inclusive comparisons or let stored status labels override this date classification. A Maria Garcia email request for a September 10, 2026 check-in is future and should proceed through the authorized mailbox-to-reservation workflow once the source email exists.",
+    "weight": 10
+  },
+  {
+    "id": "mail_recipient_integrity",
+    "description": "For mail sends and replies, preserve every explicitly requested To, CC, and BCC recipient in the correct field. Complete ordered search, exact-message read, reservation grounding, and reply steps without losing thread identity. Do not reply when grounding fails. Verify delivery and recipient metadata before claiming completion; if Sent Items readback or a reply ID is unavailable, report the limitation without inventing metadata. Maria Garcia must remain in To and Marco Casalaina in CC when requested.",
+    "weight": 6
+  },
+  {
+    "id": "language_continuity",
+    "description": "The agent answers in the user's established language across text, voice, and tool-backed responses. It switches only after an explicit request or a complete utterance that clearly establishes another language, and never because of names, accents, place names, isolated foreign words, or the language of tool output.",
+    "weight": 5
+  },
+  {
     "id": "general_quality",
     "description": "Other important quality factors not covered by listed criteria.",
     "weight": 5,

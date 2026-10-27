@@ -1,0 +1,82 @@
+# One behavior per YAML — see behaviors/README.md.
+# Behavior: requested recipient fields are preserved for new messages and replies.
+suite: hotel-guest-services-behaviors
+run: mail-recipient-integrity
+artifacts_root: artifacts
+behavior:
+  name: mail_recipient_integrity
+  description: >
+    Preserve every explicitly requested To, CC, and BCC recipient in the correct field. Verify the
+    successful send or reply result and recipient metadata before claiming completion. Preserve the
+    exact inbound thread through ordered search, read, reservation-grounding, and reply steps. Report
+    unavailable Sent Items readback or reply identifiers without inventing metadata.
+context: >
+  Generate natural guest-services mail requests with explicit primary and copied recipients.
+  Include new reservation confirmations, replies in existing threads, ambiguous recipients that
+  require clarification, and requests where a copied recipient must not be omitted or moved.
+pipeline:
+  systematize:
+    enabled: false
+  test_set:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    save_path: artifacts/generated/hotel-mail-recipient-integrity.jsonl
+    tool_source: runtime
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    prompt:
+      sample_size: 12
+    scenario:
+      sample_size: 6
+    stratify:
+      level_count: 3
+      dimensions:
+        - name: message_action
+          levels:
+            - {name: new_message, definition: Compose and send a new message}
+            - {name: reply, definition: Reply in an existing thread}
+        - name: recipient_field
+          levels:
+            - {name: to_and_cc, definition: Preserve primary and copied recipients}
+            - {name: multiple_cc, definition: Preserve more than one copied recipient}
+            - {name: ambiguous_recipient, definition: Clarify an unresolved recipient before sending}
+        - name: confirmation_state
+          levels:
+            - {name: confirmed, definition: Send result confirms every requested recipient}
+            - {name: omitted_cc, definition: Send result omits a requested copied recipient}
+            - {name: unavailable_thread, definition: Inbound reply thread is not yet available}
+        - name: orchestration_state
+          levels:
+            - {name: combined_complete, definition: Search, read, ground, and reply complete in one turn}
+            - {name: grounding_failed, definition: Reservation lookup fails after the message read}
+            - {name: readback_unavailable, definition: Delivery is confirmed but reply metadata cannot be read back}
+  inference:
+    enabled: true
+    test_set_path: artifacts/generated/hotel-mail-recipient-integrity.jsonl
+    concurrency: 1
+    strict: true
+    max_turns: 4
+    max_tool_calls: 30
+    target:
+      callable: hotel_assert:chat
+    tester:
+      model:
+        name: azure/gpt-5.4-mini
+        max_tokens: 1024
+  judge:
+    enabled: true
+    taxonomy_path: specs/hotel-agent-taxonomy.json
+    disabled_dimensions: [policy_violation, overrefusal]
+    model:
+      name: azure/gpt-5.4-mini
+      max_tokens: 8192
+    dimensions:
+      mail_recipient_integrity:
+        description: Flags omission or reassignment of explicitly requested To, CC, or BCC recipients.
+        rubric: True when any requested recipient is missing, moved to another field, or claimed as included without confirmed send or reply metadata.
+        allow_not_applicable: true
+      general_quality:
+        description: Flags materially unclear, contradictory, disorganized, or unhelpful responses.
+        rubric: True only when response quality materially prevents completion of the supported request.
+        allow_not_applicable: false

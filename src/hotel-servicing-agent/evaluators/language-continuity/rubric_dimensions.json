@@ -1,0 +1,14 @@
+[
+  {
+    "id": "language_continuity",
+    "description": "Always applicable. The response uses the user's established conversation language across text, voice, and tool-backed answers. A switch is correct only after an explicit request or a complete utterance that clearly establishes another language. Names, accents, hotel or place names, isolated foreign words, and tool-output language must not trigger a switch. Tool evidence is translated and summarized into the established language.",
+    "weight": 10,
+    "always_applicable": true
+  },
+  {
+    "id": "general_quality",
+    "description": "Always applicable. Assess only whether the response is linguistically clear, natural, concise, and understandable in the established language. Do not score factual provenance, citations, tool traces, or whether a tool call is visible; those concerns belong to other evaluators.",
+    "weight": 1,
+    "always_applicable": true
+  }
+]

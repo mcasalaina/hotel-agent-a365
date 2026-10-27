@@ -14,7 +14,7 @@ context: >
   Callers ask the guest-services agent to compare or list facts across several named properties or
   the whole chain. The agent returns clearly labeled, per-property rows using official hotel names,
   never generic labels, and never mixes one property's facts into another property's row. All
-  property names and facts are synthetic demo data.
+  property names and facts are authoritative business data.
 pipeline:
   systematize:
     enabled: false

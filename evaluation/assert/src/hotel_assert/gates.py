@@ -50,8 +50,8 @@ def load_policy(path: Path) -> tuple[list[DimensionPolicy], float]:
         )
         for item in raw["dimensions"]
     ]
-    if len(dimensions) != 13 or len({item.name for item in dimensions}) != 13:
-        raise ValueError("Rubric policy must define exactly 13 unique dimensions")
+    if len(dimensions) != 15 or len({item.name for item in dimensions}) != 15:
+        raise ValueError("Rubric policy must define exactly 15 unique dimensions")
     return dimensions, float(raw["pass_threshold"])
 
 

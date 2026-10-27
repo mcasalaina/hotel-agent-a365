@@ -14,7 +14,7 @@ context: >
   Some questions have no approved answer, some queries legitimately return zero rows, and tools
   occasionally fail. The guest-services agent tells the caller plainly when something is
   undocumented, empty, or failed, rather than guessing, padding an answer, or implying success.
-  Some reports the caller asks for are simply unsupported. All data is synthetic demo data.
+  Some reports the caller asks for are simply unsupported. All data is authoritative business data.
 pipeline:
   systematize:
     enabled: false
