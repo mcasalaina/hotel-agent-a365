@@ -101,6 +101,14 @@ The main screen simulates a live contact-center call:
 
 ## Audio pipeline
 
+`public/audio/hotel-reservation-question.wav` is a synthetic acceptance input:
+mono, 16-bit, 24 kHz PCM asking for Maria Garcia's reservation and valet rate.
+The same-origin `/audio/hotel-reservation-question.wav` resource makes browser
+acceptance reproducible without microphone access. Submit it through the normal
+prerecorded WAV input after sign-in. It contains only the spoken question, not
+an agent answer or an offline response. A pass requires the deployed authenticated
+WebSocket, actual transcription, grounded answer and real returned audio.
+
 Microphone audio is captured with the Web Audio API via an `AudioWorkletProcessor`
 (`public/audio/pcm-capture-processor.js`), then resampled on the main thread to the wire format:
 **raw signed 16-bit little-endian PCM, mono, 24 kHz**, with no header or envelope
