@@ -47,8 +47,12 @@ Narrow reviewed source repairs are preserved on branch
 `6668898` adds the real prerecorded acceptance input. `9885ef8` preserves fresh
 call/session binding, `3c99302` preserves model descriptions and blocks unsafe
 existing-model replacement, and `432e668` adds supported proxy replica affinity.
-These commits do not
-promote the remaining Fabric, infrastructure and orchestration worktree changes.
+`3a93357` preserves evaluation rubrics, datasets and reproducible runners.
+`6febbec` preserves the hosted runtime, Agent 365 notification normalization,
+stable SDK pins and the directly required IQ setup/verification helpers.
+These commits do not promote the remaining Fabric, infrastructure and
+orchestration worktree changes. Source preservation does not itself redeploy
+the hosted agent, bridge, evaluators or browser proxy.
 
 The historical `main` baseline examined for this guide was
 `8cdb88ffed2a738f4851297702bf88ce94130af2`. In that baseline:
@@ -1287,7 +1291,12 @@ The reference rollout as of October 27, 2026 established:
   digest `sha256:3ed316d00c929147a1fac488f319606bd9c95666203b2661c522d68076d84992`.
   Revision `session1` is Healthy, Running and receives all traffic. The live
   bundle verified the matching-pair binding. Actual browser second-call audio
-  acceptance remains pending, not established by source tests or readiness.
+  acceptance is paused by explicit user instruction while on a call, not
+  established by source tests or readiness. The operator tab remains signed in
+  on session1 with a text call active. Its second text turn was not confirmed,
+  the text/end/prerecorded sequence was not run, and there is no second-call
+  audio result. No observers are installed. Do not end, retry, refresh or
+  navigate that tab, including to Fabric, until the user explicitly resumes.
 - The same existing proxy subsequently enabled supported single-revision HTTP
   sticky sessions without changing the image, replica limits or roles. Live
   root, config and health responses issued `acaAffinity`, and an in-memory
@@ -1302,6 +1311,20 @@ The reference rollout as of October 27, 2026 established:
   as an Agent template, Available, version 1.0.1, with the expected Entra blueprint
   ID and one linked instance. The UI's Last published field was unpopulated, so
   no published timestamp was claimed.
+- Evaluation source preservation `3a93357` passed 77 isolated offline tests,
+  configuration validation, lint, formatting and type checking. Five evaluator
+  dimension/threshold definitions and three datasets matched retained registered
+  readbacks. The retained v7 language, primary-Hotel and strict-combined results
+  remain 8/8 each. The aggregate Hotel definition remains 0/8, not a passing
+  result. New local runner fixes were not remotely rerun. No exact historical
+  generation-prompt or runtime-build fingerprint match is asserted.
+- Runtime source preservation `6febbec` passed 112 isolated focused tests and
+  type checking of 19 runtime source files. A separate disposable environment
+  imported the real bridge server using production SDK pins, Agent 365 runtime
+  and notifications 1.0.0 with hosting core 1.2.0, and passed all 12 bridge tests.
+  This avoids treating the shared local environment's older hosting SDK as
+  production-pin validation. The reviewed source and staged bytes matched.
+  This commit did not redeploy or restart hosted v7 or bridge `em4`.
 
 At that checkpoint, SQL native Topics readback, ontology-context acceptance,
 model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
