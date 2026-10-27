@@ -989,6 +989,18 @@ Retain per-language message references, times, reply counts, header readback,
 deployed bridge revision, hosted version, and relevant traces privately. Do not
 relabel an older-version channel test as a newer-version result.
 
+If the browser cannot expose message details, the existing Agent 365 MailTools
+connection can provide read-only header evidence. Authenticate as the actual
+agent user through the already-configured blueprint/instance `user_fic` flow,
+then use `SearchMessagesQueryParameters` with a bounded time filter and
+`$select=id,internetMessageId,subject,receivedDateTime,sentDateTime,from,toRecipients,ccRecipients,isDraft`.
+Check the returned `rawResponse`, tool error status, and continuation indicator.
+Match the original and reply subjects and compare actual recipient addresses.
+Retain the complete message IDs privately. A missing original Cc means that
+test did not exercise Cc preservation, even if the reply correctly has no Cc.
+Do not grant the CLI client mail permissions just to obtain this evidence, and
+do not use a readback as authorization to send another message.
+
 ## 14. Deploy and accept voice
 
 ### Registrations and identity
@@ -1271,7 +1283,8 @@ The reference rollout as of October 27, 2026 established:
   read instruction. A fresh 7c email then produced exactly one correct delivered
   reply. Its actual trace showed one initial input, exact-message sender retrieval,
   the matching Fabric reservation, and property-specific IQ retrieval. This
-  verifies the reservation-email repair, but not the outgoing reply To/Cc headers.
+  verifies the reservation-email repair. The subsequent read-only header
+  verification below establishes its outgoing To/Cc separately.
 - The approved operator-only voice SPA grant was persisted and read back.
   Voice frontend revision `sso1` was deployed healthy with all traffic. Actual
   existing-tab silent sign-in returned `AADSTS50058`, with no authenticated API,
@@ -1374,12 +1387,36 @@ The reference rollout as of October 27, 2026 established:
   incomplete, and the retained legacy declarative graph source is not a
   substitute for the supported ontology-context workflow.
 
-At that checkpoint, SQL native Topics readback, ontology-context acceptance,
-model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
-and browser audio acceptance were not complete. Browser authentication and
-text-mode retrieval were verified separately. Do not use this guide, the
-publication operation, or the successful v7 direct invocation as a claim that
-those remaining gates passed.
+Subsequent Agent 365 MailTools readback verified the actual email recipient
+headers without sending mail, changing permissions or deploying anything.
+The complete 21:00-22:20 UTC acceptance window contained 12 messages, including
+one original and one reply for each of the five accepted subjects below.
+The failed 7b original/reply pair was also present and remains failed evidence.
+All five accepted replies were addressed to Maria.
+
+| Accepted scenario | Reply sent, October 27 UTC | Original Cc | Reply Cc |
+|---|---|---|---|
+| v6 Arabic `(5)` | 21:11:33 | Marco | Marco |
+| v6 Spanish `(5)` | 21:16:00 | Marco | Marco |
+| v6 French `(5)` | 21:19:16 | None | None |
+| v6 Chinese `(5)` | 21:27:37 | Marco twice | Marco once |
+| v7 reservation `(7c)` | 22:11:32 | Marco | Marco |
+
+The exact 7c subject was `Reservation and valet question (7c)`. French
+correctly preserved the supplied recipients, but its original contained no Cc.
+It therefore does not establish French-with-Cc acceptance. Chinese retained
+the single distinct Cc address without duplicating it. Raw message IDs,
+recipient fields, source hashes and comparisons are retained privately in
+`hotel2701-reply-headers-raw.json` and `hotel2701-reply-headers-verified.json`.
+This verifies headers, not a new body/language run or a newer-version replay.
+
+SQL native Topics readback, ontology-context acceptance, model-owned AI
+setup/Verified Answers, current Teams reservation acceptance, French-with-Cc
+coverage and browser audio acceptance remain incomplete. Browser authentication
+and text-mode retrieval were verified separately. Browser voice testing remains
+explicitly paused by the user. Do not use this guide, the publication operation,
+or the successful v7 direct invocation as a claim that those remaining gates
+passed.
 
 For a new tenant, run every gate again against that tenant's actual resources and
 identities. Previous-tenant receipts are reference material, not target acceptance.
