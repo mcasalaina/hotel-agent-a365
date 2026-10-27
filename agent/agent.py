@@ -8,6 +8,7 @@ from microsoft_agents_a365.notifications.agent_notification import NotificationT
 from openai import AsyncOpenAI
 
 from agent_interface import AgentInterface
+from email_prompt import build_email_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,7 @@ class HotelServicingBridgeAgent(AgentInterface):
         auth: Authorization,
         auth_handler_name: Optional[str],
         context: TurnContext,
+        stateless: bool = False,
     ) -> str:
         activity = context.activity
         from_property = activity.from_property
@@ -79,7 +81,7 @@ class HotelServicingBridgeAgent(AgentInterface):
             if hasattr(activity, "get_agentic_user")
             else None
         )
-        user_id = agentic_user_id or getattr(from_property, "id", None) or "anonymous"
+        user_id = getattr(from_property, "id", None) or agentic_user_id or "anonymous"
 
         try:
             user_token = await self._exchange_user_token(
@@ -87,9 +89,12 @@ class HotelServicingBridgeAgent(AgentInterface):
                 auth_handler_name,
                 context,
             )
-            return await self._call_foundry(user_id, message, user_token)
+            return await self._call_foundry(
+                user_id, message, user_token, stateless=stateless
+            )
         except Exception:
-            self.conversations.pop(user_id, None)
+            if not stateless:
+                self.conversations.pop(user_id, None)
             logger.exception("Hosted Agent invocation failed for the current Teams turn")
             return (
                 "I could not complete that request because the hotel service is unavailable. "
@@ -105,12 +110,7 @@ class HotelServicingBridgeAgent(AgentInterface):
     ) -> str:
         notification_type = notification_activity.notification_type
         if notification_type == NotificationTypes.EMAIL_NOTIFICATION:
-            email = notification_activity.email
-            body = getattr(email, "html_body", "") or getattr(email, "body", "")
-            message = (
-                "A guest-services email notification was received. Review it and respond "
-                f"according to the hotel servicing policy.\n\n{body}"
-            )
+            message = build_email_prompt(notification_activity.email)
         elif notification_type == NotificationTypes.WPX_COMMENT:
             message = (
                 "A guest-services document comment was received. Review it and respond "
@@ -120,11 +120,13 @@ class HotelServicingBridgeAgent(AgentInterface):
             message = notification_activity.text or (
                 f"Guest-services notification received: {notification_type}"
             )
+        # Each notification is an independent guest thread; never share history across them.
         return await self.process_user_message(
             message,
             auth,
             auth_handler_name,
             context,
+            stateless=True,
         )
 
     async def _exchange_user_token(
@@ -159,8 +161,9 @@ class HotelServicingBridgeAgent(AgentInterface):
         user_id: str,
         message: str,
         user_token: Optional[str],
+        stateless: bool = False,
     ) -> str:
-        history = list(self.conversations.get(user_id, []))
+        history = [] if stateless else list(self.conversations.get(user_id, []))
         history.append({"type": "message", "role": "user", "content": message})
 
         client = await self._client(user_token)
@@ -168,13 +171,11 @@ class HotelServicingBridgeAgent(AgentInterface):
             response = await client.responses.create(
                 model=self.model,
                 input=history,
-                extra_headers={"x-ms-user-identity": user_id},
             )
             response = await self._complete_approvals(
                 client,
                 history,
                 response,
-                user_id,
             )
         finally:
             await client.close()
@@ -190,10 +191,11 @@ class HotelServicingBridgeAgent(AgentInterface):
                 "content": assistant_text,
             }
         )
-        self.conversations[user_id] = history[-40:]
+        if not stateless:
+            self.conversations[user_id] = history[-40:]
         return assistant_text
 
-    async def _complete_approvals(self, client, history, response, user_id):
+    async def _complete_approvals(self, client, history, response):
         for _ in range(5):
             approvals = [
                 item
@@ -215,7 +217,6 @@ class HotelServicingBridgeAgent(AgentInterface):
             response = await client.responses.create(
                 model=self.model,
                 input=history + approval_input,
-                extra_headers={"x-ms-user-identity": user_id},
             )
         raise RuntimeError("Hosted Agent exceeded the MCP approval limit")
 
