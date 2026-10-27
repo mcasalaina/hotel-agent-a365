@@ -44,7 +44,10 @@ fresh checkout as a reproducible release.
 Narrow reviewed source repairs are preserved on branch
 `mcasalaina-hotel-agent-2701`: `115c954` adds memory-only popup-free sign-in,
 `7c09cf0` preserves the deployed stateless email/sender-resolution repair, and
-`6668898` adds the real prerecorded acceptance input. These commits do not
+`6668898` adds the real prerecorded acceptance input. `9885ef8` preserves fresh
+call/session binding, `3c99302` preserves model descriptions and blocks unsafe
+existing-model replacement, and `432e668` adds supported proxy replica affinity.
+These commits do not
 promote the remaining Fabric, infrastructure and orchestration worktree changes.
 
 The historical `main` baseline examined for this guide was
@@ -1048,6 +1051,9 @@ update only the existing app image:
 ```bash
 az containerapp update --name hotel-voice-proxy --resource-group "$BRIDGE_RG" \
   --image "<registry>/hotel-voice-proxy@sha256:<verified-digest>"
+
+az containerapp ingress sticky-sessions set \
+  --name hotel-voice-proxy --resource-group "$BRIDGE_RG" --affinity sticky
 ```
 
 Do not reapply infrastructure or change roles just to ship frontend code.
@@ -1116,10 +1122,13 @@ call must cancel old retries and clear prior guest data from the UI.
 Test a text call, End call, then a prerecorded call without reloading between
 them. A successful first call alone does not cover this lifecycle regression.
 
-The proxy's opaque-handle store is process-local. Multiple replicas require
-supported session affinity or a shared store, and multiple application workers
-need shared state. One successful single-replica run does not establish
-multi-replica reliability. See
+The proxy's opaque-handle store is process-local. The reviewed template enables
+supported session affinity in single-revision HTTP mode, so session creation
+and WebSocket requests return to the same replica. The platform routing cookie
+is not an authentication token or the browser-session handle. Run one Python
+process per replica. Multiple application workers need shared state, and a
+replica restart loses its handles. Affected calls need a fresh session.
+One successful single-replica run does not establish multi-replica load behavior. See
 [Container Apps session affinity](https://learn.microsoft.com/azure/container-apps/sticky-sessions).
 
 For direct hosted-agent audio testing:
@@ -1223,6 +1232,16 @@ The reference rollout as of October 27, 2026 established:
   other model metadata. A published Data Agent question correctly explained the
   booking-pace date and booked-revenue semantics. This did not establish
   `/elements.description` propagation or complete model-owned Prep for AI.
+- Source preservation commit `3c99302` subsequently retained the 72 approved
+  table/column descriptions and three inherited measure descriptions in the
+  canonical templates, with all other table bytes preserved. Its self-contained
+  candidate passed 34 tests, including exact template-setting preservation for
+  both Q&A flag values. The dirty Q&A toggle was not promoted. Existing semantic
+  model replacement now fails before any definition request/write because an
+  export cannot prove preservation of opaque or unexported user-owned AI state.
+  Use supported field-level TOM with preservation verification or Power BI
+  tooling for existing models. This source commit made no additional live-model
+  change and did not configure Prep for AI.
 - The initial v7 reservation email received a safe refusal without any tool calls. Its
   input exposed history shared across eight distinct email threads. Bridge
   `em4` added stateless notification turns and an explicit exact-message Work IQ
@@ -1269,6 +1288,13 @@ The reference rollout as of October 27, 2026 established:
   Revision `session1` is Healthy, Running and receives all traffic. The live
   bundle verified the matching-pair binding. Actual browser second-call audio
   acceptance remains pending, not established by source tests or readiness.
+- The same existing proxy subsequently enabled supported single-revision HTTP
+  sticky sessions without changing the image, replica limits or roles. Live
+  root, config and health responses issued `acaAffinity`, and an in-memory
+  cookie jar returned it on the next same-origin request. Cookie values were
+  not logged. Revision `session1` remained Healthy, Running and received all
+  traffic. This verifies the configured routing-cookie path, not a multi-replica
+  load test or browser audio acceptance.
 - Live proxy negative checks rejected missing/invalid bearer tokens with HTTP
   401 and an invalid WebSocket handle with an auth error and close code 1008.
   Correct rejection behavior did not establish a successful authorized call.
