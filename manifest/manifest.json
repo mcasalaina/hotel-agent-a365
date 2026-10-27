@@ -1,20 +1,20 @@
 {
   "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/vdevPreview/MicrosoftTeams.schema.json",
-  "id": "f1ae4991-0418-470b-96d5-7f7df43ab5d2",
+  "id": "c8798b5b-a68f-4815-8fcc-ca1810efc529",
   "name": {
     "short": "Hotel Guest Services",
     "full": "Hotel Guest Services Agent"
   },
   "description": {
-    "short": "Guest-services help for a fictional hotel chain.",
-    "full": "Hotel Guest Services answers property questions and supports approved synthetic reservation, billing, request, and service workflows."
+    "short": "Guest-services support for hotel properties.",
+    "full": "Hotel Guest Services answers property questions and supports reservation, billing, request, and service workflows."
   },
   "icons": {
     "outline": "outline.png",
     "color": "color.png"
   },
   "accentColor": "#B11F4B",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifestVersion": "devPreview",
   "developer": {
     "name": "Microsoft Corporation",
@@ -25,7 +25,7 @@
   },
   "agenticUserTemplates": [
     {
-      "id": "9a2da06d-059c-4b40-910f-ca8e0a6b1730",
+      "id": "147192a5-2b44-49c7-bff7-5859c442a1c8",
       "file": "agenticUserTemplateManifest.json"
     }
   ]

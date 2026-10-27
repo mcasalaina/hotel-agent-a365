@@ -104,11 +104,11 @@ resource job 'Microsoft.App/jobs@2024-03-01' = {
             [
               'live'
               '--config'
-              'evaluation/assert/config/smoke.yaml'
+              'evaluation/assert/config/baseline-quality.yaml'
               '--suite'
               'hotel-guest-services-conversations'
               '--require-all-cases'
-              '12'
+              '25'
             ],
             empty(runIdOverride) ? [] : [
               '--run-id'

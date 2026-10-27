@@ -1,5 +1,5 @@
 {
-  "_comment": "Resolve live application IDs and scope IDs before Agent 365 publication.",
+  "_comment": "Resolve every resource application ID to a tenant-local service principal before granting consent. Each delegated grant also requires a matching blueprint inheritable-permission entry.",
   "categories": [
     "Microsoft Graph",
     "Power Platform",
@@ -10,5 +10,109 @@
     "Microsoft Cognitive Services",
     "Azure Machine Learning Services"
   ],
-  "resolvedPermissions": []
+  "resolvedPermissions": [
+    {
+      "resource": "Microsoft Graph",
+      "resourceAppId": "00000003-0000-0000-c000-000000000000",
+      "delegatedScopes": [
+        "BookingsAppointment.ReadWrite.All",
+        "Calendars.ReadWrite",
+        "Channel.ReadBasic.All",
+        "ChannelMember.Read.All",
+        "ChannelMessage.Read.All",
+        "Chat.ReadWrite",
+        "ChatMessage.Send",
+        "Contacts.ReadWrite",
+        "Directory.Read.All",
+        "Files.Read.All",
+        "Group.Read.All",
+        "Mail.ReadWrite",
+        "Mail.Send",
+        "MailboxSettings.ReadWrite",
+        "Notes.Read.All",
+        "OnlineMeetingTranscript.Read.All",
+        "OnlineMeetings.ReadWrite",
+        "People.Read.All",
+        "Place.Read.All",
+        "Presence.Read.All",
+        "Sites.Read.All",
+        "Tasks.ReadWrite",
+        "Tasks.ReadWrite.Shared",
+        "Team.ReadBasic.All",
+        "TeamMember.Read.All",
+        "User.Read",
+        "User.Read.All",
+        "Files.ReadWrite.All",
+        "ChannelMessage.Send"
+      ]
+    },
+    {
+      "resource": "Power Platform API",
+      "resourceAppId": "8578e004-a5c6-46e7-913e-12f58912df43",
+      "delegatedScopes": [
+        "Connectivity.Connections.Read"
+      ]
+    },
+    {
+      "resource": "Messaging Bot API Application",
+      "resourceAppId": "5a807f24-c9de-44ee-a3a7-329e88a00ffc",
+      "delegatedScopes": [
+        "AgentData.ReadWrite"
+      ]
+    },
+    {
+      "resource": "Agent365Observability",
+      "resourceAppId": "9b975845-388f-4429-889e-eab1ef63949c",
+      "delegatedScopes": [
+        "Agent365.Observability.OtelWrite"
+      ],
+      "applicationRoles": [
+        "Agent365.Observability.OtelWrite"
+      ]
+    },
+    {
+      "resource": "Agent Tools",
+      "resourceAppId": "ea9ffc3e-8a23-4a7d-836d-234d7c7565c1",
+      "delegatedScopes": [
+        "McpServers.Mail.All",
+        "McpServers.Teams.All",
+        "McpServersMetadata.Read.All"
+      ]
+    },
+    {
+      "resource": "Work IQ Copilot MCP",
+      "resourceAppId": "ab7c82de-7946-4454-ac28-70249d17c95e",
+      "delegatedScopes": [
+        "Tools.ListInvoke.All"
+      ]
+    },
+    {
+      "resource": "Work IQ Mail MCP",
+      "resourceAppId": "16b1878d-62c7-4009-aa25-68989d63bbad",
+      "delegatedScopes": [
+        "Tools.ListInvoke.All"
+      ]
+    },
+    {
+      "resource": "Work IQ Teams MCP",
+      "resourceAppId": "ce5029ee-c1d3-45c0-bdcc-efb5a4245687",
+      "delegatedScopes": [
+        "Tools.ListInvoke.All"
+      ]
+    },
+    {
+      "resource": "Microsoft Cognitive Services",
+      "resourceAppId": "7d312290-28c8-473c-a0ed-8e53749b6d6d",
+      "delegatedScopes": [
+        "user_impersonation"
+      ]
+    },
+    {
+      "resource": "Azure Machine Learning Services",
+      "resourceAppId": "18a66f5f-dbdf-4c17-9dd7-1634712a9cbe",
+      "delegatedScopes": [
+        "user_impersonation"
+      ]
+    }
+  ]
 }

@@ -13,28 +13,25 @@ param entraTenantId string
 param entraApiClientId string
 
 @description('Existing Azure Container Registry resource group.')
-param containerRegistryResourceGroupName string = 'rg-aycabas-3iqs'
+param containerRegistryResourceGroupName string = 'rg-mcasalaina-4iqs-2701'
 
 @description('Existing Azure Container Registry name.')
-param containerRegistryName string = 'ca31c6a7351facr'
-
-@description('Existing Microsoft Foundry resource group.')
-param foundryResourceGroupName string = 'rg-aycabas-3iqs'
-
-@description('Existing Microsoft Foundry account name.')
-param foundryAccountName string = '4iq-foundry-project-resource'
-
-@description('Existing Microsoft Foundry project name.')
-param foundryProjectName string = '4iq-foundry-project'
+param containerRegistryName string = 'mcasalaina4iqs2701acr'
 
 @description('Existing Microsoft Foundry project endpoint.')
-param foundryProjectEndpoint string = 'https://4iq-foundry-project-resource.services.ai.azure.com/api/projects/4iq-foundry-project'
+param foundryProjectEndpoint string = 'https://mcasalaina-4iqs-2701-resource.services.ai.azure.com/api/projects/mcasalaina-4iqs-2701'
 
 @description('Hosted Agent name.')
 param foundryAgentName string = 'hotel-servicing-agent'
 
 @description('Container Apps environment name.')
 param managedEnvironmentName string = 'hotel-voice-env'
+
+@description('Create a dedicated environment, or reuse an existing environment without changing it.')
+param createManagedEnvironment bool = true
+
+@description('Resource group containing the existing Container Apps environment when reusing one.')
+param managedEnvironmentResourceGroupName string = resourceGroup().name
 
 @description('Container App name.')
 param containerAppName string = 'hotel-voice-proxy'
@@ -68,22 +65,16 @@ module registryPullRole 'modules/voice-web-acr-role.bicep' = {
   }
 }
 
-module foundryDeveloperRole 'modules/voice-web-foundry-role.bicep' = {
-  name: 'voice-web-foundry-developer'
-  scope: resourceGroup(subscription().subscriptionId, foundryResourceGroupName)
-  params: {
-    foundryAccountName: foundryAccountName
-    foundryProjectName: foundryProjectName
-    principalId: managedIdentity.properties.principalId
-    managedIdentityResourceId: managedIdentity.id
-  }
-}
-
-resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
+resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = if (createManagedEnvironment) {
   name: managedEnvironmentName
   location: location
   tags: tags
   properties: {}
+}
+
+resource existingManagedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
+  name: managedEnvironmentName
+  scope: resourceGroup(subscription().subscriptionId, managedEnvironmentResourceGroupName)
 }
 
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
@@ -97,7 +88,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     }
   }
   properties: {
-    managedEnvironmentId: managedEnvironment.id
+    managedEnvironmentId: createManagedEnvironment ? managedEnvironment!.id : existingManagedEnvironment.id
     configuration: {
       activeRevisionsMode: 'Single'
       ingress: {
@@ -198,7 +189,6 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
   dependsOn: [
     registryPullRole
-    foundryDeveloperRole
   ]
 }
 

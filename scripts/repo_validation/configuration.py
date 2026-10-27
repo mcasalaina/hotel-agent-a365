@@ -4,26 +4,21 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import yaml
 
 EXPECTED_AGENT_NAME = "hotel-servicing-agent"
 EXPECTED_MODEL = "gpt-5.4-mini"
-EXPECTED_AGENT365_BLUEPRINT_ID = "f1ae4991-0418-470b-96d5-7f7df43ab5d2"
-EXPECTED_AGENT365_TEMPLATE_ID = "9a2da06d-059c-4b40-910f-ca8e0a6b1730"
-EXPECTED_SEARCH_ENDPOINT = "https://3iqs-search-aycabas.search.windows.net"
 EXPECTED_KNOWLEDGE_BASE = "hotel-foundryiq"
-EXPECTED_FABRIC_DATA_AGENT_MCP_URL = (
-    "https://api.fabric.microsoft.com/v1/mcp/workspaces/"
-    "660ed238-54b7-42bd-8b1b-cf2ee47a11ba/dataagents/"
-    "9990b87a-d2ef-4c23-b11d-ffd72905906c/agent"
+AGENT365_DEPLOYMENT_ENV = (
+    "AGENT365_TENANT_ID",
+    "AGENT365_BLUEPRINT_CLIENT_ID",
+    "AGENT365_BLUEPRINT_SECRET_VAULT_URL",
+    "AGENT365_INSTANCE_CLIENT_ID",
 )
 EXPECTED_AGENT365_ENV = {
-    "AGENT365_TENANT_ID": "a9d9510e-7131-4355-8b7e-37e7b1e99862",
-    "AGENT365_BLUEPRINT_CLIENT_ID": "f1ae4991-0418-470b-96d5-7f7df43ab5d2",
-    "AGENT365_BLUEPRINT_SECRET_VAULT_URL": "https://hotelagentkv4iqs.vault.azure.net",
     "AGENT365_BLUEPRINT_SECRET_NAME": "agent365-blueprint-client-secret",
-    "AGENT365_INSTANCE_CLIENT_ID": "cc4f4078-c463-494a-a5fc-0b63a6995296",
     "WORK_IQ_COPILOT_MCP_URL": (
         "https://agent365.svc.cloud.microsoft/agents/servers/mcp_M365Copilot"
     ),
@@ -36,13 +31,22 @@ EXPECTED_AGENT365_ENV = {
     "WORK_IQ_TEAMS_MCP_AUDIENCE": "ce5029ee-c1d3-45c0-bdcc-efb5a4245687",
 }
 EXPECTED_OBSERVABILITY_ENV = {"A365_USE_S2S_ENDPOINT": "true"}
-EXPECTED_PROJECT_ENDPOINT = (
-    "https://4iq-foundry-project-resource.services.ai.azure.com/api/projects/4iq-foundry-project"
-)
-EXPECTED_PROJECT_ID = (
-    "/subscriptions/27b0139a-16b4-42bf-9ec9-c6db3768245e/"
-    "resourceGroups/rg-aycabas-3iqs/providers/Microsoft.CognitiveServices/"
-    "accounts/4iq-foundry-project-resource/projects/4iq-foundry-project"
+SHARED_DEPLOYMENT_ENV = (
+    "FOUNDRY_PROJECT_ENDPOINT",
+    "AZURE_AI_MODEL_DEPLOYMENT_NAME",
+    "VOICE_LIVE_ENDPOINT",
+    "VOICE_LIVE_VOICE",
+    "AZURE_SEARCH_ENDPOINT",
+    "AZURE_OPENAI_ENDPOINT",
+    "FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
+    "FABRIC_DATA_AGENT_MCP_URL",
+    "FABRIC_WORKSPACE_ID",
+    "FABRIC_GUEST_SERVICES_LAKEHOUSE_ID",
+    "FABRIC_RESERVATION_NOTEBOOK_ID",
+    "AZURE_STORAGE_ACCOUNT_URL",
+    "FOUNDRY_IQ_BLOB_CONTAINER",
+    *AGENT365_DEPLOYMENT_ENV,
+    *EXPECTED_AGENT365_ENV,
 )
 EXPECTED_PROTOCOLS = [
     {"protocol": "responses", "version": "2.0.0"},
@@ -91,6 +95,13 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     _expect(problems, "azure.name", azure.get("name"), "hotel-agent-a365")
     _expect(problems, "infra.provider", infrastructure.get("provider"), "microsoft.foundry")
     _expect(problems, "services.ai-project.host", project.get("host"), "azure.ai.project")
+    deployments = project.get("deployments")
+    _expect(
+        problems,
+        "services.ai-project.deployments.count",
+        len(deployments) if isinstance(deployments, list) else 0,
+        1,
+    )
     _expect(
         problems,
         "services.ai-project.deployments[0].name",
@@ -157,7 +168,7 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         environment_variables.get("FABRIC_DATA_AGENT_MCP_URL"),
         "${FABRIC_DATA_AGENT_MCP_URL}",
     )
-    for name in EXPECTED_AGENT365_ENV:
+    for name in (*AGENT365_DEPLOYMENT_ENV, *EXPECTED_AGENT365_ENV):
         _expect(
             problems,
             f"agent.environmentVariables.{name}",
@@ -178,13 +189,12 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
             environment_variables.get(name),
             expected,
         )
-    if "FOUNDRY_PROJECT_ENDPOINT" in environment_variables:
-        problems.append(
-            ConfigurationProblem(
-                "agent.environmentVariables.FOUNDRY_PROJECT_ENDPOINT",
-                "Foundry injects this value; it must not be configured in azure.yaml",
-            )
-        )
+    _expect(
+        problems,
+        "agent.environmentVariables.FOUNDRY_PROJECT_ENDPOINT",
+        environment_variables.get("FOUNDRY_PROJECT_ENDPOINT"),
+        "${FOUNDRY_PROJECT_ENDPOINT}",
+    )
 
     _expect(problems, "manifest.template.name", template.get("name"), EXPECTED_AGENT_NAME)
     _expect(problems, "manifest.template.kind", template.get("kind"), "hosted")
@@ -196,10 +206,12 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     )
     manifest_environment_variables = _named_values(template.get("environment_variables"))
     for name in (
+        "FOUNDRY_PROJECT_ENDPOINT",
         "AZURE_AI_MODEL_DEPLOYMENT_NAME",
         "AZURE_SEARCH_ENDPOINT",
         "FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
         "FABRIC_DATA_AGENT_MCP_URL",
+        *AGENT365_DEPLOYMENT_ENV,
         *EXPECTED_AGENT365_ENV,
         *EXPECTED_OBSERVABILITY_ENV,
     ):
@@ -234,13 +246,7 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
         problems,
         "AZURE_AI_PROJECT_ENDPOINT",
         env.get("AZURE_AI_PROJECT_ENDPOINT"),
-        EXPECTED_PROJECT_ENDPOINT,
-    )
-    _expect(
-        problems,
-        "AZURE_AI_PROJECT_ID",
-        env.get("AZURE_AI_PROJECT_ID"),
-        EXPECTED_PROJECT_ID,
+        env.get("FOUNDRY_PROJECT_ENDPOINT"),
     )
     _expect(
         problems,
@@ -250,43 +256,16 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     )
     _expect(
         problems,
-        "AZURE_SEARCH_ENDPOINT",
-        env.get("AZURE_SEARCH_ENDPOINT"),
-        EXPECTED_SEARCH_ENDPOINT,
-    )
-    _expect(
-        problems,
         "FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
         env.get("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME"),
         EXPECTED_KNOWLEDGE_BASE,
     )
-    _expect(
-        problems,
-        "FABRIC_DATA_AGENT_MCP_URL",
-        env.get("FABRIC_DATA_AGENT_MCP_URL"),
-        EXPECTED_FABRIC_DATA_AGENT_MCP_URL,
-    )
-    _expect(
-        problems,
-        ".env.AZURE_SEARCH_ENDPOINT",
-        local_env.get("AZURE_SEARCH_ENDPOINT"),
-        EXPECTED_SEARCH_ENDPOINT,
-    )
-    _expect(
-        problems,
-        ".env.FOUNDRY_IQ_KNOWLEDGE_BASE_NAME",
-        local_env.get("FOUNDRY_IQ_KNOWLEDGE_BASE_NAME"),
-        EXPECTED_KNOWLEDGE_BASE,
-    )
-    _expect(
-        problems,
-        ".env.FABRIC_DATA_AGENT_MCP_URL",
-        local_env.get("FABRIC_DATA_AGENT_MCP_URL"),
-        EXPECTED_FABRIC_DATA_AGENT_MCP_URL,
-    )
+    for name in SHARED_DEPLOYMENT_ENV:
+        if name not in env:
+            problems.append(ConfigurationProblem(name, "required environment binding is missing"))
+        _expect(problems, f".env.{name}", local_env.get(name), env.get(name))
     for name, expected in EXPECTED_AGENT365_ENV.items():
         _expect(problems, name, env.get(name), expected)
-        _expect(problems, f".env.{name}", local_env.get(name), expected)
     _expect(
         problems,
         "ToolingManifest.mcpServers",
@@ -315,17 +294,22 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
             },
         ],
     )
-    _expect(
-        problems,
-        "m365.manifest.id",
-        m365_manifest.get("id"),
-        EXPECTED_AGENT365_BLUEPRINT_ID,
-    )
+    blueprint_id = m365_manifest.get("id")
+    template_id = agentic_user_template.get("id")
+    _expect_uuid(problems, "m365.manifest.id", blueprint_id)
+    _expect_uuid(problems, "m365.agenticUserTemplate.id", template_id)
+    if env.get("AGENT365_BLUEPRINT_CLIENT_ID"):
+        _expect(
+            problems,
+            "m365.manifest.id",
+            blueprint_id,
+            env["AGENT365_BLUEPRINT_CLIENT_ID"],
+        )
     _expect(
         problems,
         "m365.manifest.agenticUserTemplates[0].id",
         _nested_sequence(m365_manifest, "agenticUserTemplates", 0, "id"),
-        EXPECTED_AGENT365_TEMPLATE_ID,
+        template_id,
     )
     _expect(
         problems,
@@ -335,15 +319,9 @@ def validate_repository_configuration(root: Path) -> list[ConfigurationProblem]:
     )
     _expect(
         problems,
-        "m365.agenticUserTemplate.id",
-        agentic_user_template.get("id"),
-        EXPECTED_AGENT365_TEMPLATE_ID,
-    )
-    _expect(
-        problems,
         "m365.agenticUserTemplate.agentIdentityBlueprintId",
         agentic_user_template.get("agentIdentityBlueprintId"),
-        EXPECTED_AGENT365_BLUEPRINT_ID,
+        blueprint_id,
     )
     _expect(
         problems,
@@ -387,6 +365,15 @@ def _expect(
 ) -> None:
     if actual != expected:
         problems.append(ConfigurationProblem(field, f"expected {expected!r}, found {actual!r}"))
+
+
+def _expect_uuid(problems: list[ConfigurationProblem], field: str, value: object) -> None:
+    try:
+        parsed = UUID(value) if isinstance(value, str) else None
+    except ValueError:
+        parsed = None
+    if parsed is None or parsed.int == 0:
+        problems.append(ConfigurationProblem(field, f"expected a nonzero UUID, found {value!r}"))
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
