@@ -1080,7 +1080,9 @@ a user-mediated supported browser sign-in. Do not weaken token storage, alter
 browser cookie policy, borrow a CLI bearer, or claim authentication from consent
 or health alone.
 
-Verify missing/invalid browser tokens return HTTP 401. Verify invalid WebSocket
+With the required `{"clientContext":"web"}` JSON request body, verify
+missing/invalid browser tokens return HTTP 401. An invalid client context returns
+HTTP 400 before token validation. Verify invalid WebSocket
 handles produce an authentication error and policy close, not a live session.
 Then sign in with the real approved SPA user and require authenticated session
 creation, a successful WebSocket, final user transcript, final agent transcript,
@@ -1199,11 +1201,24 @@ The reference rollout as of October 27, 2026 established:
   existing-tab silent sign-in returned `AADSTS50058`, with no authenticated API,
   WebSocket, or audio acceptance reached. The deployment did not change hosted
   version 7 or bridge `em4`, and it did not weaken memory-only token storage.
+- A separate direct v7 prerecorded-audio test established the hosted WebSocket
+  upgrade, then failed at the inner Voice Live handshake with HTTP 401 before
+  transcription or audio. Role inspection found the actual hosted identity
+  missing the documented account-scoped Cognitive Services User and
+  project-scoped Foundry User assignments. Those grants remained unapplied while
+  explicit approval was unavailable. This was separate from the browser cookie
+  failure, not a successful voice test.
+- Live proxy negative checks rejected missing/invalid bearer tokens with HTTP
+  401 and an invalid WebSocket handle with an auth error and close code 1008.
+  Correct rejection behavior did not establish a successful authorized call.
+- Independent Microsoft 365 admin catalog details showed Hotel Guest Services
+  as an Agent template, Available, version 1.0.1, with the expected Entra blueprint
+  ID and one linked instance. The UI's Last published field was unpopulated, so
+  no published timestamp was claimed.
 
 At that checkpoint, SQL native Topics readback, ontology-context acceptance,
 model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
-authenticated voice/audio acceptance, and independent
-final template-catalog readback were not all complete. Do not use this guide, the
+and authenticated voice/audio acceptance were not complete. Do not use this guide, the
 publication operation, or the successful v7 direct invocation as a claim that
 those remaining gates passed.
 
