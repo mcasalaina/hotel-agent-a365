@@ -1,3 +1,4 @@
+/// Restaurant reservation aggregates by hotel, outlet and reservation date, including status counts and summed party sizes. Does not provide food-and-beverage revenue.
 table 'Restaurant Daily'
 
 	/// Total restaurant reservations for the day.
@@ -8,39 +9,47 @@ table 'Restaurant Daily'
 	measure 'Restaurant Covers' = SUM('Restaurant Daily'[Covers])
 		formatString: #,##0
 
+	/// Technical hotel identifier joining restaurant daily aggregates to Property.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Technical outlet identifier joining restaurant daily aggregates to Outlet.
 	column 'Outlet Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: outlet_id
 
+	/// Calendar date of reservation_at, the scheduled restaurant reservation timestamp.
 	column 'Service Date'
 		dataType: dateTime
 		summarizeBy: none
 		sourceColumn: service_date
 
+	/// Count of restaurant reservations across all statuses at the hotel/outlet/date grain.
 	column 'Total Reservations'
 		dataType: int64
 		sourceColumn: total_reservations
 
+	/// Count of restaurant reservations whose stored status is confirmed.
 	column 'Confirmed Reservations'
 		dataType: int64
 		sourceColumn: confirmed_reservations
 
+	/// Count of restaurant reservations whose stored status is seated.
 	column 'Seated Reservations'
 		dataType: int64
 		sourceColumn: seated_reservations
 
+	/// Count of restaurant reservations whose stored status is cancelled.
 	column 'Cancelled Reservations'
 		dataType: int64
 		sourceColumn: cancelled_reservations
 
+	/// Sum of party_size across all restaurant reservation statuses, including cancelled; not restricted to seated reservations.
 	column Covers
 		dataType: int64
 		sourceColumn: covers

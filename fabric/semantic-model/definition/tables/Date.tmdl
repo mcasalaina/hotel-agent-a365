@@ -1,5 +1,7 @@
+/// Calendar dimension with one row per day from 2026-03-01 to 2027-03-31; filters daily facts. Calculated Import table.
 table Date
 
+	/// Calendar day and relationship key for daily facts; use to filter service dates.
 	column Date
 		dataType: dateTime
 		isKey

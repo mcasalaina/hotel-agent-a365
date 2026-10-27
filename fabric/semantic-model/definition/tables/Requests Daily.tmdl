@@ -1,3 +1,4 @@
+/// Guest special-request aggregates by reservation property, date requested and request type. Includes stored status counts and pending-reconciliation flags.
 table 'Requests Daily'
 
 	/// Total guest service requests created for the reporting grain.
@@ -12,39 +13,47 @@ table 'Requests Daily'
 	measure 'Pending Reconciliation Request Count' = SUM('Requests Daily'[Pending Reconciliation Requests])
 		formatString: #,##0
 
+	/// Technical hotel identifier obtained from the request's reservation; joins guest request aggregates to Property.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Calendar date the guest special request was made, derived from requested_at.
 	column 'Service Date'
 		dataType: dateTime
 		summarizeBy: none
 		sourceColumn: service_date
 
+	/// Guest special-request classification used to group requests.
 	column 'Request Type'
 		dataType: string
 		sourceColumn: request_type
 
+	/// Count of guest special requests for the hotel/date/type group across all statuses.
 	column 'Total Requests'
 		dataType: int64
 		isHidden
 		sourceColumn: total_requests
 
+	/// Count of guest special requests whose stored status is requested.
 	column 'Open Requests'
 		dataType: int64
 		isHidden
 		sourceColumn: open_requests
 
+	/// Count of guest special requests whose stored status is confirmed.
 	column 'Confirmed Requests'
 		dataType: int64
 		sourceColumn: confirmed_requests
 
+	/// Count of guest special requests whose stored status is fulfilled.
 	column 'Fulfilled Requests'
 		dataType: int64
 		sourceColumn: fulfilled_requests
 
+	/// Count of requests flagged pending_reconciliation; flag count is independent of request status and can overlap status counts.
 	column 'Pending Reconciliation Requests'
 		dataType: int64
 		isHidden

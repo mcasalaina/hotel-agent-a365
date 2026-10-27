@@ -1,3 +1,4 @@
+/// Daily property performance, one row per hotel and service date. Operations metrics plus completed-stay and reservation aggregates; use governed KPI measures.
 table 'Property KPI Daily'
 
 	/// Occupancy rate (OCC) from occupied and sellable rooms.
@@ -16,15 +17,15 @@ table 'Property KPI Daily'
 	measure ALOS = DIVIDE(SUM('Property KPI Daily'[Room Nights]), SUM('Property KPI Daily'[Completed Stays]))
 		formatString: 0.00
 
-	/// Total room revenue from the committed property daily metrics contract.
+	/// Total recognized room revenue from daily property operations.
 	measure 'Room Revenue' = SUM('Property KPI Daily'[Room Revenue Amount])
 		formatString: $#,##0.00
 
-	/// Not available in Phase 1 because the committed CSV contract contains no food-and-beverage revenue column.
+	/// Not currently available because food-and-beverage revenue is not recorded in this source.
 	measure 'Food and Beverage Revenue' = BLANK()
 		formatString: $#,##0.00
 
-	/// Not available in Phase 1 because the committed CSV contract contains no food-and-beverage revenue column.
+	/// Not currently available because total revenue beyond rooms is not recorded in this source.
 	measure TRevPAR = BLANK()
 		formatString: $#,##0.00
 
@@ -32,44 +33,53 @@ table 'Property KPI Daily'
 	measure 'Completed Stay Count' = SUM('Property KPI Daily'[Completed Stays])
 		formatString: #,##0
 
+	/// Technical hotel identifier joining daily property performance to Property.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Operations business date; completed stays use actual check-in date and reservations use scheduled check-in date in this daily aggregate.
 	column 'Service Date'
 		dataType: dateTime
 		summarizeBy: none
 		sourceColumn: service_date
 
+	/// Currency code of daily operations amounts; no cross-currency conversion is applied.
 	column Currency
 		dataType: string
 		sourceColumn: currency
 
+	/// Sellable room count from daily property operations; denominator for OCC and RevPAR.
 	column 'Sellable Rooms'
 		dataType: int64
 		sourceColumn: sellable_rooms
 
+	/// Occupied room count from daily property operations; denominator for ADR and numerator for OCC.
 	column 'Occupied Rooms'
 		dataType: int64
 		sourceColumn: occupied_rooms
 
+	/// Room revenue from daily property operations in the row currency; base amount for the governed Room Revenue measure.
 	column 'Room Revenue Amount'
 		dataType: decimal
 		isHidden
 		sourceColumn: room_revenue
 
+	/// Count of completed stays grouped by actual check-in date, not checkout date; denominator for ALOS.
 	column 'Completed Stays'
 		dataType: int64
 		isHidden
 		sourceColumn: completed_stays
 
+	/// Sum of nights for completed stays grouped by actual check-in date; each stay contributes at least one night. Numerator for ALOS.
 	column 'Room Nights'
 		dataType: int64
 		isHidden
 		sourceColumn: room_nights
 
+	/// Count of reservations with scheduled check-in on the service date, including all reservation statuses.
 	column 'Total Reservations'
 		dataType: int64
 		sourceColumn: total_reservations

@@ -1,3 +1,4 @@
+/// Billing dispute aggregates by folio property, date opened and dispute type. Status counts reflect stored statuses; amounts sum all disputes in each group.
 table 'Disputes Daily'
 
 	/// Total disputes opened for the reporting grain.
@@ -16,39 +17,47 @@ table 'Disputes Daily'
 	measure 'Dispute Rate' = DIVIDE([Disputes], SUM('Property KPI Daily'[Completed Stays]))
 		formatString: 0.00%
 
+	/// Technical hotel identifier obtained from the dispute's folio; joins daily disputes to Property.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Calendar date the billing dispute was opened, derived from opened_at.
 	column 'Service Date'
 		dataType: dateTime
 		summarizeBy: none
 		sourceColumn: service_date
 
+	/// Billing dispute classification used to group disputes.
 	column 'Dispute Type'
 		dataType: string
 		sourceColumn: dispute_type
 
+	/// Count of billing disputes opened for the hotel/date/type group, across all statuses.
 	column 'Total Disputes'
 		dataType: int64
 		isHidden
 		sourceColumn: total_disputes
 
+	/// Count of disputes whose stored status is open; excludes under_review and resolved.
 	column 'Open Disputes'
 		dataType: int64
 		isHidden
 		sourceColumn: open_disputes
 
+	/// Count of disputes whose stored status is under_review.
 	column 'Under Review Disputes'
 		dataType: int64
 		sourceColumn: under_review_disputes
 
+	/// Count of disputes whose stored status is resolved.
 	column 'Resolved Disputes'
 		dataType: int64
 		sourceColumn: resolved_disputes
 
+	/// Sum of disputed amounts across all statuses in the group; not refunds paid or recognized revenue.
 	column 'Dispute Amount'
 		dataType: decimal
 		sourceColumn: dispute_amount

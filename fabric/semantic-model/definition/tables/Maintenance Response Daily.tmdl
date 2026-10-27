@@ -1,3 +1,4 @@
+/// Maintenance aggregates by hotel, report date and request type. Response time runs from request report to work-order opening, not resolution.
 table 'Maintenance Response Daily'
 
 	/// Average time from maintenance request report to work-order open, in minutes.
@@ -8,38 +9,46 @@ table 'Maintenance Response Daily'
 	measure 'Maintenance Response Hours' = DIVIDE([Maintenance Response Minutes], 60)
 		formatString: #,##0.00
 
+	/// Technical hotel identifier joining maintenance response aggregates to Property.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Calendar date the maintenance request was reported, derived from reported_at.
 	column 'Service Date'
 		dataType: dateTime
 		summarizeBy: none
 		sourceColumn: service_date
 
+	/// Maintenance request classification used to group response-time and status aggregates.
 	column 'Request Type'
 		dataType: string
 		sourceColumn: request_type
 
+	/// Count of maintenance-request rows after the left join to work orders at the hotel/report-date/type grain.
 	column 'Total Requests'
 		dataType: int64
 		sourceColumn: total_requests
 
+	/// Mean minutes from reported_at to linked work-order opened_at; requests without a work-order opening contribute no response-time value.
 	column 'Average Response Minutes'
 		dataType: decimal
 		isHidden
 		sourceColumn: avg_response_minutes
 
+	/// Count of joined maintenance-request rows whose request status is open.
 	column 'Open Requests'
 		dataType: int64
 		sourceColumn: open_requests
 
+	/// Count of joined maintenance-request rows whose request status is in_progress.
 	column 'In Progress Requests'
 		dataType: int64
 		sourceColumn: in_progress_requests
 
+	/// Count of joined maintenance-request rows whose request status is resolved.
 	column 'Resolved Requests'
 		dataType: int64
 		sourceColumn: resolved_requests

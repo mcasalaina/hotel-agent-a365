@@ -1,3 +1,4 @@
+/// Reservation aggregates by hotel, scheduled check-in date and booking channel. Uses current statuses; not a booking-created-date or historical snapshot fact.
 table 'Booking Pace Daily'
 
 	/// Cancellation rate from daily reservation aggregates.
@@ -8,44 +9,53 @@ table 'Booking Pace Daily'
 	measure 'No Show Rate' = DIVIDE(SUM('Booking Pace Daily'[No Show Bookings]), SUM('Booking Pace Daily'[Total Reservations]))
 		formatString: 0.00%
 
+	/// Technical hotel identifier joining booking-channel aggregates to Property.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Scheduled reservation check-in date, not booking creation date.
 	column 'Service Date'
 		dataType: dateTime
 		summarizeBy: none
 		sourceColumn: service_date
 
+	/// Booking origin recorded on the reservation; grouping for channel trends.
 	column Channel
 		dataType: string
 		sourceColumn: channel
 
+	/// Count of reservations across all statuses for the hotel, check-in date and channel; denominator for cancellation and no-show rates.
 	column 'Total Reservations'
 		dataType: int64
 		isHidden
 		sourceColumn: total_reservations
 
+	/// Count of reservations whose stored status is future; not recomputed from today's date.
 	column 'Future Bookings'
 		dataType: int64
 		sourceColumn: future_bookings
 
+	/// Count of reservations whose stored status is cancelled; numerator for Cancellation Rate.
 	column 'Cancelled Bookings'
 		dataType: int64
 		isHidden
 		sourceColumn: cancelled_bookings
 
+	/// Count of reservations whose stored status is no_show; numerator for No Show Rate.
 	column 'No Show Bookings'
 		dataType: int64
 		isHidden
 		sourceColumn: no_show_bookings
 
+	/// Sum of reservation rate_total across all statuses, including cancelled and no-show bookings; not recognized room revenue.
 	column 'Booked Revenue'
 		dataType: decimal
 		sourceColumn: booked_revenue
 
+	/// First reservation currency in the hotel/date/channel group; no currency conversion is applied.
 	column Currency
 		dataType: string
 		sourceColumn: currency

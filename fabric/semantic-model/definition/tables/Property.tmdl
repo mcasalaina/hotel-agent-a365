@@ -1,31 +1,39 @@
+/// Property dimension, one row per hotel, sourced through the HotelOperations properties shortcut. Supplies property labels, geography, currency and tax rate.
 table Property
 
+	/// Technical hotel identifier used to join daily facts and outlets to the Property dimension.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Hotel name from the authoritative HotelOperations property record; use for property labels.
 	column 'Property Name'
 		dataType: string
 		sourceColumn: name
 
+	/// Operating region assigned to the hotel in the property record.
 	column Region
 		dataType: string
 		sourceColumn: region
 
+	/// City where the hotel is located, from the property record.
 	column City
 		dataType: string
 		sourceColumn: city
 
+	/// Country where the hotel is located, from the property record.
 	column Country
 		dataType: string
 		sourceColumn: country
 
+	/// Currency code assigned to the hotel; amounts are not converted across currencies.
 	column Currency
 		dataType: string
 		sourceColumn: currency
 
+	/// Property tax rate stored as a decimal fraction, not a percentage-point value.
 	column 'Tax Rate'
 		dataType: decimal
 		formatString: 0.0000

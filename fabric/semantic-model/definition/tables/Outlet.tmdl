@@ -1,25 +1,31 @@
+/// Outlet dimension, one row per hotel outlet, sourced through the HotelOperations outlets shortcut. Supplies outlet labels, type and capacity.
 table Outlet
 
+	/// Technical outlet identifier linking restaurant daily facts to the Outlet dimension.
 	column 'Outlet Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: outlet_id
 
+	/// Technical identifier of the hotel owning the outlet; joins to Property.
 	column 'Property Id'
 		dataType: string
 		isHidden
 		summarizeBy: none
 		sourceColumn: property_id
 
+	/// Business name of the outlet within its hotel.
 	column 'Outlet Name'
 		dataType: string
 		sourceColumn: name
 
+	/// Outlet classification recorded by HotelOperations.
 	column 'Outlet Type'
 		dataType: string
 		sourceColumn: outlet_type
 
+	/// Recorded outlet capacity in guests; not a count of reservations or daily covers.
 	column Capacity
 		dataType: int64
 		sourceColumn: capacity
