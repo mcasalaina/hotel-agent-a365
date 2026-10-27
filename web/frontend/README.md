@@ -59,6 +59,22 @@ Tokens are kept **in memory only**:
   intentional trade-off of the "tokens in memory only" requirement.
 - Popup and silent authentication return through `redirect.html`, the isolated MSAL v5 redirect
   bridge entry. Its exact deployed URL must be registered as the SPA redirect URI in Entra.
+- When popups are unavailable, enter the hotel account email and choose **Use existing Microsoft
+  session**. This explicitly uses MSAL `ssoSilent` with a login hint and never falls back to a
+  popup. The account must already have an Entra browser session and consent for the API scope.
+  Browser restrictions on third-party cookies can prevent silent SSO, and failures are surfaced.
+  Signing out of this mode clears the app's in-memory cache, not the shared Microsoft browser
+  session. Token renewal requiring interaction asks the user to reconnect rather than opening a
+  popup. Full-page redirect sign-in is not compatible with MSAL's memory-only token cache.
+- **Sign in in this tab** provides a separate standards-based Authorization Code + PKCE flow
+  using `oidc-client-ts`, not MSAL's unsupported memory-cache redirect flow. Register the exact
+  deployed origin plus `/` as an additional SPA redirect URI. Only short-lived PKCE request
+  state uses session storage. Tokens and user records use `InMemoryWebStorage`, no refresh-token
+  scope is requested, and authorization responses use a URL fragment removed before processing.
+  Tokens are lost on reload. Expired tokens require another interactive sign-in. Sign-out clears
+  the app's local authentication without signing out other Microsoft applications.
+  The root page belongs to this flow and does not forward callbacks to an opener.
+  MSAL popup and silent flows continue to use only the dedicated `/redirect.html` bridge.
 
 Sign-in is required before any text or voice call session can start — there is no anonymous mode
 (`src/App.tsx`'s `AuthGate` enforces this).

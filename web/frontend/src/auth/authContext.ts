@@ -12,7 +12,8 @@ export interface AuthContextValue {
   status: AuthStatus;
   user: SignedInUser | null;
   errorMessage: string | null;
-  signIn: () => Promise<void>;
+  signIn: (loginHint?: string) => Promise<void>;
+  signInSameTab: (loginHint?: string) => Promise<void>;
   signOut: () => Promise<void>;
   acquireApiToken: () => Promise<string>;
 }
