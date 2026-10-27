@@ -1,11 +1,17 @@
 # Hotel Guest Services Agent
 
-This repository contains the source-controlled foundation for a fictional hotel guest-services demo built on Microsoft Foundry, Microsoft Fabric, Foundry IQ, Work IQ, and Agent 365.
+This repository contains the Hotel Guest Services solution built on Microsoft Foundry,
+Microsoft Fabric, Foundry IQ, Work IQ, and Agent 365.
 
 The current implementation includes the deployed Fabric data estate, Foundry IQ knowledge base,
-Python Hosted Agent, Agent 365 bot/publication artifacts, a read-only Work IQ integration, and an
+Python Hosted Agent, Agent 365 bot/publication artifacts, a Work IQ integration, and an
 authenticated Voice Live web frontend.
 Cloud-changing commands remain operator-invoked; local setup and validation never deploy implicitly.
+
+The current target runbook is the
+[tenant guide on main](https://github.com/mcasalaina/hotel-agent-a365/blob/main/docs/tenant-migration-guide.md).
+It records required permissions, verified deployments and the remaining acceptance
+gates. Guide publication is not implementation promotion or full solution acceptance.
 
 ## Developer setup
 
@@ -80,7 +86,7 @@ See `PLAN.md` for the approved architecture, `DEPLOYMENT.md` for the controlled 
 ## ASSERT evaluation
 
 ASSERT runs in an isolated Python 3.13 environment and invokes the deployed agent only with a
-validated Hotel Guest Services Agent ID user token from a loopback-only Entra Auth SDK sidecar.
+validated Lyrenza Hotel Guest Services Agent ID user token from a loopback-only Entra Auth SDK sidecar.
 The reviewed **Hotel Guest Services Conversations** suite combines natural fixed requests with
 adaptive two-turn ASSERT scenarios.
 
@@ -93,7 +99,7 @@ evaluation/assert/.venv/bin/python scripts/run_assert_evaluation.py validate
 Live runs, controlled Azure execution, baseline promotion, artifact restrictions, and viewer startup
 are documented in `evaluation/assert/README.md`.
 
-## Deterministic demo data and source documents
+## Deterministic hotel data and source documents
 
 Generate the full deterministic source dataset and the Foundry IQ Markdown corpus:
 
@@ -103,7 +109,7 @@ Generate the full deterministic source dataset and the Foundry IQ Markdown corpu
 ```
 
 Use `--scale demo` with explicit output paths for quick local checks. Generated CSV,
-manifest, and documents are synthetic; data output under `data/generated/` is ignored.
+manifest, and document output under `data/generated/` is ignored.
 Canonical scenario identifiers are in `data/fixtures/demo_scenarios.json`.
 
 ## Foundry IQ local setup

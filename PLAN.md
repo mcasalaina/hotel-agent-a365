@@ -47,7 +47,7 @@ Use generic technical names, with a short uniqueness suffix only where Azure req
 | Fabric data agent | `HotelOperationsAgent` |
 | Hosted web app | `hotel-agent-webapp` |
 | Agent 365 identity/blueprint | `hotel-agent Identity` / `hotel-agent Blueprint` |
-| Agent user | Generic hotel guest-services display name and UPN |
+| Agent user | Display name `Lyrenza Hotel Guest Services`, alias `hotelguestservices` |
 
 Before every deployment, run a naming-policy check over IaC, manifests, azd environment values, and Fabric definitions. It must fail if `Lyrenza` occurs in a technical resource-name field.
 
@@ -458,7 +458,7 @@ Live Phase 2 status on 2026-07-15:
   Key Vault `hotelagentkv4iqs`. The Hosted Agent managed identity can read only that credential.
 - Deployed Hosted Agent version 23 with the explicit blueprint, instance, and delegated `user_fic`
   token exchanges. Authentication, real Mail metadata retrieval, real Teams metadata retrieval, and
-  read-only mutation refusal all pass under the `Hotel Guest Services` agentic user.
+  read-only mutation refusal all pass under the prior-tenant agentic user.
 - Corrected obsolete Work IQ MCP allowlist names by discovering the live case-sensitive tool
   contracts. Mail and Teams retrieval started working immediately after version 23 activated.
 - Published `manifest/manifest.zip` through the canonical **Agents > All agents > Registry > ... >
@@ -468,7 +468,7 @@ Live Phase 2 status on 2026-07-15:
   all-users activation selection.
 - Configured the owned blueprint as **API Based** with the Container Apps
   `hotel-agent-bridge-a365` `/api/messages` endpoint.
-- The surviving instance is `Hotel Guest Services`
+- The prior-tenant deployment's surviving instance had the identifiers
   (`hotelguestservices@cam3652609.onmicrosoft.com`, object ID
   `ba923ab8-d1d8-46de-98a4-229cf0b29e6b`, Entra agent ID
   `cc4f4078-c463-494a-a5fc-0b63a6995296`). Agent 365 assigned its Frontier license automatically.

@@ -4,6 +4,19 @@ The live development deployment uses the existing Foundry project, Search servic
 deployments, and storage account. Repository commands remain operator-invoked and do not deploy
 implicitly.
 
+## Current target runbook and acceptance boundary
+
+Use the [tenant guide on main](https://github.com/mcasalaina/hotel-agent-a365/blob/main/docs/tenant-migration-guide.md)
+for current permissions, target bindings, deployment steps and acceptance status.
+Its explicit gates supersede historical environment and version examples below.
+Hosted v7, bridge `em4` and proxy `session1` are deployed. Browser sign-in and
+text retrieval passed, but browser second-call audio acceptance is paused by
+explicit user instruction. The text/end/prerecorded sequence was not run and has
+no audio result. Do not manipulate the active operator tab until the user resumes.
+Actual email reply To/Cc headers, current Teams reservation acceptance, native
+SQL Topics/ontology context and user-owned Prep for AI remain separate gates.
+Source-preservation commits do not execute deployments, grants or publication.
+
 ## Foundry binding configuration
 
 The azd project binds to the existing project through its active environment. The environment must
