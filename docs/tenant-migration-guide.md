@@ -377,6 +377,27 @@ source instructions, native examples, and Topics are not effective semantic-mode
 NL2DAX configuration. Use the model's supported Power BI Prep for AI route,
 AI Schema, AI instructions, and Verified Answers. The reference instructions
 contained 11 DAX examples, but this did not prove that NL2DAX consumed them.
+
+Populate ordinary TOM descriptions on every model table, column, and measure.
+The full reference model has nine tables, 63 columns, and 21 measures, including
+columns outside the Data Agent's selected schema. Preserve approved descriptions
+in the canonical model templates so a later deployment does not erase them.
+For an existing model, prefer a narrow supported TOM update, such as
+`sempy.fabric.create_tom_server(..., readonly=False)` in a Fabric notebook,
+changing only missing `Description` properties and calling `Model.SaveChanges()`.
+Read back the live model, compare all protected metadata, and run representative
+DAX. Do not replace the entire model definition merely to add descriptions,
+especially when it contains user-owned Prep for AI state.
+
+The Data Agent REST `/elements.description` property is a user-set override, not
+a guaranteed mirror of model TOM descriptions. Schema-object description
+overrides are supported for SQL sources. Empty semantic-source element fields
+alone do not establish that NL2DAX metadata is stale or that a schema refresh is
+required. Verify the live model and real Data Agent answers separately. See
+[Schema object descriptions](https://learn.microsoft.com/fabric/data-science/data-agent-schema-object-descriptions)
+and the
+[published element contract](https://learn.microsoft.com/rest/api/fabric/dataagent/published/list-datasource-elements).
+
 In the Power BI service, open the target model's Prep data for AI experience.
 Use Simplify data schema for the AI Schema, Add AI instructions for the model's
 business rules, and the supported Verified Answers workflow to save approved
@@ -660,10 +681,18 @@ but replace historical resource names and revision receipts.
    message-reference behavior. The EmailReference SDK used in the rollout exposes
    `type`, `id`, `conversation_id`, and `html_body`, not a reliable sender/subject.
    Fetch exact message metadata through Work IQ using the reference. Never invent
-   missing fields or substitute the operator's identity.
+   missing fields or substitute the operator's identity. In the reviewed hosted
+   implementation, the exposed Work IQ tool is `query_work_context`. Explicitly
+   request that exact-message read before resolving the guest and querying their
+   reservation. A guest signature is not verified sender metadata.
 4. The email prompt must forbid send/reply/forward operations by the hosted agent,
    require actual hotel and reservation retrieval before facts, and request only
    the guest-facing reply in the guest's language. The bridge owns delivery.
+   Keep notification invocations stateless. Never key their hosted history by
+   the transport sender ID, which can be the same across unrelated guests and
+   email threads. A notification must neither inherit nor alter ordinary Teams
+   history, including on failure. Test different email conversation IDs sharing
+   one transport sender, and confirm ordinary Teams turns retain their history.
 5. Build from the `agent` directory, which is the bridge's container build context:
 
    ```bash
@@ -1103,6 +1132,16 @@ The reference rollout as of October 27, 2026 established:
 - The v6 knowledge-only email batch produced one correct-language reply each in
   Spanish, French, Arabic, and Chinese with the expected Scottsdale facts.
   This was v6 evidence, not v7 channel acceptance.
+- A subsequent narrow TOM repair populated all nine table and 63 column
+  descriptions, preserving all 21 existing measure descriptions/formulas and
+  other model metadata. A published Data Agent question correctly explained the
+  booking-pace date and booked-revenue semantics. This did not establish
+  `/elements.description` propagation or complete model-owned Prep for AI.
+- The v7 reservation email received a safe refusal without any tool calls. Its
+  input exposed history shared across eight distinct email threads. Bridge
+  `em4` added stateless notification turns and an explicit exact-message Work IQ
+  read instruction. The new revision was healthy with all traffic, but that
+  operational readback alone did not establish reservation-email acceptance.
 
 At that checkpoint, SQL native Topics readback, ontology-context acceptance,
 model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
