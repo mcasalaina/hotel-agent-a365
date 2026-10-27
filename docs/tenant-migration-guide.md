@@ -972,6 +972,29 @@ Create a target single-tenant API registration and SPA registration:
 - Use the operator's approved delegated consent where permitted. Do not replace
   this with a CLI client's grant or tenant-wide consent as a shortcut.
 
+For an approved operator-only grant, resolve the SPA and API service-principal
+object IDs with `az ad sp show --id <application-client-id> --query id`. Resolve
+the approved operator's user object ID separately. Read existing
+`/v1.0/oauth2PermissionGrants` before creating anything. An authorized administrator
+can create the specifically approved missing grant with Azure CLI:
+
+```bash
+az rest --method post \
+  --url https://graph.microsoft.com/v1.0/oauth2PermissionGrants \
+  --body '{
+    "clientId": "<SPA-service-principal-object-id>",
+    "consentType": "Principal",
+    "principalId": "<approved-operator-user-object-id>",
+    "resourceId": "<API-service-principal-object-id>",
+    "scope": "HotelAgent.Access"
+  }'
+```
+
+`clientId` and `resourceId` here are service-principal object IDs, not application
+client IDs. Read the resulting grant back and verify all five fields. Do not
+change it to `AllPrincipals`, add scopes, or create a duplicate grant. Persisted
+consent alone does not prove that the browser can authenticate.
+
 Attach the dedicated user-assigned proxy identity, grant its registry AcrPull and
 project-scoped Foundry User access, and set `AZURE_CLIENT_ID`. The hosted identity
 separately requires the inner Voice Live permissions in section 3.
@@ -1011,6 +1034,18 @@ configuration, not secret storage.
 Read back image digest, ready revision, health, and 100% traffic. Startup must
 successfully obtain a `https://ai.azure.com/.default` token before health succeeds.
 
+For an application-only update, build from a source-only context that preserves
+the Dockerfile's `web/` layout. Exclude local environment files, private `.foundry`
+receipts, dependency caches, and unrelated worktree artifacts. After validation,
+update only the existing app image:
+
+```bash
+az containerapp update --name hotel-voice-proxy --resource-group "$BRIDGE_RG" \
+  --image "<registry>/hotel-voice-proxy@sha256:<verified-digest>"
+```
+
+Do not reapply infrastructure or change roles just to ship frontend code.
+
 ### Authentication and audio acceptance
 
 The supported flow is:
@@ -1029,6 +1064,21 @@ Never put raw browser or Foundry bearer tokens in a WebSocket URL. Production
 must not fall back to scripted/offline playback after an authentication or network
 error. `/api/config` contains public configuration, and `/api/health` is not
 authenticated end-to-end voice acceptance.
+
+The reviewed frontend keeps tokens in MSAL `memoryStorage`. Ordinary sign-in uses
+a popup. Where popups are unavailable, its explicit **Use existing Microsoft
+session** action passes the entered hotel account email as `loginHint` to
+`ssoSilent`. It requires an existing Entra browser session, approved API consent,
+and usable IdP session cookies. It never falls back to a popup. In this mode,
+sign-out clears only local app authentication, not the shared Microsoft session.
+Token renewal requiring interaction surfaces a reconnect error.
+
+Do not replace this with full-page MSAL redirect sign-in while retaining
+`memoryStorage`. That combination is unsupported. `AADSTS50058` means silent
+sign-in did not receive a usable IdP session. Record the actual error and obtain
+a user-mediated supported browser sign-in. Do not weaken token storage, alter
+browser cookie policy, borrow a CLI bearer, or claim authentication from consent
+or health alone.
 
 Verify missing/invalid browser tokens return HTTP 401. Verify invalid WebSocket
 handles produce an authentication error and policy close, not a live session.
@@ -1137,15 +1187,22 @@ The reference rollout as of October 27, 2026 established:
   other model metadata. A published Data Agent question correctly explained the
   booking-pace date and booked-revenue semantics. This did not establish
   `/elements.description` propagation or complete model-owned Prep for AI.
-- The v7 reservation email received a safe refusal without any tool calls. Its
+- The initial v7 reservation email received a safe refusal without any tool calls. Its
   input exposed history shared across eight distinct email threads. Bridge
   `em4` added stateless notification turns and an explicit exact-message Work IQ
-  read instruction. The new revision was healthy with all traffic, but that
-  operational readback alone did not establish reservation-email acceptance.
+  read instruction. A fresh 7c email then produced exactly one correct delivered
+  reply. Its actual trace showed one initial input, exact-message sender retrieval,
+  the matching Fabric reservation, and property-specific IQ retrieval. This
+  verifies the reservation-email repair, but not the outgoing reply To/Cc headers.
+- The approved operator-only voice SPA grant was persisted and read back.
+  Voice frontend revision `sso1` was deployed healthy with all traffic. Actual
+  existing-tab silent sign-in returned `AADSTS50058`, with no authenticated API,
+  WebSocket, or audio acceptance reached. The deployment did not change hosted
+  version 7 or bridge `em4`, and it did not weaken memory-only token storage.
 
 At that checkpoint, SQL native Topics readback, ontology-context acceptance,
 model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
-reservation-grounded email, authenticated voice/audio acceptance, and independent
+authenticated voice/audio acceptance, and independent
 final template-catalog readback were not all complete. Do not use this guide, the
 publication operation, or the successful v7 direct invocation as a claim that
 those remaining gates passed.
