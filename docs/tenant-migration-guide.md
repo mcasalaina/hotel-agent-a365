@@ -41,6 +41,12 @@ publication does not merge those changes, deploy them, or make the whole solutio
 accepted. Record and promote the reviewed implementation commit before treating a
 fresh checkout as a reproducible release.
 
+Narrow reviewed source repairs are preserved on branch
+`mcasalaina-hotel-agent-2701`: `115c954` adds memory-only popup-free sign-in,
+`7c09cf0` preserves the deployed stateless email/sender-resolution repair, and
+`6668898` adds the real prerecorded acceptance input. These commits do not
+promote the remaining Fabric, infrastructure and orchestration worktree changes.
+
 The historical `main` baseline examined for this guide was
 `8cdb88ffed2a738f4851297702bf88ce94130af2`. In that baseline:
 
@@ -1103,6 +1109,19 @@ Then sign in with the real approved SPA user and require authenticated session
 creation, a successful WebSocket, final user transcript, final agent transcript,
 and audible synthesized audio.
 
+Bind the WebSocket auth frame's `opaqueHandle` and `agentSessionId` to the same
+session-creation response. Never combine a new handle with an ended call's
+session ID. Reconnects retain their own call's matching pair. Starting a new
+call must cancel old retries and clear prior guest data from the UI.
+Test a text call, End call, then a prerecorded call without reloading between
+them. A successful first call alone does not cover this lifecycle regression.
+
+The proxy's opaque-handle store is process-local. Multiple replicas require
+supported session affinity or a shared store, and multiple application workers
+need shared state. One successful single-replica run does not establish
+multi-replica reliability. See
+[Container Apps session affinity](https://learn.microsoft.com/azure/container-apps/sticky-sessions).
+
 For direct hosted-agent audio testing:
 
 ```bash
@@ -1229,8 +1248,27 @@ The reference rollout as of October 27, 2026 established:
   Running, and receiving all traffic. Both same-origin SPA redirects were read
   back. The live bundle contains the correct tenant, application and API scope.
   The existing-tab authenticated browser acceptance remained pending at this
-  checkpoint. The root no longer forwards authorization responses to the MSAL
-  bridge based on an opener. Hosted version 7 and bridge `em4` were unchanged.
+  deployment checkpoint. A subsequent actual operator-tab test completed
+  same-tab sign-in with no popup and reached an active authenticated text call.
+  Its Maria reservation question returned Scottsdale, September 10-12, 2026,
+  and USD 25 valet, with Fabric followed by Foundry IQ in the activity timeline.
+  The root no longer forwards authorization responses to the MSAL bridge based
+  on an opener. Hosted version 7 and bridge `em4` were unchanged.
+- Revision `audio1` subsequently added the real synthetic question WAV through
+  the existing same-origin static audio route. The live file matched the direct
+  voice test's SHA-256. The actual prerecorded attempt after an ended text call
+  failed before `auth_ack`, with four invalid-or-expired session errors, no WAV
+  transcription and zero output audio bytes. The old text transcript was not
+  counted as speech recognition.
+- Source repair `9885ef8` binds each fresh connection and retry to the matching
+  handle/session-ID pair from the same POST response, clears previous guest data
+  on a new call and cancels old retries. Its exact staged snapshot passed 85
+  frontend tests, TypeScript build and lint. The same 85 tests and six proxy
+  tests passed in the implementation worktree. ACR run `chx` produced immutable
+  digest `sha256:3ed316d00c929147a1fac488f319606bd9c95666203b2661c522d68076d84992`.
+  Revision `session1` is Healthy, Running and receives all traffic. The live
+  bundle verified the matching-pair binding. Actual browser second-call audio
+  acceptance remains pending, not established by source tests or readiness.
 - Live proxy negative checks rejected missing/invalid bearer tokens with HTTP
   401 and an invalid WebSocket handle with an auth error and close code 1008.
   Correct rejection behavior did not establish a successful authorized call.
@@ -1241,7 +1279,8 @@ The reference rollout as of October 27, 2026 established:
 
 At that checkpoint, SQL native Topics readback, ontology-context acceptance,
 model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
-and authenticated voice/audio acceptance were not complete. Do not use this guide, the
+and browser audio acceptance were not complete. Browser authentication and
+text-mode retrieval were verified separately. Do not use this guide, the
 publication operation, or the successful v7 direct invocation as a claim that
 those remaining gates passed.
 
