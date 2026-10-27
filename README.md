@@ -7,6 +7,12 @@ Python Hosted Agent, Agent 365 bot/publication artifacts, a read-only Work IQ in
 authenticated Voice Live web frontend.
 Cloud-changing commands remain operator-invoked; local setup and validation never deploy implicitly.
 
+For the complete cross-tenant setup, deployment order, permission matrix, channel
+acceptance, and rollback procedure, see the
+[tenant migration guide](docs/tenant-migration-guide.md). It distinguishes verified
+rollout results from remaining acceptance gaps and implementation changes that
+have not yet been promoted to `main`.
+
 ## Developer setup
 
 Requirements:
