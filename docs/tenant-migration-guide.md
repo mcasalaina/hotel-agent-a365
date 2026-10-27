@@ -50,8 +50,11 @@ existing-model replacement, and `432e668` adds supported proxy replica affinity.
 `3a93357` preserves evaluation rubrics, datasets and reproducible runners.
 `6febbec` preserves the hosted runtime, Agent 365 notification normalization,
 stable SDK pins and the directly required IQ setup/verification helpers.
-These commits do not promote the remaining Fabric, infrastructure and
-orchestration worktree changes. Source preservation does not itself redeploy
+`7c0b7e0` preserves Container Apps infrastructure, target template identifiers,
+the permission contract and guarded provisioning helpers. `9c4815c` preserves
+the remaining web configuration and production offline-playback guards.
+These commits do not promote all remaining worktree changes or merge the
+implementation branch into main. Source preservation does not itself redeploy
 the hosted agent, bridge, evaluators or browser proxy.
 
 The historical `main` baseline examined for this guide was
@@ -306,11 +309,18 @@ reference date, not the machine's current date.
    ```bash
    .venv/bin/python -m scripts.fabric.cli validate --config "$FABRIC_CONFIG"
    .venv/bin/python -m scripts.fabric.cli plan --config "$FABRIC_CONFIG"
-   .venv/bin/python -m scripts.fabric.cli apply --config "$FABRIC_CONFIG" --execute
+   .venv/bin/python -m scripts.fabric.cli apply --config "$FABRIC_CONFIG"
    ```
 
-   Without `--execute`, `apply` is a dry run. Verify that the reviewed release
-   implements every artifact in its plan. Placeholder scripts are not substitutes.
+   Without `--execute`, `apply` is a dry run. Do not execute the generic plan
+   against reviewed native Data Agent configuration or a user-owned semantic
+   model. Full-definition replacement cannot prove preservation of native AI
+   state. The retained declarative draft also contains a legacy graph datasource,
+   which is not the supported ontology-context configuration. Review the exact
+   supported artifact operations before adding `--execute`, and use the native
+   configuration/publication workflow in Section 6 for the Data Agent.
+   Placeholder scripts, a valid legacy draft, and successful local tests are not
+   substitutes for a native-preserving deployment path.
 5. Upload the reviewed source bundle and fixtures to the correct lakehouse:
 
    ```bash
@@ -1325,6 +1335,17 @@ The reference rollout as of October 27, 2026 established:
   This avoids treating the shared local environment's older hosting SDK as
   production-pin validation. The reviewed source and staged bytes matched.
   This commit did not redeploy or restart hosted v7 or bridge `em4`.
+- Infrastructure/configuration source `7c0b7e0` passed 19 isolated tests,
+  configuration type checking, and compilation of all three changed Bicep
+  templates. The bridge keeps Key Vault references and one replica. The proxy
+  keeps Single-mode sticky sessions and no broad Foundry developer-role module.
+  The package contains exactly four root files with matching template/blueprint
+  identifiers. No provisioning helper, credential operation, permission grant,
+  package upload or infrastructure deployment was executed.
+- Web source `9c4815c` passed 85 isolated frontend tests, production build and
+  lint, plus three proxy configuration cases. Offline scripted playback is
+  enabled only for development, never production/staging or an authentication
+  failure. This source commit made no browser action, voice call or deployment.
 
 At that checkpoint, SQL native Topics readback, ontology-context acceptance,
 model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
