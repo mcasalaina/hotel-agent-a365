@@ -1,9 +1,8 @@
 /**
- * Client wire protocol for the Lyrenza Hotels simulated contact-center backend proxy.
+ * Client wire protocol for the Lyrenza Hotels contact-center backend proxy.
  *
  * This module documents every request/response shape exchanged between the browser and the
- * *private backend proxy* (never the Foundry service directly). All data in this demo represents
- * a fictional hotel chain and synthetic guests; nothing here is a real reservation system.
+ * *private backend proxy* (never the Foundry service directly).
  *
  * The socket opens at the fixed `/api/calls` path. Because the browser WebSocket API cannot set
  * headers, its first frame is a `ClientAuthFrame` containing the opaque session handle. The backend
@@ -15,15 +14,15 @@
 export interface BackendConfigResponse {
   /** Deployment environment label, shown only in developer-facing surfaces. */
   environment: "development" | "staging" | "production";
-  /** Display name of the fictional hotel brand, e.g. "Lyrenza Hotels". */
+  /** Display name of the hotel brand, e.g. "Lyrenza Hotels". */
   hotelBrandName: string;
-  /** Notice string the UI must render verbatim near any synthetic data. */
-  syntheticDataNotice: string;
+  /** Access notice rendered by the contact-center UI. */
+  dataNotice: string;
   /** Feature flags the backend currently supports. */
   features: {
     voiceEnabled: boolean;
     textEnabled: boolean;
-    headlessDemoEnabled: boolean;
+    offlinePlaybackEnabled: boolean;
     prerecordedAudioEnabled: boolean;
   };
   /** Path prefix (no host) used to construct the call WebSocket URL, e.g. "/api/calls". */

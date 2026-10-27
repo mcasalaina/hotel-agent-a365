@@ -21,11 +21,10 @@ export function SignInScreen() {
         <h1 className={styles.title} id="sign-in-title">
           Lyrenza Hotels Contact Center
         </h1>
-        <p className={styles.subtitle}>Simulated agent demo &mdash; sign-in required</p>
+        <p className={styles.subtitle}>Hotel guest services &mdash; sign-in required</p>
         <p className={styles.notice}>
-          This is a demonstration environment. The Lyrenza Hotels brand, guests, reservations, and
-          folio details shown here are entirely <strong>synthetic</strong> and do not represent a
-          real hotel chain or real customer data.
+          Sign in with your authorized hotel account to access guest services, reservations, and
+          property information.
         </p>
         <button
           type="button"

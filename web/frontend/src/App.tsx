@@ -15,8 +15,8 @@ import { useElapsedTime } from "./hooks/useElapsedTime";
 import styles from "./App.module.css";
 
 const DEFAULT_HOTEL_BRAND_NAME = "Lyrenza Hotels";
-const DEFAULT_SYNTHETIC_NOTICE =
-  "All guests, reservations, and folio details in this demo are synthetic.";
+const DEFAULT_DATA_NOTICE =
+  "Guest and reservation information is restricted to authorized hotel staff.";
 
 function ContactCenterApp() {
   const { user, signOut } = useAuth();
@@ -105,8 +105,8 @@ function ContactCenterApp() {
           ) : null}
         </aside>
       </main>
-      <p className={styles.syntheticFooter}>
-        {config?.syntheticDataNotice ?? DEFAULT_SYNTHETIC_NOTICE}
+      <p className={styles.dataFooter}>
+        {config?.dataNotice ?? DEFAULT_DATA_NOTICE}
       </p>
     </div>
   );

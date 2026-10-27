@@ -24,7 +24,7 @@ export function buildDemoScenario(): ScriptedStep[] {
   return [
     {
       delayMs: 300,
-      message: { type: "auth_ack", agentSessionId: "demo-session-0001" },
+      message: { type: "auth_ack", agentSessionId: "offline-session-0001" },
     },
     {
       delayMs: 200,
@@ -54,7 +54,7 @@ export function buildDemoScenario(): ScriptedStep[] {
       message: {
         type: "timeline_event",
         category: "data_source",
-        message: "Checked the synthetic Lyrenza reservations lakehouse table.",
+        message: "Offline walkthrough: displaying a prerecorded reservation lookup.",
         timestamp: iso(),
       },
     },
@@ -64,7 +64,7 @@ export function buildDemoScenario(): ScriptedStep[] {
         type: "transcript",
         speaker: "agent",
         text:
-          "I found a synthetic reservation for Jordan Ellery, checking in Friday for two nights in a " +
+          "This offline walkthrough shows Jordan Ellery checking in Friday for two nights in a " +
           "King Harbor View room at the Lyrenza Bay Meridian.",
         isFinal: true,
         timestamp: iso(),
@@ -93,16 +93,16 @@ export function buildDemoScenario(): ScriptedStep[] {
       delayMs: 600,
       message: {
         type: "confirmation_request",
-        confirmationId: "demo-confirmation-0001",
-        summary: "Change room type to Deluxe Suite for this synthetic reservation?",
+        confirmationId: "offline-confirmation-0001",
+        summary: "Show a Deluxe Suite room change in this offline walkthrough?",
         details: {
-          Guest: "Jordan Ellery (synthetic)",
+          Guest: "Jordan Ellery",
           Property: "Lyrenza Bay Meridian",
           "Check-in": "Friday",
           Nights: "2",
           "Current room": "King Harbor View",
           "New room": "Deluxe Suite",
-          "Rate difference": "+$85.00/night (synthetic)",
+          "Rate difference": "+$85.00/night",
         },
         timestamp: iso(),
       },
@@ -112,7 +112,7 @@ export function buildDemoScenario(): ScriptedStep[] {
       message: {
         type: "timeline_event",
         category: "progress",
-        message: "Applying the confirmed room change to the synthetic reservation.",
+        message: "Offline walkthrough: displaying the room change. No hotel records are changed.",
         timestamp: iso(),
       },
     },
@@ -121,11 +121,11 @@ export function buildDemoScenario(): ScriptedStep[] {
       message: {
         type: "result_card",
         cardType: "reservation",
-        title: "Reservation updated (synthetic data)",
+        title: "Offline reservation walkthrough",
         fields: {
           Guest: "Jordan Ellery",
           Property: "Lyrenza Bay Meridian",
-          "Confirmation number": "LYR-DEMO-48213",
+          "Confirmation number": "LYR-OFFLINE-48213",
           Room: "Deluxe Suite",
           "Check-in": "Friday",
           "Check-out": "Sunday",
@@ -138,7 +138,7 @@ export function buildDemoScenario(): ScriptedStep[] {
       message: {
         type: "transcript",
         speaker: "agent",
-        text: "You're all set. Your synthetic reservation now shows a Deluxe Suite. Anything else?",
+        text: "The offline walkthrough now shows a Deluxe Suite. No hotel records were changed.",
         isFinal: true,
         timestamp: iso(),
       },
@@ -158,7 +158,7 @@ export function buildDemoScenario(): ScriptedStep[] {
       message: {
         type: "disposition",
         outcome: "resolved",
-        summary: "Room type updated to Deluxe Suite on the synthetic reservation. No further action needed.",
+        summary: "Offline walkthrough complete. No hotel records were changed.",
         timestamp: iso(),
       },
     },

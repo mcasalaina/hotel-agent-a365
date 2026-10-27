@@ -66,7 +66,7 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: /start voice call/i })).not.toBeInTheDocument();
   });
 
-  it("shows the signed-in contact-center UI, synthetic-data notice, and call controls once authenticated", () => {
+  it("shows the signed-in contact-center UI, access notice, and live call controls", () => {
     useAuthMock.mockReturnValue({
       status: "signed_in",
       user: { displayName: "Jamie Rivera", username: "jamie@example.com", tenantId: "tenant-1" },
@@ -84,9 +84,9 @@ describe("App", () => {
     expect(document.querySelector("img")).not.toBeInTheDocument();
     expect(screen.queryByText("Synthetic demo data")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /start voice call/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /run headless demo/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /run offline walkthrough/i })).not.toBeInTheDocument();
     expect(
-      screen.getByText(/all guests, reservations, and folio details.*are synthetic/i),
+      screen.getByText(/guest and reservation information is restricted to authorized hotel staff/i),
     ).toBeInTheDocument();
   });
 });

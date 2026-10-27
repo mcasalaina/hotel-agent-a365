@@ -39,7 +39,12 @@ The production container builds the frontend and serves it from the same origin.
 - `GET /api/config`: non-secret frontend configuration and feature flags.
 - `POST /api/auth/session`: Entra bearer-token exchange for an opaque browser session.
 - `GET /api/calls`: duplex PCM/JSON relay authenticated by the first WebSocket frame.
-- `GET /api/health`: liveness response.
+- `GET /api/health`: readiness/liveness response, available only after the startup Foundry token probe.
+
+Production and staging disable offline scripted playback. Voice, text, and prerecorded WAV sessions
+always use the authenticated live proxy; failed configuration or sign-in never enables an offline
+fallback. The production container uses the approved Python package feed
+`https://packagefeedproxy.microsoft.io/pypi/simple/`.
 
 Build the container after exporting the public `VITE_ENTRA_*` values from
 `web/frontend/.env.example`:

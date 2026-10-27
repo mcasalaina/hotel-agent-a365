@@ -53,20 +53,21 @@ export function CallControls({
           >
             Start text call
           </button>
-          <button
-            type="button"
-            className={styles.modeButton}
-            onClick={() => onStartCall("headless")}
-            disabled={features ? !features.headlessDemoEnabled : false}
-          >
-            Run headless demo
-          </button>
+          {features?.offlinePlaybackEnabled ? (
+            <button
+              type="button"
+              className={styles.modeButton}
+              onClick={() => onStartCall("headless")}
+            >
+              Run offline walkthrough
+            </button>
+          ) : null}
           <label
             className={`${styles.modeButton} ${
               features && !features.prerecordedAudioEnabled ? styles.modeButtonDisabled : ""
             }`}
           >
-            Test prerecorded WAV
+            Upload prerecorded WAV
             <input
               className={styles.fileInput}
               type="file"
@@ -83,8 +84,8 @@ export function CallControls({
           </label>
         </div>
         <p className={styles.hint}>
-          Upload a 16-bit PCM WAV to exercise the live Voice Live path without a microphone.
-          Headless demo remains fully offline.
+          Upload a 16-bit PCM WAV to use Voice Live without a microphone.
+          {features?.offlinePlaybackEnabled ? " The offline walkthrough does not use hotel services." : ""}
         </p>
       </section>
     );

@@ -202,7 +202,7 @@ export function useCallSession(): UseCallSessionResult {
       message: {
         type: "timeline_event",
         category: "progress",
-        message: `Sent a ${silentFrame.byteLength}-byte generated silent test audio frame (no microphone used).`,
+        message: `Prepared a ${silentFrame.byteLength}-byte silent audio frame for offline playback (no microphone used).`,
         timestamp: new Date().toISOString(),
       },
     });
@@ -228,14 +228,18 @@ export function useCallSession(): UseCallSessionResult {
       userEndedRef.current = false;
       dispatch({ type: "MODE_SELECTED", mode });
 
-      if (mode === "headless") {
-        runDemoScenario();
-        return;
-      }
-
       const config = configRef.current.config;
       if (!config) {
         dispatch({ type: "LOCAL_ERROR", message: "Contact-center configuration is not ready yet." });
+        return;
+      }
+
+      if (mode === "headless") {
+        if (!config.features.offlinePlaybackEnabled) {
+          dispatch({ type: "LOCAL_ERROR", message: "Offline playback is not available." });
+          return;
+        }
+        runDemoScenario();
         return;
       }
 
@@ -271,7 +275,7 @@ export function useCallSession(): UseCallSessionResult {
       if (!config?.features.prerecordedAudioEnabled) {
         dispatch({
           type: "LOCAL_ERROR",
-          message: "Prerecorded audio testing is not enabled by the backend.",
+          message: "Prerecorded audio is not enabled by the backend.",
         });
         return;
       }

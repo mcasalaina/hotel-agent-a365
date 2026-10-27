@@ -73,13 +73,13 @@ async def _get_config(request: web.Request) -> web.Response:
         {
             "environment": settings.environment,
             "hotelBrandName": "Lyrenza Hotels",
-            "syntheticDataNotice": (
-                "All guests, reservations, and folio details in this demo are synthetic."
+            "dataNotice": (
+                "Guest and reservation information is restricted to authorized hotel staff."
             ),
             "features": {
                 "voiceEnabled": True,
                 "textEnabled": True,
-                "headlessDemoEnabled": True,
+                "offlinePlaybackEnabled": settings.environment == "development",
                 "prerecordedAudioEnabled": True,
             },
             "websocketPath": "/api/calls",

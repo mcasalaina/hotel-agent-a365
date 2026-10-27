@@ -1,11 +1,9 @@
 # Lyrenza Hotels Contact Center — Web Frontend
 
-A React 19 + TypeScript + Vite single-page app that simulates a live hotel contact-center agent
-desk for the fictional **Lyrenza Hotels** brand. Every guest, reservation, and folio detail shown
-in this app is **synthetic** demo data; it is not connected to a real hotel chain or real customer
-records.
+A React 19 + TypeScript + Vite single-page app for the **Lyrenza Hotels** contact-center agent desk.
+Guest and reservation information is restricted to authorized hotel staff.
 
-This app is the browser client for Phase 3 of the project. It never talks to Foundry directly. It
+This app never talks to Foundry directly. It
 connects only to the Python proxy in `web/backend`, which is deployed with the production frontend.
 
 ## Requirements
@@ -18,7 +16,7 @@ connects only to the Python proxy in `web/backend`, which is deployed with the p
 
 ```bash
 cd web/frontend
-npm install
+npm ci
 cp .env.example .env.local   # fill in your Entra + backend values
 npm run dev
 ```
@@ -81,7 +79,7 @@ Sign-in is required before any text or voice call session can start — there is
 
 ## What the app does
 
-The main screen simulates a live contact-center call:
+The main screen supports live contact-center calls:
 
 - Signed-in user summary and sign-out control
 - Connection/call state badge (idle, connecting, active, reconnecting, ended) with a reconnect
@@ -94,10 +92,9 @@ The main screen simulates a live contact-center call:
 - Confirmation cards for actions the agent wants to take, with Approve/Decline controls
 - Reservation/folio/request result cards summarizing outcomes
 - A final call disposition banner
-- A "Run headless demo" mode that plays a fully scripted, synthetic call — including a generated
-  silent PCM audio frame and typed text turns — entirely offline, without microphone permission or
-  any network connection. Useful for demos, screenshots, and exercising the UI without a live
-  backend.
+- A development-only "Run offline walkthrough" mode for checking transcript and card rendering.
+  It is unavailable in production and staging, never changes hotel records, and is never a
+  fallback for a failed live connection or authentication.
 
 ## Audio pipeline
 
@@ -127,7 +124,7 @@ The Python backend implements this contract. See the header comment in
 [`src/types/protocol.ts`](./src/types/protocol.ts) for the full authoritative type-level contract.
 
 - **`GET /api/config`** — unauthenticated. Returns non-secret runtime configuration: environment
-  label, hotel brand name, synthetic-data notice text, feature flags (voice/text/headless demo
+  label, hotel brand name, access notice (`dataNotice`), feature flags (voice/text/offline playback
   enabled), the prerecorded-audio flag, the WebSocket path prefix, and reconnect tuning values.
 - **`POST /api/auth/session`** — requires an `Authorization: Bearer <Entra access token>` header.
   Exchanges the signed-in user's Entra token for a short-lived **opaque session handle**. The
@@ -189,7 +186,7 @@ src/
   components/  Presentational React components (CSS Modules, --cp-* colors only)
   config/      Vite environment variable loading/validation
   hooks/       Call-session state machine (reducer + orchestrator hook), elapsed-time ticker
-  lib/         Backend HTTP client, WebSocket client, PCM audio helpers, capture/playback, demo data
+  lib/         Backend HTTP client, WebSocket client, PCM audio helpers, capture/playback
   types/       Documented wire-protocol types and env var typings
 public/audio/  AudioWorkletProcessor script for microphone capture
 ```

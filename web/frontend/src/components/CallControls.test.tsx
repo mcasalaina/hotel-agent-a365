@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CallControls } from "./CallControls";
 
 describe("CallControls", () => {
-  it("offers voice, text, and headless-demo start buttons before a call begins", async () => {
+  it("offers offline playback only when explicitly enabled by the backend", async () => {
     const onStartCall = vi.fn();
     const user = userEvent.setup();
     render(
@@ -12,7 +12,12 @@ describe("CallControls", () => {
         phase="idle"
         mode={null}
         micMuted={false}
-        features={null}
+        features={{
+          voiceEnabled: true,
+          textEnabled: true,
+          offlinePlaybackEnabled: true,
+          prerecordedAudioEnabled: true,
+        }}
         onStartCall={onStartCall}
         onStartPrerecorded={vi.fn()}
         onToggleMute={vi.fn()}
@@ -24,7 +29,7 @@ describe("CallControls", () => {
     await user.click(screen.getByRole("button", { name: /start voice call/i }));
     expect(onStartCall).toHaveBeenCalledWith("voice");
 
-    await user.click(screen.getByRole("button", { name: /run headless demo/i }));
+    await user.click(screen.getByRole("button", { name: /run offline walkthrough/i }));
     expect(onStartCall).toHaveBeenCalledWith("headless");
   });
 
@@ -37,7 +42,7 @@ describe("CallControls", () => {
         features={{
           voiceEnabled: false,
           textEnabled: true,
-          headlessDemoEnabled: true,
+          offlinePlaybackEnabled: false,
           prerecordedAudioEnabled: true,
         }}
         onStartCall={vi.fn()}
@@ -49,6 +54,7 @@ describe("CallControls", () => {
     );
     expect(screen.getByRole("button", { name: /start voice call/i })).toBeDisabled();
     expect(screen.getByRole("button", { name: /start text call/i })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /run offline walkthrough/i })).not.toBeInTheDocument();
   });
 
   it("shows mute, interrupt, and end-call controls only for a live voice call", async () => {
@@ -117,7 +123,7 @@ describe("CallControls", () => {
     const file = new File([new ArrayBuffer(44)], "spanish-prompt.wav", {
       type: "audio/wav",
     });
-    await user.upload(screen.getByLabelText(/test prerecorded wav/i), file);
+    await user.upload(screen.getByLabelText(/upload prerecorded wav/i), file);
 
     expect(onStartPrerecorded).toHaveBeenCalledWith(file);
   });
