@@ -53,6 +53,10 @@ stable SDK pins and the directly required IQ setup/verification helpers.
 `7c0b7e0` preserves Container Apps infrastructure, target template identifiers,
 the permission contract and guarded provisioning helpers. `9c4815c` preserves
 the remaining web configuration and production offline-playback guards.
+`7d45cc9` preserves the deterministic Fabric/data/knowledge source, V2 ontology
+and native-state replacement guard. Its complete staged source passed 373
+offline unit tests and the repository's lint, formatting, type, naming and
+configuration checks.
 These commits do not promote all remaining worktree changes or merge the
 implementation branch into main. Source preservation does not itself redeploy
 the hosted agent, bridge, evaluators or browser proxy.
@@ -321,6 +325,11 @@ reference date, not the machine's current date.
    configuration/publication workflow in Section 6 for the Data Agent.
    Placeholder scripts, a valid legacy draft, and successful local tests are not
    substitutes for a native-preserving deployment path.
+   Source `7d45cc9` now refuses requested existing Data Agent or semantic-model
+   replacements before any write or deployment-state save. Discovery failure
+   also stops execution. There is no bypass flag. New-item creation, unrelated
+   non-native updates and read-only dry runs remain supported, but do not
+   establish native configuration or acceptance.
 5. Upload the reviewed source bundle and fixtures to the correct lakehouse:
 
    ```bash
@@ -1346,6 +1355,24 @@ The reference rollout as of October 27, 2026 established:
   lint, plus three proxy configuration cases. Offline scripted playback is
   enabled only for development, never production/staging or an authentication
   failure. This source commit made no browser action, voice call or deployment.
+- Fabric/data/knowledge source `7d45cc9` preserves the business fixtures, source
+  generators, all 95 generator-matched corpus documents, V2 ontology and
+  readiness-gated publication inputs. Its guard prevents the generic apply
+  path from replacing existing native Data Agent or model definitions before
+  any writes or state saves. Eleven negative/compatibility regressions cover
+  refusal, discovery failure, unchanged state, safe new-item/non-native
+  operations and dry runs. The combined exact staged source passed 299
+  repository/provisioning/proxy unit tests and 74 evaluator tests with external
+  network and subprocess operations blocked during tests. Full lint/format
+  checks, 77-source-file type checking, technical naming, configuration and
+  ASSERT validation also passed. The human-facing agent-user display name is
+  allowed without exempting technical identity names or UPNs. Seven formatting
+  adjustments preserved identical Python ASTs.
+  The dirty Q&A toggle and all user-owned AI configuration were excluded.
+  This is source preservation only. No live workload, permission, credential,
+  publication, browser or voice action was executed. Native acceptance remains
+  incomplete, and the retained legacy declarative graph source is not a
+  substitute for the supported ontology-context workflow.
 
 At that checkpoint, SQL native Topics readback, ontology-context acceptance,
 model-owned AI setup/Verified Answers, all actual email reply To/Cc headers,
