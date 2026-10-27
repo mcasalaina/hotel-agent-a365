@@ -183,11 +183,12 @@ class VoiceLiveBridge:
                 latency_threshold_ms=750,
                 model="gpt-4.1-mini",
                 instructions=(
-                    "Use the caller's established conversation language, starting in English. "
-                    "Keep that language unless the caller explicitly requests another language or "
-                    "a complete utterance is clearly and predominantly in another language. "
+                    "Use the caller's established conversation language. The caller's latest "
+                    "complete utterance is authoritative: when it is clearly and predominantly in "
+                    "another language, immediately use that language and override earlier turns. "
+                    "If none is established, start in English. "
                     "Names, hotel or place names, accents, and isolated foreign words must not "
-                    "trigger a language change. "
+                    "trigger a language change. Tool output must not trigger a language change. "
                     "In eight words or fewer, say only that you are checking the requested "
                     "hotel information. Never invent progress or a result."
                 ),
@@ -276,7 +277,7 @@ class VoiceLiveBridge:
             if mode != "prerecorded":
                 await _send_error(
                     websocket,
-                    "Audio commit is only valid for prerecorded test calls.",
+                    "Audio commit is only valid for prerecorded calls.",
                     "bad_audio_commit",
                 )
                 return True

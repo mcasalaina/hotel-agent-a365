@@ -10,6 +10,7 @@ from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from typing import Any, cast
 
+from azure.identity import AzureCliCredential
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.indexes.models import SearchIndexKnowledgeSource
@@ -29,6 +30,7 @@ SHARED_PROPERTY_ID = "chain-wide"
 @dataclass(slots=True)
 class VerificationReport:
     index_counts: dict[str, int] = field(default_factory=dict)
+    index_modes: dict[str, str] = field(default_factory=dict)
     direct_queries: dict[str, int] = field(default_factory=dict)
     knowledge_sources: list[str] = field(default_factory=list)
     answer: str = ""
@@ -62,7 +64,9 @@ def verify_direct_searches(
     search_endpoint: str,
     credential: Any,
     property_id: str,
-) -> tuple[dict[str, int], dict[str, int]]:
+    *,
+    index_client: SearchIndexClient | None = None,
+) -> tuple[dict[str, int], dict[str, int], dict[str, str]]:
     queries = {
         "properties": "parking",
         "policies": "cancellation",
@@ -70,7 +74,19 @@ def verify_direct_searches(
         "operations": "maintenance",
     }
     counts: dict[str, int] = {}
+    modes: dict[str, str] = {}
+    if index_client is None:
+        index_client = SearchIndexClient(
+            search_endpoint, credential, api_version="2026-05-01-preview"
+        )
     for route, query in queries.items():
+        index = index_client.get_index(INDEXES[route])
+        vector_fields = [
+            item.name
+            for item in index.fields
+            if item.name == "content_vector" or item.vector_search_dimensions is not None
+        ]
+        modes[route] = "vector_semantic" if vector_fields else "semantic_lexical"
         client = SearchClient(search_endpoint, INDEXES[route], credential)
         results = list(
             client.search(
@@ -84,24 +100,26 @@ def verify_direct_searches(
         if not results:
             raise RuntimeError(f"Representative direct Search query returned no results: {route}")
         counts[route] = len(results)
-
-    vector_results = list(
-        SearchClient(search_endpoint, INDEXES["properties"], credential).search(
-            search_text=None,
-            vector_queries=[
-                VectorizableTextQuery(
-                    text="parking and arrival transportation",
-                    k_nearest_neighbors=3,
-                    fields="content_vector",
+        if vector_fields:
+            vector_results = list(
+                client.search(
+                    search_text=None,
+                    vector_queries=[
+                        VectorizableTextQuery(
+                            text=query,
+                            k_nearest_neighbors=3,
+                            fields=",".join(vector_fields),
+                        )
+                    ],
+                    select=["id", "property_id", "title"],
+                    top=3,
                 )
-            ],
-            select=["id", "property_id", "title"],
-            top=3,
-        )
-    )
-    if not vector_results:
-        raise RuntimeError("Representative integrated vector query returned no results")
-    counts["properties_vector"] = len(vector_results)
+            )
+            if not vector_results:
+                raise RuntimeError(
+                    f"Representative integrated vector query returned no results: {route}"
+                )
+            counts[f"{route}_vector"] = len(vector_results)
 
     property_results = list(
         SearchClient(search_endpoint, INDEXES["properties"], credential).search(
@@ -115,7 +133,7 @@ def verify_direct_searches(
         result["property_id"] != property_id for result in property_results
     ):
         raise RuntimeError(f"Property isolation failed for {property_id}")
-    return counts, {"properties": len(property_results)}
+    return counts, {"properties": len(property_results)}, modes
 
 
 def retrieve_answer(
@@ -204,6 +222,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--property-id", default="HTL-001")
     parser.add_argument("--as-of", default="2026-04-10")
+    parser.add_argument("--tenant-id", help="Use Azure CLI credentials scoped to this tenant.")
     return parser.parse_args()
 
 
@@ -213,7 +232,11 @@ def main() -> int:
         raise RuntimeError(
             "AZURE_SEARCH_ENDPOINT or --search-endpoint is required for live verification."
         )
-    credential = select_search_credential()
+    credential = (
+        AzureCliCredential(tenant_id=args.tenant_id)
+        if args.tenant_id
+        else select_search_credential()
+    )
     index_client = SearchIndexClient(
         endpoint=args.search_endpoint,
         credential=credential,
@@ -222,8 +245,8 @@ def main() -> int:
     report = VerificationReport()
     report.index_counts = count_indexes(args.search_endpoint, credential)
     report.knowledge_sources = verify_knowledge_base(index_client, args.knowledge_base_name)
-    report.direct_queries, property_isolation = verify_direct_searches(
-        args.search_endpoint, credential, args.property_id
+    report.direct_queries, property_isolation, report.index_modes = verify_direct_searches(
+        args.search_endpoint, credential, args.property_id, index_client=index_client
     )
     report.direct_queries.update(
         {f"{name}_isolation": count for name, count in property_isolation.items()}
@@ -232,7 +255,7 @@ def main() -> int:
         args.search_endpoint,
         credential,
         args.knowledge_base_name,
-        "What dated operational notice applies to this property on the requested date?",
+        f"What dated operational notice applies to {args.property_id} on {args.as_of}?",
         args.property_id,
         args.as_of,
     )

@@ -38,7 +38,8 @@ def test_fabric_data_tool_queries_published_mcp_endpoint() -> None:
     answer = asyncio.run(adapter.query("  Find reservation RES-1  "))
     function_tool = adapter.as_function_tool()
 
-    assert answer == "A governed answer"
+    assert answer.endswith("Tool evidence:\nA governed answer")
+    assert "use the user's established conversation language" in answer
     assert function_tool.name == "query_hotel_operations_data"
     assert captured["scope"] == FABRIC_TOKEN_SCOPE
     assert captured["headers"] == {"Authorization": "Bearer fabric-token"}
@@ -47,13 +48,16 @@ def test_fabric_data_tool_queries_published_mcp_endpoint() -> None:
     assert "first resolve the exact guest_id" in PROPERTY_CONTEXT_DIRECTIVE
     assert "'any reservations' or reservations 'on file'" in PROPERTY_CONTEXT_DIRECTIVE
     assert "all dates and statuses" in PROPERTY_CONTEXT_DIRECTIVE
-    assert "only filter to active or upcoming" in PROPERTY_CONTEXT_DIRECTIVE
+    assert "Filter by a stored status only when the question explicitly names" in (
+        PROPERTY_CONTEXT_DIRECTIVE
+    )
+    assert "must not add a stored-status filter" in PROPERTY_CONTEXT_DIRECTIVE
     assert "always return the exact guest_id" in PROPERTY_CONTEXT_DIRECTIVE
     assert "exact property_id and room_type_id" in PROPERTY_CONTEXT_DIRECTIVE
     assert "exactly 20 rows" in PROPERTY_CONTEXT_DIRECTIVE
     assert "property name and count only" in PROPERTY_CONTEXT_DIRECTIVE
     assert "Never collapse zero-count rows" in PROPERTY_CONTEXT_DIRECTIVE
-    assert "status future or arriving" in PROPERTY_CONTEXT_DIRECTIVE
+    assert "arrivals by check_in without a stored-status filter" in PROPERTY_CONTEXT_DIRECTIVE
     assert "without narrating this interpretation" in PROPERTY_CONTEXT_DIRECTIVE
 
 
@@ -106,11 +110,26 @@ def test_governed_question_injects_authoritative_relative_date_window() -> None:
     question = _governed_question("Show next week's arrivals", date(2026, 7, 12))
 
     assert "Today's authoritative UTC date is 2026-07-12" in question
-    assert "next-7-days window ends 2026-07-18, inclusive" in question
+    assert "past reservations only when check_in is before 2026-07-12" in question
+    assert "future or upcoming reservations only when check_in is after 2026-07-12" in question
+    assert "a same-day check_in is neither" in question
+    assert "Do not add a stored-status filter" in question
+    assert "next-7-days window is 2026-07-13 through 2026-07-19, inclusive" in question
+
+
+def test_governed_question_uses_fixed_default_temporal_boundary() -> None:
+    question = _governed_question("Show past and future reservations")
+
+    assert "Today's authoritative UTC date is 2026-09-01" in question
+    assert "past reservations only when check_in is before 2026-09-01" in question
+    assert "future or upcoming reservations only when check_in is after 2026-09-01" in question
+    assert "a same-day check_in is neither" in question
 
 
 def test_governed_exact_id_lookup_does_not_inject_date_window() -> None:
     question = _governed_question("Find reservation RES-DEMO-FAMILY", date(2026, 7, 12))
 
     assert "search the full record history" in question
+    assert "join its property_id to the authoritative property roster" in question
+    assert "return the official property name" in question
     assert "Today's authoritative UTC date" not in question

@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 
 from agent_framework import Agent
 from agent_framework.foundry import FoundryChatClient
 
-from hotel_servicing_agent.config import Settings
+from hotel_servicing_agent.config import HOTEL_TEMPORAL_BOUNDARY, Settings
 from hotel_servicing_agent.credentials import (
     select_async_azure_credential,
     select_azure_credential,
 )
 from hotel_servicing_agent.hosting import VoiceLiveAgentHost
+from hotel_servicing_agent.language import LANGUAGE_RESPONSE_GUIDANCE
 from hotel_servicing_agent.tools import (
     WORK_IQ_AGENT_TOOLS,
     AgenticUserTokenProvider,
@@ -72,9 +73,9 @@ def create_agent(settings: Settings) -> Agent:
         client=client,
         id=settings.agent365_instance_client_id,
         name="hotel-servicing-agent",
-        description="Guest-services orchestration for a fictional hotel chain.",
+        description="Guest-services orchestration for Lyrenza Hotels.",
         instructions=_instructions_with_current_utc_date(settings.instructions),
-        default_options={"store": False},
+        default_options={"store": False, "allow_multiple_tool_calls": False},
         tools=[
             knowledge_tool.as_function_tool(),
             fabric_tool.as_function_tool(),
@@ -91,15 +92,20 @@ def _instructions_with_current_utc_date(
     instructions: str,
     today: date | None = None,
 ) -> str:
-    current_date = today or datetime.now(UTC).date()
-    next_week_end = current_date + timedelta(days=6)
+    current_date = today or HOTEL_TEMPORAL_BOUNDARY
+    next_week_start = current_date + timedelta(days=1)
+    next_week_end = current_date + timedelta(days=7)
     return (
         f"{instructions.rstrip()}\n\n"
         "Authoritative time context:\n"
         f"- Today's UTC date is {current_date.isoformat()}.\n"
-        f"- A relative next-7-days window is {current_date.isoformat()} through "
+        f"- Past reservations have check_in before {current_date.isoformat()}.\n"
+        f"- Future or upcoming reservations have check_in after {current_date.isoformat()}.\n"
+        f"- A check_in on {current_date.isoformat()} is neither past nor future.\n"
+        f"- A relative next-7-days window is {next_week_start.isoformat()} through "
         f"{next_week_end.isoformat()}, inclusive.\n"
-        "- Never infer the current date from model training data."
+        "- Never infer the current date from prior knowledge.\n\n"
+        f"{LANGUAGE_RESPONSE_GUIDANCE}"
     )
 
 

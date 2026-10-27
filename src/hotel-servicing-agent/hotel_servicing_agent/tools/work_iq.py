@@ -13,6 +13,7 @@ from agent_framework.foundry import FoundryChatClient
 from azure.core.exceptions import ClientAuthenticationError
 
 from hotel_servicing_agent.hosting import current_agent_user_id
+from hotel_servicing_agent.language import with_language_response_guidance
 
 WORK_IQ_SCOPE = "Tools.ListInvoke.All"
 TOKEN_EXCHANGE_SCOPE = "api://AzureADTokenExchange/.default"
@@ -275,7 +276,7 @@ class WorkIQTool:
             name="send_email",
             description=(
                 "Send a new email from my mailbox. Use only for an explicitly requested send. "
-                "Provide the exact recipients, subject, and body."
+                "Provide the exact To recipients, optional CC recipients, subject, and body."
             ),
             func=self.send_email,
         )
@@ -285,7 +286,8 @@ class WorkIQTool:
             name="reply_to_email",
             description=(
                 "Send an immediate reply from my mailbox to an email identified by its "
-                "folder-specific message ID. Provide the exact reply body."
+                "folder-specific message ID. Provide the exact reply body and any additional "
+                "CC recipients."
             ),
             func=self.reply_to_email,
         )
@@ -340,7 +342,7 @@ class WorkIQTool:
             server.name: await self._token_provider.get_token(user_id, server.scope)
             for server in servers
         }
-        return await self._query_runner(
+        answer = await self._query_runner(
             self._project_endpoint,
             self._model_deployment,
             self._credential,
@@ -348,9 +350,17 @@ class WorkIQTool:
             tokens,
             question,
         )
+        return with_language_response_guidance(answer)
 
-    async def send_email(self, recipient_emails: str, subject: str, body: str) -> str:
+    async def send_email(
+        self,
+        recipient_emails: str,
+        subject: str,
+        body: str,
+        cc_emails: str = "",
+    ) -> str:
         recipients = recipient_emails.strip()
+        cc_recipients = cc_emails.strip()
         if not recipients:
             raise ValueError("recipient_emails must not be empty")
         if not subject.strip():
@@ -359,15 +369,23 @@ class WorkIQTool:
             raise ValueError("body must not be empty")
         return await self._query(
             "Send a new email now using SendEmailWithAttachments, with no attachments. "
-            f"Recipients: {recipients}\n"
+            f"To recipients: {recipients}\n"
+            f"CC recipients: {cc_recipients or '(none)'}\n"
             f"Subject: {subject.strip()}\n"
             f"Exact body:\n{body.strip()}\n"
-            "Do not create a draft. Report success only after the mail tool confirms the send.",
+            "Preserve the To and CC recipient lists exactly and do not merge them. Do not create "
+            "a draft. Report success only after the mail tool confirms the send.",
             self._mail_servers(),
         )
 
-    async def reply_to_email(self, message_id: str, body: str) -> str:
+    async def reply_to_email(
+        self,
+        message_id: str,
+        body: str,
+        cc_emails: str = "",
+    ) -> str:
         resolved_message_id = message_id.strip()
+        cc_recipients = cc_emails.strip()
         if not resolved_message_id:
             raise ValueError("message_id must not be empty")
         if not body.strip():
@@ -376,8 +394,11 @@ class WorkIQTool:
             "Reply to the email with the following folder-specific message ID now using "
             "ReplyToMessage with sendImmediately set to true.\n"
             f"Message ID: {resolved_message_id}\n"
+            f"Additional CC recipients: {cc_recipients or '(none)'}\n"
             f"Exact reply body:\n{body.strip()}\n"
-            "Do not create a draft. Report success only after the mail tool confirms the send.",
+            "Preserve the additional CC recipient list exactly. If the immediate reply operation "
+            "cannot add CC recipients, create a reply draft, update its CC recipients, and send "
+            "that draft instead. Report success only after the mail tool confirms the send.",
             self._mail_servers(),
         )
 
@@ -430,7 +451,10 @@ async def _query_work_iq(
                 "when evidence is unavailable. Send an email or reply only when the request "
                 "explicitly asks you to send it. For a new email, use the mail server's "
                 "SendEmailWithAttachments tool directly, even when there are no attachments. "
-                "For a reply, use ReplyToMessage with sendImmediately set to true. "
+                "Preserve To and CC recipients exactly as supplied; never silently omit or merge "
+                "a CC recipient. For a reply, use ReplyToMessage with sendImmediately set to true "
+                "when it supports the requested CC list. Otherwise create a reply draft, update "
+                "its CC recipients, and send the draft. "
                 "When returning an email task, include both its Internet Message ID for idempotent "
                 "actions and its folder-specific message ID for replies. The folder-specific ID is "
                 "the id field returned by SearchMessagesQueryParameters. Never omit either ID. "

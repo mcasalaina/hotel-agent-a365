@@ -1,5 +1,9 @@
+agent-framework-core==1.22.0
 agent-framework-foundry==1.10.1
 agent-framework-foundry-hosting==1.0.0a260709
+# openai 1.17.0 sends response.output_text.done as replace-mode text that hosting
+# 1.0.0a260709 emits again as a delta, duplicating streamed answers and tool arguments.
+agent-framework-openai==1.16.0
 azure-ai-voicelive==1.2.0
 azure-identity==1.25.3
 azure-search-documents==12.0.0

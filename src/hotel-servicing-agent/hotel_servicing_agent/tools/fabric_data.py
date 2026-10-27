@@ -3,12 +3,19 @@ from __future__ import annotations
 import asyncio
 import re
 from collections.abc import Awaitable, Callable
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from agent_framework import FunctionTool
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
+
+from hotel_servicing_agent.config import HOTEL_TEMPORAL_BOUNDARY
+from hotel_servicing_agent.language import with_language_response_guidance
+from hotel_servicing_agent.property_context import (
+    record_fabric_property_ids,
+    record_fabric_query_attempt,
+)
 
 FABRIC_TOKEN_SCOPE = "https://api.fabric.microsoft.com/.default"
 PROPERTY_CONTEXT_DIRECTIVE = (
@@ -17,23 +24,27 @@ PROPERTY_CONTEXT_DIRECTIVE = (
     "display to the user. For a named guest reservation lookup, first resolve the exact guest_id "
     "from the guest's first and last name, then join reservations on that guest_id. A request for "
     "'any reservations' or reservations 'on file' means all dates and statuses, including "
-    "completed and cancelled; only filter to active or upcoming reservations when the question "
-    "explicitly asks for that filter. For a guest lookup, always return the exact guest_id. For a "
-    "hotel and room lookup, always return the exact property_id and room_type_id needed by the "
-    "write tool, and limit the result to the requested hotel. "
+    "completed and cancelled. Filter by a stored status only when the question explicitly names "
+    "that status. Past, future, and upcoming are strict check_in date classifications and must not "
+    "add a stored-status filter. For every reservation result, join its property_id to the "
+    "authoritative property roster and return the official property name; never omit that name "
+    "when the reservation has a property_id. For a guest lookup, always return the exact guest_id. "
+    "For a hotel and room lookup, always return the exact property_id and room_type_id needed by "
+    "the write tool, and limit the result to the requested hotel. "
     "For a chain-wide aggregation, query the complete property roster, return an overall total and "
     "a Markdown table with exactly 20 rows using property name and count only, and include "
     "properties with zero matching records. Never collapse zero-count rows into an 'all other "
     "properties' summary. For a "
-    "forward-looking reservation window, interpret reservations as arrivals by check_in with "
-    "status future or arriving unless the user explicitly asks for records created or booked "
-    "during the window. Return the exact date range without narrating this interpretation. For an "
+    "forward-looking reservation window, interpret reservations as arrivals by check_in without a "
+    "stored-status filter unless the user explicitly names a stored status. Return the exact date "
+    "range without narrating this interpretation. For an "
     "exact reservation, "
     "folio, dispute, request, or work-order identifier, search the full record history and do not "
     "apply a date window unless the user explicitly requests one."
 )
 RELATIVE_DATE_PATTERN = re.compile(
-    r"\b(today|tomorrow|yesterday|next week|this week|last week|next \d+ days?|upcoming)\b",
+    r"\b(today|tomorrow|yesterday|next week|this week|last week|next \d+ days?|"
+    r"past|future|upcoming)\b",
     re.IGNORECASE,
 )
 CHAIN_WIDE_PATTERN = re.compile(
@@ -74,13 +85,15 @@ class FabricDataAgentTool:
     async def query(self, question: str) -> str:
         if not question.strip():
             raise ValueError("question must not be empty")
+        record_fabric_query_attempt()
         token = self._credential.get_token(FABRIC_TOKEN_SCOPE)
         headers = {"Authorization": f"Bearer {token.token}"}
         if CHAIN_WIDE_PATTERN.search(question):
             fact_question = (
                 f"{question.strip()} Use HotelGuestServices reservation facts only. Do not query "
-                "the property roster. For an active forward-looking reservation window, filter "
-                "check_in to the requested inclusive date range and status to future or arriving. "
+                "the property roster. For a forward-looking reservation window, filter check_in "
+                "to the requested inclusive date range. Do not add a stored-status filter unless "
+                "the user explicitly names a stored status. "
                 "Group by property_id and return property_id and count for every nonzero group."
                 f"{_authoritative_date_directive(question)}"
             )
@@ -93,14 +106,17 @@ class FabricDataAgentTool:
                 self._query_runner(self._mcp_url, headers, fact_question),
                 self._query_runner(self._mcp_url, headers, roster_question),
             )
-            return (
+            record_fabric_property_ids(f"{fact_answer}\n{roster_answer}")
+            return with_language_response_guidance(
                 "Reservation counts by internal property key:\n"
                 f"{fact_answer}\n\nOfficial hotel roster:\n{roster_answer}\n\n"
                 "Join the two results by property_id. In the final answer, show every official "
                 "hotel name and its count, use zero for missing count groups, and do not show IDs."
             )
         governed_question = _governed_question(question)
-        return await self._query_runner(self._mcp_url, headers, governed_question)
+        answer = await self._query_runner(self._mcp_url, headers, governed_question)
+        record_fabric_property_ids(answer)
+        return with_language_response_guidance(answer)
 
 
 def _governed_question(question: str, today: date | None = None) -> str:
@@ -111,11 +127,16 @@ def _governed_question(question: str, today: date | None = None) -> str:
 def _authoritative_date_directive(question: str, today: date | None = None) -> str:
     if not RELATIVE_DATE_PATTERN.search(question):
         return ""
-    current_date = today or datetime.now(UTC).date()
-    next_week_end = current_date + timedelta(days=6)
+    current_date = today or HOTEL_TEMPORAL_BOUNDARY
+    next_week_start = current_date + timedelta(days=1)
+    next_week_end = current_date + timedelta(days=7)
     return (
         " Today's authoritative UTC date is "
-        f"{current_date.isoformat()}, and a relative next-7-days window ends "
+        f"{current_date.isoformat()}. Classify past reservations only when check_in is before "
+        f"{current_date.isoformat()}, and future or upcoming reservations only when check_in is "
+        f"after {current_date.isoformat()}; a same-day check_in is neither. Do not add a stored-"
+        "status filter for those date classifications. A relative "
+        f"next-7-days window is {next_week_start.isoformat()} through "
         f"{next_week_end.isoformat()}, inclusive."
     )
 

@@ -2,10 +2,90 @@ from __future__ import annotations
 
 import asyncio
 import json
+from types import SimpleNamespace
 from typing import Any
 
+import httpx
 import pytest
+from hotel_servicing_agent.tools import fabric_mutation
 from hotel_servicing_agent.tools.fabric_mutation import FabricReservationMutationTool
+
+
+@pytest.mark.parametrize("throttled", [False, True])
+def test_notebook_runner_uses_live_parameter_and_exit_value_contract(
+    monkeypatch: pytest.MonkeyPatch, throttled: bool
+) -> None:
+    job_id = "11111111-1111-1111-1111-111111111111"
+    base = "https://api.fabric.microsoft.com/v1/workspaces/workspace"
+    polls = 0
+    waits: list[float] = []
+    exit_value = json.dumps({"status": "committed", "reservation_id": "RES-TEST"})
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        nonlocal polls
+        if request.method == "POST":
+            assert str(request.url) == f"{base}/items/notebook/jobs/RunNotebook/instances"
+            assert json.loads(request.content) == {
+                "executionData": {
+                    "parameters": {
+                        "action": {"value": "change", "type": "string"},
+                        "expected_record_version": {"value": 2, "type": "int"},
+                    }
+                }
+            }
+            return httpx.Response(
+                202,
+                headers={
+                    "Location": f"{base}/items/notebook/jobs/instances/{job_id}",
+                    "Retry-After": "120",
+                },
+            )
+        assert str(request.url) == (
+            f"{base}/notebooks/notebook/jobs/execute/instances/{job_id}?beta=true"
+        )
+        polls += 1
+        if throttled and polls == 1:
+            return httpx.Response(429, headers={"Retry-After": "75"})
+        return httpx.Response(
+            200, json={"status": "Completed", "properties": {"exitValue": exit_value}}
+        )
+
+    original_client = httpx.AsyncClient
+
+    def make_client(**kwargs: Any) -> httpx.AsyncClient:
+        return original_client(transport=httpx.MockTransport(handle), **kwargs)
+
+    async def no_wait(seconds: float) -> None:
+        waits.append(seconds)
+
+    monkeypatch.setattr(fabric_mutation.httpx, "AsyncClient", make_client)
+    monkeypatch.setattr(fabric_mutation.asyncio, "sleep", no_wait)
+    credential = SimpleNamespace(get_token=lambda scope: SimpleNamespace(token="test-token"))
+    result = asyncio.run(
+        fabric_mutation._run_reservation_notebook(
+            "workspace",
+            "notebook",
+            credential,
+            [
+                {"name": "action", "value": "change", "type": "Text"},
+                {"name": "expected_record_version", "value": 2, "type": "Integer"},
+            ],
+        )
+    )
+    assert result["exitValue"] == exit_value
+    assert waits == ([120, 75] if throttled else [120])
+
+
+def test_notebook_runner_rejects_unsupported_parameter_types() -> None:
+    with pytest.raises(ValueError, match="Unsupported Fabric notebook parameter type"):
+        asyncio.run(
+            fabric_mutation._run_reservation_notebook(
+                "workspace",
+                "notebook",
+                object(),
+                [{"name": "action", "value": "change", "type": "Unknown"}],
+            )
+        )
 
 
 def _confirmation_id_from_question(question: str) -> str:

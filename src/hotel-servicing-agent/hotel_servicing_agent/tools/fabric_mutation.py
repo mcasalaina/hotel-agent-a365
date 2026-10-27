@@ -6,7 +6,7 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime
 from typing import Any
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 import httpx
 from agent_framework import FunctionTool
@@ -294,25 +294,46 @@ async def _run_reservation_notebook(
     credential: Any,
     parameters: list[dict[str, object]],
 ) -> dict[str, Any]:
+    parameter_types = {"Text": "string", "Integer": "int"}
+    notebook_parameters: dict[str, dict[str, object]] = {}
+    for parameter in parameters:
+        parameter_type = str(parameter["type"])
+        if parameter_type not in parameter_types:
+            raise ValueError(f"Unsupported Fabric notebook parameter type: {parameter_type}")
+        notebook_parameters[str(parameter["name"])] = {
+            "value": parameter["value"],
+            "type": parameter_types[parameter_type],
+        }
     access_token = await asyncio.to_thread(credential.get_token, FABRIC_API_SCOPE)
     headers = {"Authorization": f"Bearer {access_token.token}"}
     submit_url = (
-        f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}/notebooks/{notebook_id}"
-        "/jobs/execute/instances?beta=false"
+        f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}/items/{notebook_id}"
+        f"/jobs/{JOB_TYPE}/instances"
     )
     async with httpx.AsyncClient(headers=headers, timeout=30) as client:
-        response = await client.post(submit_url, json={"parameters": parameters})
+        response = await client.post(
+            submit_url,
+            json={"executionData": {"parameters": notebook_parameters}},
+        )
         if response.status_code != httpx.codes.ACCEPTED:
             raise RuntimeError(_fabric_error("start reservation job", response))
         location = response.headers.get("Location")
         if not location:
             raise RuntimeError("Fabric reservation job response did not include a Location header")
+        try:
+            job_id = UUID(httpx.URL(location).path.rstrip("/").rsplit("/", 1)[-1])
+        except ValueError as error:
+            raise RuntimeError("Fabric reservation job returned an invalid job Location") from error
+        status_url = (
+            f"https://api.fabric.microsoft.com/v1/workspaces/{workspace_id}"
+            f"/notebooks/{notebook_id}/jobs/execute/instances/{job_id}"
+        )
 
         deadline = time.monotonic() + 900
         retry_after = _retry_after(response)
         while time.monotonic() < deadline:
             await asyncio.sleep(retry_after)
-            status_response = await client.get(location, params={"beta": "true"})
+            status_response = await client.get(status_url, params={"beta": "true"})
             if status_response.status_code == httpx.codes.TOO_MANY_REQUESTS:
                 retry_after = _retry_after(status_response)
                 continue
@@ -329,6 +350,9 @@ async def _run_reservation_notebook(
             if status != "Completed":
                 reason = job.get("failureReason") or "No failure details were returned"
                 raise RuntimeError(f"Fabric reservation job {status}: {reason}")
+            properties = job.get("properties")
+            if job.get("exitValue") is None and isinstance(properties, dict):
+                job["exitValue"] = properties.get("exitValue")
             return job
     raise TimeoutError("Fabric reservation job did not finish within 15 minutes")
 
@@ -336,7 +360,7 @@ async def _run_reservation_notebook(
 def _retry_after(response: httpx.Response) -> int:
     value = response.headers.get("Retry-After", "15")
     try:
-        return max(1, min(int(value), 60))
+        return max(1, int(value))
     except ValueError:
         return 15
 

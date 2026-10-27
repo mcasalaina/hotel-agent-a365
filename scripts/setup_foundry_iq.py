@@ -6,12 +6,14 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import re
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
+from azure.core.credentials import TokenCredential
+from azure.identity import AzureCliCredential, DefaultAzureCredential, get_bearer_token_provider
 from azure.search.documents import SearchClient
 from azure.search.documents.indexes import SearchIndexClient
 from azure.search.documents.indexes.models import (
@@ -160,14 +162,25 @@ def build_chunks(documents: Iterable[CorpusDocument]) -> list[Chunk]:
     return [chunk for document in documents for chunk in chunk_document(document)]
 
 
-def build_index_document(chunk: Chunk, embedding: Sequence[float]) -> dict[str, object]:
-    if len(embedding) != EMBEDDING_DIMENSIONS:
+def validate_deployment_corpus(documents: Sequence[CorpusDocument]) -> None:
+    labels = re.compile(r"\b(demo|synthetic|test|sample|fictional)\b", re.IGNORECASE)
+    invalid = [
+        document.source_path
+        for document in documents
+        if labels.search(f"{document.title}\n{document.source_path}\n{document.content}")
+    ]
+    if invalid:
+        raise ValueError(f"Corpus contains runtime-prohibited source labels: {', '.join(invalid)}")
+
+
+def build_index_document(chunk: Chunk, embedding: Sequence[float] | None) -> dict[str, object]:
+    if embedding is not None and len(embedding) != EMBEDDING_DIMENSIONS:
         raise ValueError(
             f"{chunk.id}: expected {EMBEDDING_DIMENSIONS} embedding dimensions, "
             f"got {len(embedding)}"
         )
     document = chunk.document
-    return {
+    result: dict[str, object] = {
         "id": chunk.id,
         "document_id": document.document_id,
         "title": document.title,
@@ -179,14 +192,18 @@ def build_index_document(chunk: Chunk, embedding: Sequence[float]) -> dict[str, 
         "source_path": document.source_path,
         "chunk_ordinal": chunk.ordinal,
         "content": chunk.content,
-        "content_vector": list(embedding),
     }
+    if embedding is not None:
+        result["content_vector"] = list(embedding)
+    return result
 
 
 def build_search_index(
     name: str,
     openai_endpoint: str,
     openai_api_key: str | None = None,
+    *,
+    include_vectors: bool = True,
 ) -> SearchIndex:
     vectorizer = AzureOpenAIVectorizer(
         vectorizer_name="hotel-openai-vectorizer",
@@ -229,14 +246,17 @@ def build_search_index(
             searchable=True,
             retrievable=True,
         ),
-        SearchField(
-            name="content_vector",
-            type="Collection(Edm.Single)",
-            searchable=True,
-            vector_search_dimensions=EMBEDDING_DIMENSIONS,
-            vector_search_profile_name="hotel-vector-profile",
-        ),
     ]
+    if include_vectors:
+        fields.append(
+            SearchField(
+                name="content_vector",
+                type="Collection(Edm.Single)",
+                searchable=True,
+                vector_search_dimensions=EMBEDDING_DIMENSIONS,
+                vector_search_profile_name="hotel-vector-profile",
+            )
+        )
     return SearchIndex(
         name=name,
         fields=fields,
@@ -250,7 +270,9 @@ def build_search_index(
                 )
             ],
             vectorizers=[vectorizer],
-        ),
+        )
+        if include_vectors
+        else None,
         semantic_search=SemanticSearch(
             configurations=[
                 SemanticConfiguration(
@@ -356,8 +378,12 @@ def archive_corpus(
     corpus_dir: Path,
     container_name: str,
     account_url: str,
+    credential: TokenCredential | None = None,
 ) -> None:
-    service = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
+    service = BlobServiceClient(
+        account_url=account_url,
+        credential=credential if credential is not None else DefaultAzureCredential(),
+    )
     container = service.get_container_client(container_name)
     for document in documents:
         source = corpus_dir.parent / document.source_path
@@ -399,6 +425,15 @@ def parse_args() -> argparse.Namespace:
         help="Verify existing index and knowledge-base definitions.",
     )
     parser.add_argument("--expected-documents", type=int, default=95)
+    parser.add_argument(
+        "--tenant-id",
+        help="Use Azure CLI credentials explicitly scoped to this tenant for every service.",
+    )
+    parser.add_argument(
+        "--lexical-only",
+        action="store_true",
+        help="Use semantic text retrieval without requiring an embedding model deployment.",
+    )
     return parser.parse_args()
 
 
@@ -410,11 +445,16 @@ def main() -> int:
     documents = load_corpus(corpus_dir, args.expected_documents)
     chunks = build_chunks(documents)
     print(f"Validated {len(documents)} documents and {len(chunks)} chunks.")
+    if not args.verify_only:
+        validate_deployment_corpus(documents)
     if args.dry_run:
         return 0
 
     search_endpoint = _required_environment("AZURE_SEARCH_ENDPOINT")
-    credential = select_search_credential()
+    azure_credential = (
+        AzureCliCredential(tenant_id=args.tenant_id) if args.tenant_id else DefaultAzureCredential()
+    )
+    credential = azure_credential if args.tenant_id else select_search_credential()
     index_client = SearchIndexClient(
         endpoint=search_endpoint,
         credential=credential,
@@ -429,17 +469,25 @@ def main() -> int:
     openai_api_key = os.getenv("AZURE_OPENAI_API_KEY")
     for index_name in INDEXES.values():
         index_client.create_or_update_index(
-            build_search_index(index_name, openai_endpoint, openai_api_key)
+            build_search_index(
+                index_name,
+                openai_endpoint,
+                openai_api_key,
+                include_vectors=not args.lexical_only,
+            )
         )
-    azure_credential = DefaultAzureCredential()
-    openai_client = AzureOpenAI(
-        azure_endpoint=openai_endpoint,
-        api_version="2024-10-21",
-        azure_ad_token_provider=get_bearer_token_provider(
-            azure_credential, "https://cognitiveservices.azure.com/.default"
-        ),
-    )
-    embeddings = embed_chunks(openai_client, chunks)
+    embeddings: Sequence[Sequence[float] | None]
+    if args.lexical_only:
+        embeddings = [None] * len(chunks)
+    else:
+        openai_client = AzureOpenAI(
+            azure_endpoint=openai_endpoint,
+            api_version="2024-10-21",
+            azure_ad_token_provider=get_bearer_token_provider(
+                azure_credential, "https://cognitiveservices.azure.com/.default"
+            ),
+        )
+        embeddings = embed_chunks(openai_client, chunks)
     documents_by_route: dict[str, list[dict[str, object]]] = {route: [] for route in INDEXES}
     for chunk, embedding in zip(chunks, embeddings, strict=True):
         documents_by_route[chunk.document.route].append(build_index_document(chunk, embedding))
@@ -460,7 +508,7 @@ def main() -> int:
             raise RuntimeError(
                 "Set both FOUNDRY_IQ_BLOB_CONTAINER and AZURE_STORAGE_ACCOUNT_URL for archival."
             )
-        archive_corpus(documents, corpus_dir, container_name, account_url)
+        archive_corpus(documents, corpus_dir, container_name, account_url, azure_credential)
     print(f"Created or updated {len(INDEXES)} indexes and {KNOWLEDGE_BASE_NAME}.")
     return 0
 

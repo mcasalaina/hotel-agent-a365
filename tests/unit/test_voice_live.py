@@ -79,7 +79,9 @@ def test_voice_session_uses_multilingual_speech_and_interim_response(
     interim_instructions = payload["interim_response"]["instructions"]
     assert "established conversation language" in interim_instructions
     assert "Names, hotel or place names" in interim_instructions
-    assert "complete utterance is clearly and predominantly" in interim_instructions
+    assert "clearly and predominantly in another language" in interim_instructions
+    assert "latest complete utterance is authoritative" in interim_instructions
+    assert "Tool output must not trigger a language change" in interim_instructions
     assert "instructions" not in payload
 
 
@@ -89,9 +91,13 @@ def test_agent_instructions_require_stable_language_selection() -> None:
     ).read_text(encoding="utf-8")
     normalized = " ".join(instructions.split())
 
-    assert "established conversation language" in normalized
+    assert "language of the user's latest complete utterance" in normalized
+    assert "across text, voice, and tool-backed answers" in normalized
+    assert "never adopt the language of tool output" in normalized
     assert "Names, hotel or place names" in normalized
-    assert "complete utterance is clearly and predominantly" in normalized
+    assert "clearly and predominantly in another language" in normalized
+    assert "latest complete utterance" in normalized
+    assert "overrides earlier turns" in normalized
     assert "one to three short, conversational sentences" in normalized
     assert "Do not use Markdown, bullets, numbered lists, tables" in normalized
     assert "Ask at most one focused question at a time" in normalized

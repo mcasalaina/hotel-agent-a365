@@ -7,6 +7,7 @@ from urllib.parse import parse_qs
 
 import httpx
 import pytest
+from hotel_servicing_agent.language import LANGUAGE_RESPONSE_GUIDANCE
 from hotel_servicing_agent.tools import work_iq
 from hotel_servicing_agent.tools.work_iq import (
     WORK_IQ_AGENT_TOOLS,
@@ -112,7 +113,8 @@ def test_work_iq_tool_uses_agent_user_and_per_server_tokens(
 
     answer = asyncio.run(tool.query("  Find the recent guest email  "))
 
-    assert answer == "Grounded work context"
+    assert answer.endswith("Tool evidence:\nGrounded work context")
+    assert "use the user's established conversation language" in answer
     assert captured["question"] == "Find the recent guest email"
     assert captured["token_calls"] == [
         ("agent-user-id", "mail-audience/Tools.ListInvoke.All"),
@@ -166,27 +168,101 @@ def test_work_iq_mail_action_tools_issue_explicit_send_requests(
 
     send_result = asyncio.run(
         tool.send_email(
-            "marco@example.test, maria@example.test",
+            "maria@example.test",
             "Reservation update",
             "Your reservation is confirmed.",
+            cc_emails="marco@example.test",
         )
     )
     reply_result = asyncio.run(
         tool.reply_to_email(
             "folder-message-id",
             "Your reservation number is RES-TEST.",
+            cc_emails="marco@example.test",
         )
     )
 
-    assert send_result == "Mail tool confirmed the send."
-    assert reply_result == "Mail tool confirmed the send."
+    assert send_result.endswith("Tool evidence:\nMail tool confirmed the send.")
+    assert reply_result.endswith("Tool evidence:\nMail tool confirmed the send.")
     assert "SendEmailWithAttachments" in questions[0]
-    assert "marco@example.test, maria@example.test" in questions[0]
+    assert "To recipients: maria@example.test" in questions[0]
+    assert "CC recipients: marco@example.test" in questions[0]
     assert "ReplyToMessage" in questions[1]
     assert "sendImmediately set to true" in questions[1]
     assert "folder-message-id" in questions[1]
+    assert "Additional CC recipients: marco@example.test" in questions[1]
     assert tool.as_send_email_tool().name == "send_email"
     assert tool.as_reply_to_email_tool().name == "reply_to_email"
+
+
+@pytest.mark.parametrize(
+    ("user_request", "body"),
+    [
+        (
+            "Réponds en français à Maria García concernant le voiturier du "
+            "Lyrenza Scottsdale Sonoran Resort.",
+            "Bonjour Maria, le voiturier du Lyrenza Scottsdale Sonoran Resort coûte "
+            "25 dollars américains par nuit.",
+        ),
+        (
+            "María et Chen séjournent au Lyrenza Scottsdale Sonoran Resort. "
+            "Peux-tu leur répondre au sujet du voiturier ?",
+            "Bonjour María et Chen, le voiturier du Lyrenza Scottsdale Sonoran Resort "
+            "coûte 25 dollars américains par nuit.",
+        ),
+        (
+            "María and Chen are visiting Lyrenza Scottsdale Sonoran Resort. "
+            "Reply in English with the nightly valet parking fee.",
+            "Hello María and Chen, valet parking at Lyrenza Scottsdale Sonoran Resort "
+            "costs USD 25 per night.",
+        ),
+    ],
+)
+def test_mail_reply_preserves_language_with_foreign_names(
+    monkeypatch: pytest.MonkeyPatch,
+    user_request: str,
+    body: str,
+) -> None:
+    questions: list[str] = []
+
+    class FakeTokenProvider:
+        async def get_token(self, user_id: str, scope: str) -> str:
+            return "test-delegated-token"
+
+    async def fake_query_runner(
+        project_endpoint: str,
+        model_deployment: str,
+        credential: Any,
+        servers: tuple[WorkIQServer, ...],
+        tokens: dict[str, str],
+        question: str,
+    ) -> str:
+        questions.append(question)
+        return "Mail tool confirmed the reply."
+
+    monkeypatch.setattr(work_iq, "current_agent_user_id", lambda: "agent-user-id")
+    tool = WorkIQTool(
+        project_endpoint="https://example.test/project",
+        model_deployment="model",
+        credential=object(),
+        token_provider=FakeTokenProvider(),  # type: ignore[arg-type]
+        servers=(WorkIQServer("mail", "https://example.test/mail", "audience", ("reply",)),),
+        query_runner=fake_query_runner,
+    )
+
+    evidence = asyncio.run(tool.query(user_request))
+    result = asyncio.run(tool.reply_to_email("folder-message-id", body))
+
+    assert questions[0] == user_request
+    actual_body = questions[1].split("Exact reply body:\n", 1)[1].split(
+        "\nPreserve the additional CC recipient list exactly.", 1
+    )[0]
+    assert actual_body == body
+    assert evidence == result == (
+        f"{LANGUAGE_RESPONSE_GUIDANCE}\n\nTool evidence:\nMail tool confirmed the reply."
+    )
+    assert "latest complete utterance is authoritative" in result
+    assert "not from the visitors' names" in result
 
 
 def test_work_iq_mail_actions_do_not_depend_on_unrelated_servers(
@@ -239,7 +315,7 @@ def test_work_iq_mail_actions_do_not_depend_on_unrelated_servers(
         )
     )
 
-    assert result == "Email sent."
+    assert result.endswith("Tool evidence:\nEmail sent.")
     assert queried_servers == ["work-iq-mail"]
     assert token_calls == ["mail-audience/Tools.ListInvoke.All"]
 

@@ -19,6 +19,7 @@ from microsoft_agents.hosting.core import (
     Authorization,
     ClaimsIdentity,
     MemoryStorage,
+    RouteRank,
     TurnContext,
     TurnState,
 )
@@ -38,9 +39,24 @@ from microsoft_agents_a365.runtime.environment_utils import (
 )
 
 from agent_interface import AgentInterface, validate_agent_class
+from inbound_compat import NormalizedBodyRequest
 from token_cache import cache_agentic_token
 
 logger = logging.getLogger(__name__)
+
+
+class NormalizingCloudAdapter(CloudAdapter):
+    """CloudAdapter that canonicalizes known entity types before Activity validation.
+
+    The Agent 365 email channel sends a lowerCamelCase ``productInfo`` entity that the pinned
+    SDK rejects, which surfaced as HTTP 500 before any handler ran. Authentication is untouched:
+    claims are still read from the wrapped request.
+    """
+
+    async def process_request(self, request, agent):
+        if request is not None:
+            request = NormalizedBodyRequest(request)
+        return await super().process_request(request, agent)
 
 
 def create_and_run_host(agent_class: type[AgentInterface]) -> None:
@@ -63,7 +79,7 @@ class GenericAgentHost:
         configuration = load_configuration_from_env(environ)
         self.storage = MemoryStorage()
         self.connection_manager = MsalConnectionManager(**configuration)
-        self.adapter = CloudAdapter(connection_manager=self.connection_manager)
+        self.adapter = NormalizingCloudAdapter(connection_manager=self.connection_manager)
         self.authorization = Authorization(
             self.storage,
             self.connection_manager,
@@ -115,7 +131,9 @@ class GenericAgentHost:
         self.agent_app.conversation_update("membersAdded", **options)(help_handler)
         self.agent_app.message("/help", **options)(help_handler)
 
-        @self.agent_app.activity("message", **options)
+        # Notifications are also "message" activities without text. Rank the catch-all message
+        # route last and the notification route first so notifications are never swallowed here.
+        @self.agent_app.activity("message", rank=RouteRank.LAST, **options)
         async def on_message(context: TurnContext, _: TurnState) -> None:
             prepared = await self._prepare_turn(context)
             if prepared is None:
@@ -149,6 +167,7 @@ class GenericAgentHost:
 
         @self.agent_notification.on_agent_notification(
             channel_id=ChannelId(channel="agents", sub_channel="*"),
+            rank=RouteRank.FIRST,
             **options,
         )
         async def on_notification(
@@ -160,6 +179,10 @@ class GenericAgentHost:
             if prepared is None:
                 return
             tenant_id, agent_id = prepared
+            logger.info(
+                "Agent notification received: type=%s",
+                notification_activity.notification_type,
+            )
             with BaggageBuilder().tenant_id(tenant_id).agent_id(agent_id).build():
                 handler = getattr(
                     self.agent_instance,
@@ -186,6 +209,10 @@ class GenericAgentHost:
                     )
                 else:
                     await context.send_activity(response)
+                logger.info(
+                    "Agent notification reply sent: type=%s",
+                    notification_activity.notification_type,
+                )
 
     @staticmethod
     async def _send_typing(context: TurnContext) -> None:

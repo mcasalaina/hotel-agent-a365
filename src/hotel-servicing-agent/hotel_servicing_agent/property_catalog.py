@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 type PropertyId = Literal[
@@ -51,3 +52,34 @@ PROPERTY_NAMES: dict[PropertyId, str] = {
 
 def official_property_name(property_id: PropertyId) -> str:
     return PROPERTY_NAMES[property_id]
+
+
+def property_id_from_text(text: str) -> PropertyId | None:
+    normalized = text.casefold()
+    id_match = re.search(r"\bHTL-\d{3}\b", text, re.IGNORECASE)
+    if id_match:
+        candidate = id_match.group(0).upper()
+        return next(
+            (property_id for property_id in PROPERTY_NAMES if property_id == candidate),
+            None,
+        )
+
+    full_name_matches = [
+        property_id
+        for property_id, property_name in PROPERTY_NAMES.items()
+        if property_name.casefold() in normalized
+    ]
+    if len(full_name_matches) == 1:
+        return full_name_matches[0]
+
+    token_owners: dict[str, set[PropertyId]] = {}
+    for property_id, property_name in PROPERTY_NAMES.items():
+        for token in re.findall(r"[a-z0-9]+", property_name.casefold()):
+            if len(token) >= 4 and token not in {"hotel", "lyrenza", "resort", "the"}:
+                token_owners.setdefault(token, set()).add(property_id)
+    abbreviated_matches = {
+        next(iter(owners))
+        for token, owners in token_owners.items()
+        if len(owners) == 1 and re.search(rf"\b{re.escape(token)}\b", normalized)
+    }
+    return next(iter(abbreviated_matches)) if len(abbreviated_matches) == 1 else None

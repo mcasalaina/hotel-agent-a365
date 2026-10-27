@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+HOTEL_TEMPORAL_BOUNDARY = date(2026, 9, 1)
 
 
 @dataclass(frozen=True, slots=True)
