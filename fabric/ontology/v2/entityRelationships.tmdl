@@ -1,0 +1,71 @@
+/// Property to Room through the authoritative key join.
+entityRelationship usertypes#PropertyHasRoom
+	lineageTag: 7ff45d1f-a319-5688-844c-063cfe3f39fb
+	fromEntity: usertypes#Property
+	toEntity: usertypes#Room
+
+	backingConfiguration
+		relationship: rel_PropertyHasRoom
+
+/// Guest to Reservation through the authoritative key join.
+entityRelationship usertypes#GuestBookedReservation
+	lineageTag: cb8b4edb-6c86-55c3-8529-5349790d1d7f
+	fromEntity: usertypes#Guest
+	toEntity: usertypes#Reservation
+
+	backingConfiguration
+		relationship: rel_GuestBookedReservation
+
+/// Reservation to Stay through the authoritative key join.
+entityRelationship usertypes#ReservationResultedInStay
+	lineageTag: 6b37a915-1c3e-5fe1-bc4f-f2d78e6fe4c0
+	fromEntity: usertypes#Reservation
+	toEntity: usertypes#Stay
+
+	backingConfiguration
+		relationship: rel_ReservationResultedInStay
+
+/// Stay to Room through the authoritative key join.
+entityRelationship usertypes#StayAssignedRoom
+	lineageTag: 5a6bb593-7e17-50ae-9ff5-fc5eecf89512
+	fromEntity: usertypes#Stay
+	toEntity: usertypes#Room
+
+	backingConfiguration
+		relationship: rel_StayAssignedRoom
+
+/// Stay to Folio through the authoritative key join.
+entityRelationship usertypes#StayHasFolio
+	lineageTag: d2aed844-eebc-573c-b572-531dd9590fa3
+	fromEntity: usertypes#Stay
+	toEntity: usertypes#Folio
+
+	backingConfiguration
+		relationship: rel_StayHasFolio
+
+/// Reservation to SpecialRequest through the authoritative key join.
+entityRelationship usertypes#ReservationHasSpecialRequest
+	lineageTag: ab7a9670-13e3-5ed4-ba01-cddd428ba2d4
+	fromEntity: usertypes#Reservation
+	toEntity: usertypes#SpecialRequest
+
+	backingConfiguration
+		relationship: rel_ReservationHasSpecialRequest
+
+/// Stay to MaintenanceRequest through the authoritative key join.
+entityRelationship usertypes#StayTriggeredMaintenanceRequest
+	lineageTag: ecad3e51-e94a-579d-861f-9843413a6070
+	fromEntity: usertypes#Stay
+	toEntity: usertypes#MaintenanceRequest
+
+	backingConfiguration
+		relationship: rel_StayTriggeredMaintenanceRequest
+
+/// MaintenanceRequest to WorkOrder through the authoritative key join.
+entityRelationship usertypes#MaintenanceRequestTracksWorkOrder
+	lineageTag: 4c72d49c-fd1c-5666-a516-8afdbc7ac780
+	fromEntity: usertypes#MaintenanceRequest
+	toEntity: usertypes#WorkOrder
+
+	backingConfiguration
+		relationship: rel_MaintenanceRequestTracksWorkOrder

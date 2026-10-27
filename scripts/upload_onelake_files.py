@@ -2,6 +2,8 @@
 
 Authentication uses the caller's Azure CLI session and a storage-audience token.
 IDs and credentials are never embedded in the generated data or repository.
+Use --workspace-id and --lakehouse-id together to address exact target artifacts,
+or retain name-based addressing with --workspace-name and --lakehouse-name.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from uuid import UUID
 
 ONELAKE = "https://onelake.dfs.fabric.microsoft.com"
 API_VERSION = "2021-06-08"
@@ -43,9 +46,20 @@ def storage_token() -> str:
 
 
 class OneLakeUploader:
-    def __init__(self, workspace_name: str, lakehouse_name: str, token: str) -> None:
-        workspace = urllib.parse.quote(workspace_name, safe="")
-        lakehouse = urllib.parse.quote(f"{lakehouse_name}.Lakehouse", safe="")
+    def __init__(
+        self,
+        workspace_name: str,
+        lakehouse_name: str,
+        token: str,
+        *,
+        use_ids: bool = False,
+    ) -> None:
+        if use_ids:
+            workspace = str(UUID(workspace_name))
+            lakehouse = str(UUID(lakehouse_name))
+        else:
+            workspace = urllib.parse.quote(workspace_name, safe="")
+            lakehouse = urllib.parse.quote(f"{lakehouse_name}.Lakehouse", safe="")
         self._base_url = f"{ONELAKE}/{workspace}/{lakehouse}"
         self._headers = {
             "Authorization": f"Bearer {token}",
@@ -118,6 +132,8 @@ def upload_source(
     fixtures: Path,
     workspace_name: str,
     lakehouse_name: str,
+    *,
+    use_ids: bool = False,
 ) -> None:
     manifest = json.loads((source / "manifest.json").read_text(encoding="utf-8"))
     expected_files = {
@@ -129,7 +145,7 @@ def upload_source(
     if missing:
         raise ValueError(f"Generated source is incomplete: {sorted(missing)}")
 
-    uploader = OneLakeUploader(workspace_name, lakehouse_name, storage_token())
+    uploader = OneLakeUploader(workspace_name, lakehouse_name, storage_token(), use_ids=use_ids)
     for directory in ("Files/data", "Files/data/generated", "Files/data/fixtures"):
         uploader.create_directory(directory)
     for name in sorted(expected_files):
@@ -143,11 +159,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--fixtures",
         type=Path,
-        default=Path("data/fixtures/demo_scenarios.json"),
+        default=Path("data/fixtures/business_scenarios.json"),
     )
-    parser.add_argument("--workspace-name", required=True)
-    parser.add_argument("--lakehouse-name", required=True)
-    return parser.parse_args()
+    workspace = parser.add_mutually_exclusive_group(required=True)
+    workspace.add_argument("--workspace-name")
+    workspace.add_argument("--workspace-id", type=UUID)
+    lakehouse = parser.add_mutually_exclusive_group(required=True)
+    lakehouse.add_argument("--lakehouse-name")
+    lakehouse.add_argument("--lakehouse-id", type=UUID)
+    args = parser.parse_args()
+    args.use_ids = args.workspace_id is not None
+    if args.use_ids != (args.lakehouse_id is not None):
+        parser.error("Use both --workspace-id and --lakehouse-id, or both name arguments")
+    if args.use_ids:
+        args.workspace_name = str(args.workspace_id)
+        args.lakehouse_name = str(args.lakehouse_id)
+    return args
 
 
 def main() -> int:
@@ -157,6 +184,7 @@ def main() -> int:
         args.fixtures,
         args.workspace_name,
         args.lakehouse_name,
+        use_ids=args.use_ids,
     )
     return 0
 

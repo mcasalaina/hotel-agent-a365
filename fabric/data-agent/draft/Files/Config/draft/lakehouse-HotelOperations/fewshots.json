@@ -15,6 +15,46 @@
       "id": "c3b06c94-fd9b-56cd-b253-5b93b9b1dcda",
       "question": "List the complete property roster for a chain-wide result.",
       "query": "SELECT property_id, name, city, region FROM properties ORDER BY property_id;"
+    },
+    {
+      "id": "13e9c32d-e14c-50b4-9f8b-7e96220d5011",
+      "question": "What is the official name and city for HTL-004?",
+      "query": "SELECT property_id, name, city, region, currency FROM properties WHERE property_id = 'HTL-004';"
+    },
+    {
+      "id": "9d014902-12cc-5acc-8bbc-d3f8c86aa712",
+      "question": "Show daily occupancy inputs for HTL-004 in July.",
+      "query": "SELECT service_date, occupied_rooms, sellable_rooms FROM property_daily_metrics WHERE property_id = 'HTL-004' AND service_date BETWEEN CAST('2026-07-01' AS date) AND CAST('2026-07-31' AS date) ORDER BY service_date;"
+    },
+    {
+      "id": "dd09c6a8-f60d-55ca-a238-fc3d944b9874",
+      "question": "Which properties have the highest room revenue today?",
+      "query": "SELECT property_id, room_revenue FROM property_daily_metrics WHERE service_date = CAST(GETDATE() AS date) ORDER BY room_revenue DESC;"
+    },
+    {
+      "id": "e0440f52-2e6e-55cc-9331-af2aaef61fc2",
+      "question": "Count open maintenance requests by property.",
+      "query": "SELECT property_id, COUNT(*) AS open_request_count FROM maintenance_requests WHERE status <> 'resolved' GROUP BY property_id ORDER BY open_request_count DESC;"
+    },
+    {
+      "id": "93bf9d0b-70ad-5157-ac01-ab5e63d90015",
+      "question": "Show urgent work orders and their originating maintenance requests.",
+      "query": "SELECT work_order_id, maintenance_request_id, priority, opened_at FROM work_orders WHERE priority IN ('urgent', 'high') ORDER BY opened_at;"
+    },
+    {
+      "id": "916b95ca-c658-5371-8a90-2135d2a01057",
+      "question": "What currencies are used by properties in each region?",
+      "query": "SELECT region, currency, COUNT(*) AS property_count FROM properties GROUP BY region, currency ORDER BY region, currency;"
+    },
+    {
+      "id": "5502135d-aebd-5841-95e8-4fe6b619c8d3",
+      "question": "Show unresolved maintenance requests in report-time order.",
+      "query": "SELECT maintenance_request_id, property_id, status, reported_at FROM maintenance_requests WHERE status <> 'resolved' ORDER BY reported_at;"
+    },
+    {
+      "id": "2a17370e-e35d-54b1-b76f-03222ddf5574",
+      "question": "What parking, valet price, transportation, and pool hours apply at Lyrenza Scottsdale Sonoran Resort?",
+      "query": "SELECT property_id, name, parking, transport, pool_hours FROM properties WHERE property_id = 'HTL-004';"
     }
   ]
 }

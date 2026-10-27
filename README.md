@@ -110,7 +110,7 @@ Generate the full deterministic source dataset and the Foundry IQ Markdown corpu
 
 Use `--scale demo` with explicit output paths for quick local checks. Generated CSV,
 manifest, and document output under `data/generated/` is ignored.
-Canonical scenario identifiers are in `data/fixtures/demo_scenarios.json`.
+Canonical scenario identifiers are in `data/fixtures/business_scenarios.json`.
 
 ## Foundry IQ local setup
 

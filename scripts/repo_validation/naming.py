@@ -23,6 +23,7 @@ TECHNICAL_DIRECTORIES = {
     "manifest",
 }
 CONTENT_FIELDS = {
+    "agentuserdisplayname",
     "content",
     "description",
     "example",

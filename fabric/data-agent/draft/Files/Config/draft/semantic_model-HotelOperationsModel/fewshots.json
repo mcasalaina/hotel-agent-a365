@@ -10,6 +10,51 @@
       "id": "a6983eba-cfb6-55ae-83a1-07f9b49d8514",
       "question": "How are cancellation rate and no-show rate trending by day?",
       "query": "EVALUATE SUMMARIZECOLUMNS('Date'[Date], \"Cancellation Rate\", [Cancellation Rate], \"No Show Rate\", [No Show Rate])"
+    },
+    {
+      "id": "98586fa4-0375-57f7-9127-f48d8cb42c54",
+      "question": "What is RevPAR by property?",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Property'[Property Name], \"RevPAR\", [RevPAR])"
+    },
+    {
+      "id": "6470ff63-6d49-541e-9300-ab51e3a15372",
+      "question": "What is average length of stay by property?",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Property'[Property Name], \"ALOS\", [ALOS])"
+    },
+    {
+      "id": "29c57c9e-d0a4-521a-9f54-6f65570183b9",
+      "question": "Show room revenue by service date.",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Date'[Date], \"Room Revenue\", [Room Revenue])"
+    },
+    {
+      "id": "44be189f-000f-567c-acff-f519cd9c1291",
+      "question": "Compare occupancy and RevPAR over time.",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Date'[Date], \"OCC\", [OCC], \"RevPAR\", [RevPAR])"
+    },
+    {
+      "id": "dbdd87d1-846d-559a-8fe5-597bf992148f",
+      "question": "Compare cancellation rate by booking channel.",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Booking Pace Daily'[Channel], \"Cancellation Rate\", [Cancellation Rate])"
+    },
+    {
+      "id": "b8625b11-bbe8-54fb-a5d9-e5c304372b23",
+      "question": "Compare no-show rate by booking channel.",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Booking Pace Daily'[Channel], \"No Show Rate\", [No Show Rate])"
+    },
+    {
+      "id": "8047bded-e91f-56a2-831b-03f7a37895e9",
+      "question": "Show governed maintenance response hours by property.",
+      "query": "EVALUATE SUMMARIZECOLUMNS('Property'[Property Name], \"Maintenance Response Hours\", [Maintenance Response Hours])"
+    },
+    {
+      "id": "2541842b-dc57-5a44-a84b-a615da72dc7f",
+      "question": "Show occupancy, rate, and revenue KPIs together.",
+      "query": "EVALUATE ROW(\"OCC\", [OCC], \"ADR\", [ADR], \"RevPAR\", [RevPAR], \"Room Revenue\", [Room Revenue])"
+    },
+    {
+      "id": "17b72316-77fd-5cf8-a58c-6d0b531e3ab4",
+      "question": "What is the chainwide Completed Stay Count?",
+      "query": "EVALUATE ROW(\"Completed Stay Count\", [Completed Stay Count])"
     }
   ]
 }

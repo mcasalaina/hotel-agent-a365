@@ -56,7 +56,7 @@ def _metadata(parts: dict[str, str]) -> dict:
                 name = name[1:-1].replace("''", "'")
             prefix = match["indent"] + "/// "
             assert index > 0 and lines[index - 1].startswith(prefix), (path, name)
-            description = lines[index - 1][len(prefix):]
+            description = lines[index - 1][len(prefix) :]
             assert 0 < len(description) <= 200
             if match["kind"] == "table":
                 assert name == table_name
@@ -79,10 +79,12 @@ def _assert_approved_metadata(parts: dict[str, str]) -> None:
 
 
 def test_source_retains_all_72_approved_descriptions() -> None:
-    _assert_approved_metadata({
-        path.relative_to(MODEL).as_posix(): path.read_bytes().decode()
-        for path in (MODEL / "definition/tables").glob("*.tmdl")
-    })
+    _assert_approved_metadata(
+        {
+            path.relative_to(MODEL).as_posix(): path.read_bytes().decode()
+            for path in (MODEL / "definition/tables").glob("*.tmdl")
+        }
+    )
 
 
 @pytest.mark.parametrize("table", sorted(PROTECTED_TABLE_SHA256))
@@ -90,9 +92,7 @@ def test_description_sync_preserves_all_other_table_content(table: str) -> None:
     source = (MODEL / "definition/tables" / f"{table}.tmdl").read_bytes().decode()
     # Remove only the new single-line descriptions immediately above table/column.
     # Existing measure descriptions, whitespace, expressions and partitions remain.
-    protected = re.sub(
-        r"(?m)^([ \t]*)///[^\n]*\n(?=\1(?:table|column) )", "", source
-    )
+    protected = re.sub(r"(?m)^([ \t]*)///[^\n]*\n(?=\1(?:table|column) )", "", source)
     assert hashlib.sha256(protected.encode()).hexdigest() == PROTECTED_TABLE_SHA256[table]
 
 
@@ -111,8 +111,7 @@ def test_builder_preserves_descriptions_and_environment_substitutions(
     }
     definition = build_definition(MODEL, values)
     parts = {
-        part["path"]: base64.b64decode(part["payload"]).decode()
-        for part in definition["parts"]
+        part["path"]: base64.b64decode(part["payload"]).decode() for part in definition["parts"]
     }
     _assert_approved_metadata(parts)
     substituted = set()
@@ -122,7 +121,9 @@ def test_builder_preserves_descriptions_and_environment_substitutions(
         assert actual == TEMPLATE.sub(lambda match: values[match[1]], source)
         assert not TEMPLATE.search(actual)
     assert substituted == {
-        "WORKSPACE_ID", "HOTEL_GUEST_SERVICES_LAKEHOUSE_ID", "HOTEL_OPERATIONS_LAKEHOUSE_ID"
+        "WORKSPACE_ID",
+        "HOTEL_GUEST_SERVICES_LAKEHOUSE_ID",
+        "HOTEL_OPERATIONS_LAKEHOUSE_ID",
     }
     model = parts["definition/model.tmdl"]
     assert f"{environment}-workspace/{environment}-guest" in model

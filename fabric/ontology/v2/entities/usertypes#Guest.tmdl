@@ -1,0 +1,37 @@
+/// Guest identity and country. Use the stable GuestId rather than names as a join key.
+entity usertypes#Guest
+	lineageTag: bd2a14ed-ccbc-50ac-b2a9-48ef6c10aca9
+	backingTable: guests
+	keyProperty: GuestId
+
+	/// GuestId from HotelGuestServices.dbo.guests.guest_id.
+	property GuestId
+		dataType: string
+		lineageTag: 3353f9af-9676-58f4-aaee-1d02814a1b03
+
+		backingConfiguration
+			valueColumn: guests.guest_id
+
+	/// FirstName from HotelGuestServices.dbo.guests.first_name.
+	property FirstName
+		dataType: string
+		lineageTag: 261c8c46-a9e1-5a94-8a37-7a5f7b842125
+
+		backingConfiguration
+			valueColumn: guests.first_name
+
+	/// LastName from HotelGuestServices.dbo.guests.last_name.
+	property LastName
+		dataType: string
+		lineageTag: 50707d9a-2dda-5662-ad1b-9cd5e5008f91
+
+		backingConfiguration
+			valueColumn: guests.last_name
+
+	/// Country from HotelGuestServices.dbo.guests.country.
+	property Country
+		dataType: string
+		lineageTag: 14bbb6a7-f0a0-5571-bf8e-5618f3073865
+
+		backingConfiguration
+			valueColumn: guests.country

@@ -1,0 +1,122 @@
+{
+  "$schema": "1.0.0",
+  "minimumExampleQueriesPerSource": 10,
+  "requiredAcronyms": {
+    "ADR": "Average Daily Rate",
+    "ALOS": "Average Length of Stay",
+    "BAR": "Best Available Rate",
+    "CRS": "Central Reservation System",
+    "F&B": "Food and Beverage",
+    "GDS": "Global Distribution System",
+    "GPF": "Guest Preference Flag",
+    "LCR": "Lyrenza Care Recovery",
+    "LGR": "Lyrenza Guest Record",
+    "LOS": "Length of Stay",
+    "LSR": "Lyrenza Service Request",
+    "MICE": "Meetings Incentives Conferences and Exhibitions",
+    "OCC": "Occupancy Rate",
+    "OTA": "Online Travel Agency",
+    "PMS": "Property Management System",
+    "POS": "Point of Sale",
+    "RevPAR": "Revenue Per Available Room",
+    "RMS": "Revenue Management System",
+    "SIR": "Stay Incident Record",
+    "TRevPAR": "Total Revenue Per Available Room"
+  },
+  "businessFixtures": [
+    {
+      "name": "known-folio-minibar-dispute",
+      "source": "HotelGuestServices",
+      "question": "What disputed minibar charge is recorded for folio FOL-0000001?",
+      "expectedTerms": ["15.00", "minibar"]
+    },
+    {
+      "name": "official-property-name-routing",
+      "source": "HotelOperations",
+      "question": "What is the official property name for the hotel identified as HTL-004?",
+      "expectedTerms": ["Lyrenza Scottsdale Sonoran Resort"]
+    },
+    {
+      "name": "scottsdale-parking-transport-hours",
+      "source": "HotelOperations",
+      "question": "What parking, valet price, transportation, and pool hours apply at Lyrenza Scottsdale Sonoran Resort?",
+      "expectedTerms": ["25", "valet", "shuttle", "07:00", "21:00"]
+    },
+    {
+      "name": "past-reservation-strict-boundary",
+      "source": "HotelGuestServices",
+      "question": "Using the September 1, 2026 temporal boundary, identify the completed past reservation RES-FOLIO-2026 and report its dates.",
+      "expectedTerms": ["RES-FOLIO-2026", "2026-03-03", "2026-03-05"]
+    },
+    {
+      "name": "future-maria-reservation-strict-boundary",
+      "source": "HotelGuestServices",
+      "question": "Using the September 1, 2026 temporal boundary, identify Maria Garcia's nearest upcoming reservation. Include its reservation identifier, official property name, internal property identifier, check-in date, check-out date, and status.",
+      "expectedTerms": ["RES-FAMILY-2026", "Lyrenza Scottsdale Sonoran Resort", "HTL-004", "2026-09-10", "2026-09-12", "future"]
+    },
+    {
+      "name": "semantic-model-completed-stays",
+      "source": "HotelOperationsModel",
+      "question": "Using HotelOperationsModel, what is the chainwide Completed Stay Count?",
+      "expectedTerms": ["117,539"]
+    },
+    {
+      "name": "ontology-guest-reservation-relationship",
+      "source": "HotelOperationsOntology",
+      "question": "Using HotelOperationsOntology, which relationship connects a Guest to a Reservation?",
+      "expectedTerms": ["GuestBookedReservation"]
+    }
+  ],
+  "isolationChecks": [
+    {
+      "name": "known-folio-minibar-dispute",
+      "mode": "published-agent-direct",
+      "source": "HotelGuestServices",
+      "question": "What disputed minibar charge is recorded for folio FOL-0000001?",
+      "expectedTerms": ["15.00", "minibar"]
+    },
+    {
+      "name": "official-property-name-routing",
+      "mode": "published-agent-direct",
+      "source": "HotelOperations",
+      "question": "What is the official property name for the hotel identified as HTL-004?",
+      "expectedTerms": ["Lyrenza Scottsdale Sonoran Resort"]
+    },
+    {
+      "name": "scottsdale-parking-transport-hours",
+      "mode": "published-agent-direct",
+      "source": "HotelOperations",
+      "question": "What parking, valet price, transportation, and pool hours apply at Lyrenza Scottsdale Sonoran Resort?",
+      "expectedTerms": ["25", "valet", "shuttle", "07:00", "21:00"]
+    },
+    {
+      "name": "past-reservation-strict-boundary",
+      "mode": "published-agent-direct",
+      "source": "HotelGuestServices",
+      "question": "Using the September 1, 2026 temporal boundary, identify the completed past reservation RES-FOLIO-2026 and report its dates.",
+      "expectedTerms": ["RES-FOLIO-2026", "2026-03-03", "2026-03-05"]
+    },
+    {
+      "name": "future-maria-reservation-strict-boundary",
+      "mode": "published-agent-direct",
+      "source": "HotelGuestServices",
+      "question": "Using the September 1, 2026 temporal boundary, identify Maria Garcia's nearest upcoming reservation. Include its reservation identifier, official property name, internal property identifier, check-in date, check-out date, and status.",
+      "expectedTerms": ["RES-FAMILY-2026", "Lyrenza Scottsdale Sonoran Resort", "HTL-004", "2026-09-10", "2026-09-12", "future"]
+    },
+    {
+      "name": "semantic-model-completed-stays",
+      "mode": "published-agent-direct",
+      "source": "HotelOperationsModel",
+      "question": "Using HotelOperationsModel, what is the chainwide Completed Stay Count?",
+      "expectedTerms": ["117,539"]
+    },
+    {
+      "name": "ontology-guest-reservation-relationship",
+      "mode": "published-agent-direct",
+      "source": "HotelOperationsOntology",
+      "question": "Using HotelOperationsOntology, which relationship connects a Guest to a Reservation?",
+      "expectedTerms": ["GuestBookedReservation"]
+    }
+  ],
+  "isolationCheckRunner": "fabric/notebooks/data_agent_runtime_publish.ipynb"
+}

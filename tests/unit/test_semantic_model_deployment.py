@@ -40,9 +40,10 @@ def test_committed_definitions_are_complete_and_externalized() -> None:
     assert "blueprint.json" not in model
     assert "README.md" not in model
     assert ".platform" not in model
-    assert model["definition.pbism"].encode("utf-8") == (
-        ROOT / "fabric/semantic-model/definition.pbism"
-    ).read_bytes()
+    assert (
+        model["definition.pbism"].encode("utf-8")
+        == (ROOT / "fabric/semantic-model/definition.pbism").read_bytes()
+    )
     assert "workspace-id/guest-id" in model["definition/model.tmdl"]
     assert "workspace-id/ops-id" in model["definition/model.tmdl"]
     assert not any("{{" in text for text in [*model.values(), *report.values()])

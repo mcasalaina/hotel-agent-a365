@@ -1,0 +1,13 @@
+expression HotelOperationsQuery =
+		let
+		    database = Sql.Database("{{FABRIC_SQL_SERVER}}", "{{HOTEL_OPERATIONS_SQL_ENDPOINT_ID}}")
+		in
+		    database
+	lineageTag: 719a4d87-d99d-504e-b076-5c3b937e1020
+
+expression HotelGuestServicesQuery =
+		let
+		    database = Sql.Database("{{FABRIC_SQL_SERVER}}", "{{HOTEL_GUEST_SERVICES_SQL_ENDPOINT_ID}}")
+		in
+		    database
+	lineageTag: 8ee6bcef-a5d8-5b64-8676-8a7669c7fc62

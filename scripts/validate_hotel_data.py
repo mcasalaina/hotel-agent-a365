@@ -10,7 +10,14 @@ from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 
-from generate_hotel_data import DATE_END, DATE_START, REQUIRED_TABLES, stable_hash
+from generate_hotel_data import (
+    DATE_END,
+    DATE_START,
+    REQUIRED_TABLES,
+    TEMPORAL_BOUNDARY,
+    stable_hash,
+)
+from realistic_hotel_data import MARIA_GARCIA_EMAIL
 
 RESERVATION_STATUSES = {
     "future",
@@ -21,7 +28,7 @@ RESERVATION_STATUSES = {
     "completed",
     "in_house",
 }
-STAY_STATUSES = {"completed", "in_house"}
+STAY_STATUSES = {"completed", "future", "in_house"}
 PAYMENT_MASK = re.compile(r"^\*{4} \*{4} \*{4} \d{4}$")
 REAL_BRANDS = (
     "marriott",
@@ -101,6 +108,7 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
         reservation_properties = {
             row["reservation_id"]: row["property_id"] for row in tables["reservations"]
         }
+        reservations_by_id = {row["reservation_id"]: row for row in tables["reservations"]}
         reservation_statuses_by_property: defaultdict[str, set[str]] = defaultdict(set)
         for row in tables["room_types"]:
             if row["property_id"] not in property_ids:
@@ -125,6 +133,17 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             check_out = date.fromisoformat(row["check_out"])
             if check_in < DATE_START or check_out > DATE_END or check_out <= check_in:
                 problems.append("reservation date range failure")
+            if TEMPORAL_BOUNDARY in {check_in, check_out}:
+                problems.append("reservation date falls on the temporal boundary")
+            if row["status"] in {"future", "arriving"} and check_in <= TEMPORAL_BOUNDARY:
+                problems.append("future reservation is not strictly after the temporal boundary")
+            if (
+                row["status"] in {"completed", "departed", "no_show"}
+                and check_out >= TEMPORAL_BOUNDARY
+            ):
+                problems.append("past reservation is not strictly before the temporal boundary")
+            if row["status"] == "in_house" and not (check_in < TEMPORAL_BOUNDARY < check_out):
+                problems.append("in-house reservation does not span the temporal boundary")
         for property_id in sorted(property_ids):
             missing_statuses = RESERVATION_STATUSES - reservation_statuses_by_property[property_id]
             if missing_statuses:
@@ -141,13 +160,29 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
                 problems.append("stay FK or status failure")
             elif reservation_properties[row["reservation_id"]] != room_properties[row["room_id"]]:
                 problems.append("stay reservation and room property mismatch")
+            reservation = reservations_by_id[row["reservation_id"]]
+            actual_check_in = date.fromisoformat(row["actual_check_in"][:10])
+            actual_check_out = date.fromisoformat(row["actual_check_out"][:10])
+            if actual_check_in != date.fromisoformat(
+                reservation["check_in"]
+            ) or actual_check_out != date.fromisoformat(reservation["check_out"]):
+                problems.append("stay dates do not match reservation dates")
+            if TEMPORAL_BOUNDARY in {actual_check_in, actual_check_out}:
+                problems.append("stay date falls on the temporal boundary")
+            if row["status"] == "completed" and actual_check_out >= TEMPORAL_BOUNDARY:
+                problems.append("completed stay is not strictly before the temporal boundary")
+            if row["status"] == "future" and actual_check_in <= TEMPORAL_BOUNDARY:
+                problems.append("future stay is not strictly after the temporal boundary")
+            if row["status"] == "in_house" and not (
+                actual_check_in < TEMPORAL_BOUNDARY < actual_check_out
+            ):
+                problems.append("in-house stay does not span the temporal boundary")
         completed_stay_counts: defaultdict[str, int] = defaultdict(int)
-        completed_stay_nights: defaultdict[str, int] = defaultdict(int)
+        stay_nights: defaultdict[str, int] = defaultdict(int)
         for row in tables["stays"]:
-            if row["status"] != "completed":
-                continue
-            completed_stay_counts[row["property_id"]] += 1
-            completed_stay_nights[row["property_id"]] += (
+            if row["status"] == "completed":
+                completed_stay_counts[row["property_id"]] += 1
+            stay_nights[row["property_id"]] += (
                 date.fromisoformat(row["actual_check_out"][:10])
                 - date.fromisoformat(row["actual_check_in"][:10])
             ).days
@@ -156,16 +191,41 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             for row in tables["stays"]
             if row["reservation_id"] in reservation_properties
         }
+        stays_by_id = {row["stay_id"]: row for row in tables["stays"]}
         for row in tables["restaurant_reservations"]:
             if row["guest_id"] not in guest_ids or row["property_id"] not in property_ids:
                 problems.append("restaurant reservation FK failure")
+            service_date = datetime.fromisoformat(row["reservation_at"]).date()
+            if service_date == TEMPORAL_BOUNDARY:
+                problems.append("restaurant reservation falls on the temporal boundary")
+            if row["status"] == "confirmed" and service_date <= TEMPORAL_BOUNDARY:
+                problems.append("upcoming dining reservation is not strictly after the boundary")
+            if row["status"] == "seated" and service_date >= TEMPORAL_BOUNDARY:
+                problems.append("past dining event is not strictly before the boundary")
+            if service_date < DATE_START or service_date > DATE_END:
+                problems.append("restaurant reservation date range failure")
         for row in tables["folios"]:
             if row["stay_id"] not in stay_ids or row["reservation_id"] not in reservation_ids:
                 problems.append("folio FK failure")
+        folios_by_id = {row["folio_id"]: row for row in tables["folios"]}
         transaction_totals: defaultdict[str, int] = defaultdict(int)
         for row in tables["folio_transactions"]:
             if row["folio_id"] not in folio_ids:
                 problems.append("folio transaction FK failure")
+                continue
+            folio = folios_by_id[row["folio_id"]]
+            reservation = reservations_by_id[folio["reservation_id"]]
+            posted_date = datetime.fromisoformat(row["posted_at"]).date()
+            check_in = date.fromisoformat(reservation["check_in"])
+            check_out = date.fromisoformat(reservation["check_out"])
+            if posted_date == TEMPORAL_BOUNDARY:
+                problems.append("folio transaction falls on the temporal boundary")
+            if not check_in <= posted_date < check_out:
+                problems.append("folio transaction is outside its reservation stay")
+            if reservation["status"] == "completed" and posted_date >= TEMPORAL_BOUNDARY:
+                problems.append("past folio transaction is not strictly before the boundary")
+            if reservation["status"] == "future" and posted_date <= TEMPORAL_BOUNDARY:
+                problems.append("future folio transaction is not strictly after the boundary")
             transaction_totals[row["folio_id"]] += round(float(row["amount"]) * 100)
         payment_totals: defaultdict[str, int] = defaultdict(int)
         for row in tables["payments"]:
@@ -177,6 +237,19 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
         for row in tables["billing_disputes"]:
             if row["folio_id"] not in folio_ids:
                 problems.append("billing dispute FK failure")
+                continue
+            folio = folios_by_id[row["folio_id"]]
+            reservation = reservations_by_id[folio["reservation_id"]]
+            opened_date = datetime.fromisoformat(row["opened_at"]).date()
+            check_out = date.fromisoformat(reservation["check_out"])
+            if opened_date == TEMPORAL_BOUNDARY:
+                problems.append("billing dispute falls on the temporal boundary")
+            if opened_date < check_out:
+                problems.append("billing dispute predates checkout")
+            if reservation["status"] == "completed" and opened_date >= TEMPORAL_BOUNDARY:
+                problems.append("past billing dispute is not strictly before the boundary")
+            if reservation["status"] == "future" and opened_date <= TEMPORAL_BOUNDARY:
+                problems.append("future billing dispute is not strictly after the boundary")
         for row in tables["folios"]:
             charges = round(float(row["total_charges"]) * 100)
             adjustments = round(float(row["total_adjustments"]) * 100)
@@ -222,8 +295,8 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             sellable_nights[property_id] += sellable
             portfolio_by_date[row["service_date"]][0] += occupied
             portfolio_by_date[row["service_date"]][1] += sellable
-        if occupied_nights != completed_stay_nights:
-            problems.append("completed stay room nights do not reconcile to occupied room nights")
+        if occupied_nights != stay_nights:
+            problems.append("stay room nights do not reconcile to occupied room nights")
         occupancy_rates = {
             property_id: occupied_nights[property_id] / sellable_nights[property_id]
             for property_id in property_ids
@@ -257,6 +330,18 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
         for row in tables["special_requests"]:
             if row["reservation_id"] not in reservation_ids or row["guest_id"] not in guest_ids:
                 problems.append("special request FK failure")
+                continue
+            reservation = reservations_by_id[row["reservation_id"]]
+            requested_date = datetime.fromisoformat(row["requested_at"]).date()
+            check_out = date.fromisoformat(reservation["check_out"])
+            if requested_date == TEMPORAL_BOUNDARY:
+                problems.append("special request falls on the temporal boundary")
+            if requested_date < DATE_START or requested_date >= check_out:
+                problems.append("special request is outside its reservation lifecycle")
+            if reservation["status"] == "completed" and requested_date >= TEMPORAL_BOUNDARY:
+                problems.append("past special request is not strictly before the boundary")
+            if reservation["status"] == "future" and requested_date <= TEMPORAL_BOUNDARY:
+                problems.append("future special request is not strictly after the boundary")
         open_requests = sum(row["status"] == "requested" for row in tables["special_requests"])
         if open_requests / len(tables["special_requests"]) >= 0.10:
             problems.append("service request backlog is implausibly large")
@@ -272,6 +357,19 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
                 or row["property_id"] != room_properties[row["room_id"]]
             ):
                 problems.append("maintenance request property mismatch")
+            stay = stays_by_id.get(row["stay_id"])
+            if stay is not None:
+                reported_date = datetime.fromisoformat(row["reported_at"]).date()
+                stay_start = date.fromisoformat(stay["actual_check_in"][:10])
+                stay_end = date.fromisoformat(stay["actual_check_out"][:10])
+                if reported_date == TEMPORAL_BOUNDARY:
+                    problems.append("maintenance request falls on the temporal boundary")
+                if not stay_start <= reported_date < stay_end:
+                    problems.append("maintenance request is outside its stay")
+                if stay["status"] == "completed" and reported_date >= TEMPORAL_BOUNDARY:
+                    problems.append("past maintenance request is not strictly before the boundary")
+                if stay["status"] == "future" and reported_date <= TEMPORAL_BOUNDARY:
+                    problems.append("future maintenance request is not strictly after the boundary")
             maintenance_properties[row["maintenance_request_id"]] = row["property_id"]
         work_order_response_minutes: defaultdict[str, list[float]] = defaultdict(list)
         maintenance_by_id = {
@@ -290,6 +388,15 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
                 ).total_seconds() / 60
                 if response_minutes <= 0:
                     problems.append("maintenance response time must be positive")
+                opened_date = datetime.fromisoformat(row["opened_at"]).date()
+                if opened_date == TEMPORAL_BOUNDARY:
+                    problems.append("work order falls on the temporal boundary")
+                stay = stays_by_id.get(request["stay_id"])
+                if stay is not None:
+                    if stay["status"] == "completed" and opened_date >= TEMPORAL_BOUNDARY:
+                        problems.append("past work order is not strictly before the boundary")
+                    if stay["status"] == "future" and opened_date <= TEMPORAL_BOUNDARY:
+                        problems.append("future work order is not strictly after the boundary")
                 work_order_response_minutes[row["property_id"]].append(response_minutes)
         property_response_averages = {
             property_id: sum(values) / len(values)
@@ -302,6 +409,49 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
             problems.append("billing dispute categories lack variety")
         if len(tables["billing_disputes"]) / sum(completed_stay_counts.values()) >= 0.03:
             problems.append("billing dispute incidence is implausibly high")
+        maria = next(
+            (row for row in tables["guests"] if row["guest_id"] == "GST-000001"),
+            None,
+        )
+        maria_reservation = reservations_by_id.get("RES-FAMILY-2026")
+        if maria is None or maria_reservation is None:
+            problems.append("Maria Garcia acceptance-test reservation is missing")
+        if maria is not None and (
+            maria["first_name"] != "Maria"
+            or maria["last_name"] != "Garcia"
+            or maria["email"] != MARIA_GARCIA_EMAIL
+        ):
+            problems.append("Maria Garcia acceptance-test identity is incoherent")
+        if (
+            maria is not None
+            and maria_reservation is not None
+            and (
+                maria_reservation["guest_id"] != maria["guest_id"]
+                or maria_reservation["property_id"] != "HTL-004"
+                or maria_reservation["room_type_id"] != "HTL-004-RT-03"
+                or maria_reservation["room_count"] != "2"
+                or maria_reservation["check_in"] != "2026-09-10"
+                or maria_reservation["check_out"] != "2026-09-12"
+                or maria_reservation["status"] != "future"
+            )
+        ):
+            problems.append("Maria Garcia acceptance-test reservation is incoherent")
+        if not any(
+            row["guest_id"] == "GST-000001"
+            and row["property_id"] == "HTL-004"
+            and row["reservation_at"].startswith("2026-09-11")
+            and row["status"] == "confirmed"
+            for row in tables["restaurant_reservations"]
+        ):
+            problems.append("Maria Garcia acceptance-test dining reservation is incoherent")
+        if not any(
+            row["guest_id"] == "GST-000001"
+            and row["reservation_id"] == "RES-FAMILY-2026"
+            and row["requested_at"].startswith("2026-09-07")
+            and row["status"] == "confirmed"
+            for row in tables["special_requests"]
+        ):
+            problems.append("Maria Garcia acceptance-test special request is incoherent")
     except (KeyError, ValueError) as error:
         problems.append(str(error))
     document_paths = sorted(docs_output.glob("*/*.generated.md"))
@@ -327,6 +477,12 @@ def validate_output(output: Path, docs_output: Path) -> list[str]:
                 metadata["valid_to"]
             ):
                 problems.append(f"invalid notice window: {document.name}")
+            valid_from = date.fromisoformat(metadata["valid_from"])
+            valid_to = date.fromisoformat(metadata["valid_to"])
+            if metadata["category"] == "dated_notice" and not (
+                valid_to < TEMPORAL_BOUNDARY or valid_from > TEMPORAL_BOUNDARY
+            ):
+                problems.append(f"dated notice crosses the temporal boundary: {document.name}")
             content = document.read_text(encoding="utf-8").lower()
             if any(brand in content for brand in REAL_BRANDS):
                 problems.append(f"real brand in {document.name}")

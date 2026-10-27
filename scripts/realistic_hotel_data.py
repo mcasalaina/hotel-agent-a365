@@ -17,6 +17,8 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime, time, timedelta
 from typing import Any
 
+MARIA_GARCIA_EMAIL = "mariagarcia@cam3652701.onmicrosoft.com"
+
 
 @dataclass(frozen=True)
 class OperatingProfile:
@@ -99,6 +101,7 @@ def build_realistic_tables(
     fixture_rows: list[dict[str, str]],
     start: date,
     end: date,
+    temporal_boundary: date,
     seed: int,
     amenities: Sequence[tuple[str, str]],
 ) -> dict[str, Iterable[dict[str, str]]]:
@@ -120,15 +123,16 @@ def build_realistic_tables(
         metrics,
         start,
         end,
+        temporal_boundary,
         rng,
     )
     restaurant = _build_restaurant_reservations(
-        scale, property_rows, guests, outlets, metrics, start, end, rng
+        scale, property_rows, guests, outlets, metrics, start, end, temporal_boundary, rng
     )
     folios = _build_folios(stays, reservations, rng)
-    disputes = _build_disputes(folios, reservations, start, end, rng)
+    disputes = _build_disputes(folios, reservations, start, end, temporal_boundary, rng)
     special_requests, maintenance, work_orders = _build_service_records(
-        reservations, stays, start, end, rng
+        reservations, stays, start, end, temporal_boundary, rng
     )
     return {
         "properties": property_rows,
@@ -141,7 +145,7 @@ def build_realistic_tables(
         "stays": stays,
         "restaurant_reservations": restaurant,
         "folios": folios,
-        "folio_transactions": _transaction_rows(folios),
+        "folio_transactions": _transaction_rows(folios, reservations),
         "payments": _payment_rows(folios),
         "billing_disputes": disputes,
         "special_requests": special_requests,
@@ -362,14 +366,14 @@ def _daily_rate(
 
 def _build_guests(properties: list[dict[str, str]], count: int) -> list[dict[str, str]]:
     named_guests = {
-        1: ("Maria", "Garcia", "mariagarcia@cam3652609.onmicrosoft.com"),
-        2: ("Marco", "Casalaina", "mcasalaina.local@cam3652609.onmicrosoft.com"),
+        1: ("Maria", "Garcia", MARIA_GARCIA_EMAIL),
+        2: ("Marco", "Casalaina", "mcasalaina.local@cam3652612.onmicrosoft.com"),
     }
     rows: list[dict[str, str]] = []
     for number in range(1, count + 1):
         first_name, last_name, email = named_guests.get(
             number,
-            (f"Guest{number:05d}", "Demo", f"guest{number:05d}@example.test"),
+            (f"Guest{number:05d}", "Traveler", f"guest{number:05d}@adatum.com"),
         )
         rows.append(
             {
@@ -393,6 +397,7 @@ def _build_reservations_and_stays(
     metrics: list[dict[str, str]],
     start: date,
     end: date,
+    temporal_boundary: date,
     rng: random.Random,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     properties_by_id = {row["property_id"]: row for row in properties}
@@ -407,7 +412,7 @@ def _build_reservations_and_stays(
     stays = [
         {
             "stay_id": "STY-0000001",
-            "reservation_id": "RES-DEMO-FOLIO",
+            "reservation_id": "RES-FOLIO-2026",
             "property_id": "HTL-005",
             "guest_id": "GST-000005",
             "room_id": "HTL-005-RM-001",
@@ -417,19 +422,19 @@ def _build_reservations_and_stays(
         },
         {
             "stay_id": "STY-0000002",
-            "reservation_id": "RES-DEMO-INSTAY",
+            "reservation_id": "RES-INSTAY",
             "property_id": "HTL-004",
             "guest_id": "GST-000006",
             "room_id": "HTL-004-RM-002",
             "status": "in_house",
-            "actual_check_in": "2026-07-09T16:00:00",
-            "actual_check_out": "2026-07-11T11:00:00",
+            "actual_check_in": "2026-08-30T16:00:00",
+            "actual_check_out": "2026-09-03T11:00:00",
         },
     ]
     reservation_number = 1
     stay_number = 3
     guest_count = len(guests)
-    fixture_completed_nights = Counter({"HTL-005": 2})
+    fixture_completed_nights = Counter({"HTL-004": 4, "HTL-005": 2})
 
     for property_row in properties:
         property_id = property_row["property_id"]
@@ -454,7 +459,10 @@ def _build_reservations_and_stays(
         desired.sort(key=lambda item: (item[0], item[1]))
         type_weights = _room_type_weights(rooms_by_property_type, property_id)
         for check_in, nights in desired:
-            check_out = check_in + timedelta(days=nights)
+            check_in, check_out = _avoid_temporal_boundary(
+                check_in, nights, start, end, temporal_boundary
+            )
+            lifecycle_status = _reservation_lifecycle_status(check_in, check_out, temporal_boundary)
             room_type_number = rng.choices((1, 2, 3, 4), weights=type_weights, k=1)[0]
             room_type_id = f"{property_id}-RT-{room_type_number:02d}"
             candidate_rooms = rooms_by_property_type[(property_id, room_type_id)]
@@ -475,7 +483,7 @@ def _build_reservations_and_stays(
                     room_type_number,
                     check_in,
                     check_out,
-                    "completed",
+                    lifecycle_status,
                     channel,
                     rate_total,
                 )
@@ -487,7 +495,7 @@ def _build_reservations_and_stays(
                     "property_id": property_id,
                     "guest_id": guest_id,
                     "room_id": room_id,
-                    "status": "completed",
+                    "status": lifecycle_status,
                     "actual_check_in": f"{check_in.isoformat()}T15:{rng.randrange(0, 60):02d}:00",
                     "actual_check_out": f"{check_out.isoformat()}T11:{rng.randrange(0, 30):02d}:00",
                 }
@@ -507,14 +515,21 @@ def _build_reservations_and_stays(
                     k=1,
                 )[0]
             )
-            if status in {"future", "arriving", "in_house"}:
-                anchor = date(2026, 7, 12) + timedelta(
-                    days=(extra_number + int(property_id[-3:])) % 7
+            if status in {"future", "arriving"}:
+                anchor = temporal_boundary + timedelta(
+                    days=1 + (extra_number + int(property_id[-3:])) % 7
                 )
                 check_in = min(anchor, end - timedelta(days=4))
+            elif status == "in_house":
+                check_in = temporal_boundary - timedelta(
+                    days=1 + (extra_number + int(property_id[-3:])) % 3
+                )
             else:
-                check_in = start + timedelta(days=rng.randrange(max(1, (end - start).days - 6)))
+                historical_days = max(1, (temporal_boundary - start).days - 7)
+                check_in = start + timedelta(days=rng.randrange(historical_days))
             nights = rng.choices((1, 2, 3, 4, 5, 6), weights=(12, 27, 26, 18, 10, 7), k=1)[0]
+            if status == "in_house":
+                nights = max(nights, (temporal_boundary - check_in).days + 2)
             check_out = min(end, check_in + timedelta(days=nights))
             if check_out <= check_in:
                 check_in = end - timedelta(days=1)
@@ -547,17 +562,17 @@ def _fixture_reservations(
 ) -> list[dict[str, str]]:
     specs = {
         "family_accessibility": (
-            "RES-DEMO-FAMILY",
+            "RES-FAMILY-2026",
             "GST-000001",
-            date(2026, 8, 14),
+            date(2026, 9, 10),
             "future",
             3,
-            3,
+            2,
             2,
         ),
-        "rate_change": ("RES-DEMO-RATE-CHANGE", "GST-000002", date(2026, 4, 11), "future", 3, 2, 1),
+        "rate_change": ("RES-RATE-CHANGE", "GST-000002", date(2026, 9, 15), "future", 3, 2, 1),
         "cancellable": (
-            "RES-DEMO-CANCEL-FLEX",
+            "RES-CANCEL-FLEX",
             "GST-000003",
             date(2026, 4, 5),
             "cancelled",
@@ -566,7 +581,7 @@ def _fixture_reservations(
             1,
         ),
         "nonrefundable": (
-            "RES-DEMO-CANCEL-NRF",
+            "RES-CANCEL-NRF-2026",
             "GST-000004",
             date(2026, 4, 8),
             "cancelled",
@@ -574,8 +589,8 @@ def _fixture_reservations(
             2,
             1,
         ),
-        "folio_dispute": ("RES-DEMO-FOLIO", "GST-000005", date(2026, 3, 3), "completed", 1, 2, 1),
-        "maintenance": ("RES-DEMO-INSTAY", "GST-000006", date(2026, 7, 9), "in_house", 1, 2, 1),
+        "folio_dispute": ("RES-FOLIO-2026", "GST-000005", date(2026, 3, 3), "completed", 1, 2, 1),
+        "maintenance": ("RES-INSTAY", "GST-000006", date(2026, 8, 30), "in_house", 1, 4, 1),
     }
     rows: list[dict[str, str]] = []
     for fixture in fixtures:
@@ -636,6 +651,33 @@ def _reservation(
     }
 
 
+def _avoid_temporal_boundary(
+    check_in: date,
+    nights: int,
+    start: date,
+    end: date,
+    temporal_boundary: date,
+) -> tuple[date, date]:
+    check_out = check_in + timedelta(days=nights)
+    if check_in == temporal_boundary:
+        check_in += timedelta(days=1)
+        check_out += timedelta(days=1)
+    elif check_out == temporal_boundary:
+        check_in -= timedelta(days=1)
+        check_out -= timedelta(days=1)
+    if check_in < start or check_out > end:
+        raise ValueError("Temporal-boundary adjustment moved a reservation outside the data range")
+    return check_in, check_out
+
+
+def _reservation_lifecycle_status(check_in: date, check_out: date, temporal_boundary: date) -> str:
+    if check_out < temporal_boundary:
+        return "completed"
+    if check_in > temporal_boundary:
+        return "future"
+    return "in_house"
+
+
 def _stay_lengths(
     total_nights: int,
     target_count: int,
@@ -678,6 +720,7 @@ def _build_restaurant_reservations(
     metrics: list[dict[str, str]],
     start: date,
     end: date,
+    temporal_boundary: date,
     rng: random.Random,
 ) -> list[dict[str, str]]:
     count = 250 if scale == "demo" else 35_000
@@ -695,11 +738,11 @@ def _build_restaurant_reservations(
     }
     rows = [
         {
-            "restaurant_reservation_id": "RR-DEMO-DINING",
+            "restaurant_reservation_id": "RR-DINING",
             "guest_id": "GST-000001",
             "property_id": "HTL-004",
             "outlet_id": "HTL-004-OUT-01",
-            "reservation_at": "2026-08-15T19:30:00",
+            "reservation_at": "2026-09-11T19:30:00",
             "party_size": "4",
             "status": "confirmed",
         }
@@ -713,7 +756,14 @@ def _build_restaurant_reservations(
             k=1,
         )[0]
         service_date = date.fromisoformat(service_row["service_date"])
+        if service_date == temporal_boundary:
+            service_date += timedelta(days=1)
         hour = rng.choices((18, 19, 20, 21), weights=(18, 36, 31, 15), k=1)[0]
+        statuses = (
+            (("confirmed", "cancelled"), (93, 7))
+            if service_date > temporal_boundary
+            else (("seated", "cancelled"), (93, 7))
+        )
         rows.append(
             {
                 "restaurant_reservation_id": f"RR-{number:07d}",
@@ -728,9 +778,7 @@ def _build_restaurant_reservations(
                         k=1,
                     )[0]
                 ),
-                "status": rng.choices(
-                    ("confirmed", "seated", "cancelled"), weights=(18, 75, 7), k=1
-                )[0],
+                "status": rng.choices(statuses[0], weights=statuses[1], k=1)[0],
             }
         )
     return rows
@@ -771,15 +819,24 @@ def _build_folios(
     return rows
 
 
-def _transaction_rows(folios: list[dict[str, str]]) -> Iterator[dict[str, str]]:
+def _transaction_rows(
+    folios: list[dict[str, str]], reservations: list[dict[str, str]]
+) -> Iterator[dict[str, str]]:
     extra_types = ("minibar", "parking", "room_service", "spa", "laundry")
+    reservations_by_id = {row["reservation_id"]: row for row in reservations}
     for number, folio in enumerate(folios, start=1):
         charges = _cents(folio["total_charges"])
         adjustment = _cents(folio["total_adjustments"])
         room = round(charges * (0.78 + (number % 7) * 0.009))
         tax = round(charges * (0.09 + (number % 5) * 0.006))
         extra = charges - room - tax
-        posted_date = date(2026, 3, 1) + timedelta(days=(number * 17) % 395)
+        reservation = reservations_by_id[folio["reservation_id"]]
+        check_in = date.fromisoformat(reservation["check_in"])
+        check_out = date.fromisoformat(reservation["check_out"])
+        stay_days = max(1, (check_out - check_in).days)
+        posted_date = check_in + timedelta(days=number % stay_days)
+        if posted_date == date(2026, 9, 1):
+            posted_date -= timedelta(days=1)
         components = [
             ("room_charge", room),
             ("tax", tax),
@@ -806,7 +863,7 @@ def _payment_rows(folios: list[dict[str, str]]) -> Iterator[dict[str, str]]:
             "payment_id": f"PAY-{number:07d}",
             "folio_id": folio["folio_id"],
             "payment_method": methods[number % len(methods)],
-            "payment_token": f"tok_syn_{number:012d}",
+            "payment_token": f"tok_pay_{number:012d}",
             "card_mask": f"**** **** **** {1000 + (number * 37) % 9000:04d}",
             "amount": folio["total_payments"],
             "currency": folio["currency"],
@@ -819,6 +876,7 @@ def _build_disputes(
     reservations: list[dict[str, str]],
     start: date,
     end: date,
+    temporal_boundary: date,
     rng: random.Random,
 ) -> list[dict[str, str]]:
     reservation_by_id = {row["reservation_id"]: row for row in reservations}
@@ -836,7 +894,7 @@ def _build_disputes(
         raise ValueError("Dispute model unexpectedly produced no disputes")
     rows = [
         {
-            "billing_dispute_id": "BD-DEMO-MINIBAR",
+            "billing_dispute_id": "BD-MINIBAR",
             "folio_id": "FOL-0000001",
             "dispute_type": "minibar",
             "status": "open",
@@ -850,6 +908,12 @@ def _build_disputes(
         reservation = reservation_by_id[folio["reservation_id"]]
         check_out = date.fromisoformat(reservation["check_out"])
         opened = min(end, check_out + timedelta(days=rng.randrange(0, 5)))
+        if reservation["status"] == "completed" and opened >= temporal_boundary:
+            opened = temporal_boundary - timedelta(days=1)
+        elif reservation["status"] == "future" and opened <= temporal_boundary:
+            opened = temporal_boundary + timedelta(days=1)
+        elif opened == temporal_boundary:
+            opened += timedelta(days=1)
         age = (end - opened).days
         if age <= 10:
             status = rng.choices(("open", "under_review", "resolved"), weights=(32, 44, 24), k=1)[0]
@@ -889,17 +953,18 @@ def _build_service_records(
     stays: list[dict[str, str]],
     start: date,
     end: date,
+    temporal_boundary: date,
     rng: random.Random,
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     reservation_by_id = {row["reservation_id"]: row for row in reservations}
     special_requests = [
         {
-            "special_request_id": "SR-DEMO-PREARRIVAL",
-            "reservation_id": "RES-DEMO-FAMILY",
+            "special_request_id": "SR-PREARRIVAL",
+            "reservation_id": "RES-FAMILY-2026",
             "guest_id": "GST-000001",
             "request_type": "accessibility",
             "status": "confirmed",
-            "requested_at": "2026-08-01T10:00:00",
+            "requested_at": "2026-09-07T10:00:00",
             "details": "Step-free access, feather-free bedding, crib, arrival after 22:00.",
         }
     ]
@@ -926,19 +991,16 @@ def _build_service_records(
             else:
                 span = max(1, (check_out - check_in).days)
                 requested_date = min(end, check_in + timedelta(days=rng.randrange(span)))
-            age = (end - requested_date).days
-            if age <= 4:
-                status = rng.choices(
-                    ("requested", "confirmed", "fulfilled"), weights=(16, 31, 53), k=1
-                )[0]
-            elif age <= 14:
-                status = rng.choices(
-                    ("requested", "confirmed", "fulfilled"), weights=(4, 13, 83), k=1
-                )[0]
+            if check_in > temporal_boundary:
+                requested_date = max(temporal_boundary + timedelta(days=1), requested_date)
+            elif check_out < temporal_boundary:
+                requested_date = min(temporal_boundary - timedelta(days=1), requested_date)
+            elif requested_date == temporal_boundary:
+                requested_date -= timedelta(days=1)
+            if requested_date > temporal_boundary:
+                status = rng.choices(("requested", "confirmed"), weights=(5, 95), k=1)[0]
             else:
-                status = rng.choices(
-                    ("requested", "confirmed", "fulfilled"), weights=(0.4, 2.6, 97), k=1
-                )[0]
+                status = rng.choices(("confirmed", "fulfilled"), weights=(3, 97), k=1)[0]
             request_type = rng.choices(
                 REQUEST_TYPES,
                 weights=(17, 14, 13, 8, 11, 7, 8, 6, 16),
@@ -959,23 +1021,23 @@ def _build_service_records(
 
     maintenance_requests = [
         {
-            "maintenance_request_id": "MR-DEMO-HVAC",
+            "maintenance_request_id": "MR-HVAC",
             "property_id": "HTL-004",
             "stay_id": "STY-0000002",
             "room_id": "HTL-004-RM-002",
             "request_type": "hvac",
             "status": "in_progress",
-            "reported_at": "2026-07-10T21:00:00",
+            "reported_at": "2026-08-31T21:00:00",
         }
     ]
     work_orders = [
         {
-            "work_order_id": "WO-DEMO-HVAC",
-            "maintenance_request_id": "MR-DEMO-HVAC",
+            "work_order_id": "WO-HVAC",
+            "maintenance_request_id": "MR-HVAC",
             "property_id": "HTL-004",
             "status": "assigned",
             "priority": "high",
-            "opened_at": "2026-07-10T21:18:00",
+            "opened_at": "2026-08-31T21:18:00",
         }
     ]
     maintenance_number = 2
@@ -990,6 +1052,8 @@ def _build_service_records(
         check_out = date.fromisoformat(reservation["check_out"])
         span = max(1, (check_out - check_in).days)
         reported_date = min(end, check_in + timedelta(days=rng.randrange(span)))
+        if reported_date == temporal_boundary:
+            reported_date -= timedelta(days=1)
         reported_hour = rng.randrange(0, 24)
         reported = datetime.combine(reported_date, time(reported_hour, rng.randrange(0, 60)))
         request_type = rng.choices(MAINTENANCE_TYPES, weights=(24, 22, 13, 15, 14, 12), k=1)[0]
@@ -1004,8 +1068,14 @@ def _build_service_records(
             response_hours *= rng.uniform(3.5, 8.0)
         response_minutes = max(6, min(round(response_hours * 60), 36 * 60))
         opened = reported + timedelta(minutes=response_minutes)
+        if stay["status"] == "completed" and opened.date() >= temporal_boundary:
+            opened = datetime.combine(temporal_boundary - timedelta(days=1), time(23, 59))
+        elif opened.date() == temporal_boundary:
+            opened = datetime.combine(temporal_boundary + timedelta(days=1), time(0, 1))
         age = (datetime.combine(end, time(23, 59)) - reported).days
-        if age <= 3:
+        if opened.date() > temporal_boundary:
+            request_status = "open"
+        elif age <= 3:
             request_status = rng.choices(
                 ("open", "in_progress", "resolved"), weights=(18, 35, 47), k=1
             )[0]

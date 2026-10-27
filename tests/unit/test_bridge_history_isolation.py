@@ -62,9 +62,7 @@ def make_agent(monkeypatch):
 
 
 def context(sender="agent-transport-id"):
-    return SimpleNamespace(
-        activity=SimpleNamespace(from_property=SimpleNamespace(id=sender))
-    )
+    return SimpleNamespace(activity=SimpleNamespace(from_property=SimpleNamespace(id=sender)))
 
 
 def notification(conversation_id, body):
@@ -83,7 +81,11 @@ def run(coro):
 def test_same_sender_different_email_threads_share_no_history(monkeypatch):
     agent, responses = make_agent(monkeypatch)
     for conv, body in (("CONV-A", "first thread"), ("CONV-B", "second thread")):
-        run(agent.handle_agent_notification_activity(notification(conv, body), None, None, context()))
+        run(
+            agent.handle_agent_notification_activity(
+                notification(conv, body), None, None, context()
+            )
+        )
     assert [len(i) for i in responses.inputs] == [1, 1]
     assert "first thread" not in responses.inputs[1][0]["content"]
     assert agent.conversations == {}
@@ -93,7 +95,11 @@ def test_notification_does_not_read_write_or_clear_teams_history(monkeypatch):
     agent, responses = make_agent(monkeypatch)
     saved = [{"type": "message", "role": "user", "content": "teams hello"}]
     agent.conversations["agent-transport-id"] = list(saved)
-    run(agent.handle_agent_notification_activity(notification("CONV-A", "mail"), None, None, context()))
+    run(
+        agent.handle_agent_notification_activity(
+            notification("CONV-A", "mail"), None, None, context()
+        )
+    )
     assert len(responses.inputs[0]) == 1
     assert agent.conversations["agent-transport-id"] == saved
 
@@ -101,7 +107,11 @@ def test_notification_does_not_read_write_or_clear_teams_history(monkeypatch):
         raise RuntimeError("fail")
 
     monkeypatch.setattr(agent, "_call_foundry", boom)
-    run(agent.handle_agent_notification_activity(notification("CONV-B", "mail"), None, None, context()))
+    run(
+        agent.handle_agent_notification_activity(
+            notification("CONV-B", "mail"), None, None, context()
+        )
+    )
     assert agent.conversations["agent-transport-id"] == saved
 
 

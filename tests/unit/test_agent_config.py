@@ -149,9 +149,7 @@ def test_runtime_serializes_dependent_tool_calls_in_the_actual_model_request(
         agent365_blueprint_secret_vault_url="https://vault.example.test",
         agent365_blueprint_secret_name="blueprint-secret",
         agent365_instance_client_id="instance-id",
-        work_iq_servers=(
-            ("work-iq-mail", "https://agent365.example.test/mail", "mail-audience"),
-        ),
+        work_iq_servers=(("work-iq-mail", "https://agent365.example.test/mail", "mail-audience"),),
         instructions="Resolve the reservation before looking up its hotel's valet price.",
     )
 

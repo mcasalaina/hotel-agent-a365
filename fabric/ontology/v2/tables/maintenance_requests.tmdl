@@ -1,0 +1,35 @@
+/// Authoritative HotelOperations.dbo.maintenance_requests.
+table maintenance_requests
+	lineageTag: 6bf046b2-44a9-50d9-9563-92d49b968658
+
+	column maintenance_request_id
+		dataType: string
+		sourceColumn: maintenance_request_id
+		lineageTag: c004503c-249a-503a-8595-ff2aca6a0098
+
+	column stay_id
+		dataType: string
+		sourceColumn: stay_id
+		lineageTag: 3f9fd894-0db1-53fa-8d8f-abc2524b7557
+
+	column room_id
+		dataType: string
+		sourceColumn: room_id
+		lineageTag: 35b89a61-f5a2-5bf5-9d7c-3e0a31212548
+
+	column request_type
+		dataType: string
+		sourceColumn: request_type
+		lineageTag: 0c40c714-26bd-58e7-97a6-81e0da0f9ce7
+
+	column status
+		dataType: string
+		sourceColumn: status
+		lineageTag: ffd82a64-fe36-596c-ae26-03393c5de8c1
+
+	partition maintenance_requests = entity
+		mode: directLake
+		source
+			entityName: maintenance_requests
+			schemaName: dbo
+			expressionSource: HotelOperationsQuery

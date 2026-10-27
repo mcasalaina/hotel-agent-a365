@@ -1,5 +1,17 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "as_of_date": "2026-09-01",
+  "temporal_contract": {
+    "completed_departed_no_show": "check_out < 2026-09-01",
+    "future": "check_in > 2026-09-01",
+    "arriving": "check_in > 2026-09-01",
+    "in_house": "check_in < 2026-09-01 < check_out, actual_check_out empty",
+    "financial_postings": "posted_at and opened_at < 2026-09-01T00:00:00",
+    "daily_occupancy": "historical actuals before boundary, confirmed on-books nights after",
+    "room_revenue": "historical recognized room charges, zero on and after boundary",
+    "last_checkout": "2027-04-01",
+    "folio_balance": "total_charges + total_adjustments - total_payments + total_refunds"
+  },
   "date_range": {
     "start": "2026-03-01",
     "end": "2027-03-31"

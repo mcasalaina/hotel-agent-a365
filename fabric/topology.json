@@ -1,8 +1,8 @@
 {
   "workspace": {
-    "capacityId": "24f6590d-413b-4d9f-9c2b-601d753eda94",
-    "capacityRegion": "East US 2",
-    "description": "Fabric workspace for the hotel guest services demo foundation.",
+    "capacityId": "de2ca443-9cac-49b5-8caa-567682a553c1",
+    "capacityRegion": "Central US",
+    "description": "Fabric workspace for authoritative hotel operations and guest services.",
     "displayName": "HotelAgent.Workspace"
   },
   "lakehouses": [
@@ -101,21 +101,21 @@
       "contractKey": "HotelInitialLoad",
       "defaultLakehouse": "HotelGuestServices",
       "definitionPath": "fabric/notebooks/initial_load.ipynb",
-      "description": "Materialize authoritative Phase 1 lakehouse Delta tables from the deterministic hotel CSV contract.",
+      "description": "Materialize authoritative hotel records as governed lakehouse Delta tables.",
       "displayName": "HotelInitialLoad"
     },
     {
-      "contractKey": "HotelDeterministicReset",
+      "contractKey": "HotelAuthoritativeReset",
       "defaultLakehouse": "HotelGuestServices",
       "definitionPath": "fabric/notebooks/deterministic_reset.ipynb",
-      "description": "Reset one or both lakehouses to the deterministic Phase 1 baseline by deleting tables and rerunning the initial load.",
-      "displayName": "HotelDeterministicReset"
+      "description": "Restore one or both lakehouses to the authoritative baseline and rerun the initial load.",
+      "displayName": "HotelAuthoritativeReset"
     },
     {
       "contractKey": "HotelValidation",
       "defaultLakehouse": "HotelGuestServices",
       "definitionPath": "fabric/notebooks/validation.ipynb",
-      "description": "Validate source inputs, authoritative Delta tables, shortcuts, fixture presence, and reconciliation rules.",
+      "description": "Validate source inputs, authoritative Delta tables, shortcuts, required business records, and reconciliation rules.",
       "displayName": "HotelValidation"
     },
     {

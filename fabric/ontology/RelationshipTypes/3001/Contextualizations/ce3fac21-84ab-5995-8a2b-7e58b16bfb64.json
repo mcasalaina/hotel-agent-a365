@@ -4,7 +4,6 @@
     "workspaceId": "{{WORKSPACE_ID}}",
     "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
     "sourceTableName": "rooms",
-    "sourceSchema": "dbo",
     "sourceType": "LakehouseTable"
   },
   "sourceKeyRefBindings": [

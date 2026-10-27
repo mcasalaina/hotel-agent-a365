@@ -1,0 +1,47 @@
+relationship rel_PropertyHasRoom
+	fromColumn: rooms.property_id
+	toColumn: properties.property_id
+	fromCardinality: many
+	toCardinality: one
+
+relationship rel_GuestBookedReservation
+	fromColumn: reservations.guest_id
+	toColumn: guests.guest_id
+	fromCardinality: many
+	toCardinality: one
+
+relationship rel_ReservationResultedInStay
+	fromColumn: stays.reservation_id
+	toColumn: reservations.reservation_id
+	fromCardinality: many
+	toCardinality: one
+
+relationship rel_StayAssignedRoom
+	fromColumn: stays.room_id
+	toColumn: rooms.room_id
+	fromCardinality: many
+	toCardinality: one
+
+relationship rel_StayHasFolio
+	fromColumn: folios.stay_id
+	toColumn: stays.stay_id
+	fromCardinality: many
+	toCardinality: one
+
+relationship rel_ReservationHasSpecialRequest
+	fromColumn: special_requests.reservation_id
+	toColumn: reservations.reservation_id
+	fromCardinality: many
+	toCardinality: one
+
+relationship rel_StayTriggeredMaintenanceRequest
+	fromColumn: maintenance_requests.stay_id
+	toColumn: stays.stay_id
+	fromCardinality: many
+	toCardinality: one
+
+relationship rel_MaintenanceRequestTracksWorkOrder
+	fromColumn: work_orders.maintenance_request_id
+	toColumn: maintenance_requests.maintenance_request_id
+	fromCardinality: many
+	toCardinality: one

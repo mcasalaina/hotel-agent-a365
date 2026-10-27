@@ -77,3 +77,28 @@ def test_rejects_forbidden_brand_in_identity_display_name(tmp_path: Path) -> Non
     violations = find_naming_violations([config])
 
     assert [violation.field for violation in violations] == ["agentIdentityDisplayName"]
+
+
+def test_allows_customer_facing_agent_user_display_name(tmp_path: Path) -> None:
+    config = tmp_path / "a365.config.example.json"
+    config.write_text(
+        '{"agentUserDisplayName": "Lyrenza Hotel Guest Services",'
+        '"agentIdentityDisplayName": "hotel-agent-bridge Identity",'
+        '"agentUserPrincipalName": "hotelguestservices@example.test"}',
+        encoding="utf-8",
+    )
+
+    assert find_naming_violations([config]) == []
+
+
+def test_agent_user_display_name_does_not_exempt_technical_upn(tmp_path: Path) -> None:
+    config = tmp_path / "a365.config.example.json"
+    config.write_text(
+        '{"agentUserDisplayName": "Lyrenza Hotel Guest Services",'
+        '"agentUserPrincipalName": "lyrenza-guestservices@example.test"}',
+        encoding="utf-8",
+    )
+
+    violations = find_naming_violations([config])
+
+    assert [violation.field for violation in violations] == ["agentUserPrincipalName"]

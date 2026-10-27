@@ -83,12 +83,14 @@ class FabricRestClient:
         base_url: str = FABRIC_API_BASE_URL,
         scope: str = FABRIC_API_SCOPE,
         sleeper: Callable[[float], None] | None = None,
+        skill_name: str = "e2e-medallion-architecture",
     ) -> None:
         self._credential = credential
         self._transport = transport or UrllibTransport()
         self._base_url = base_url.rstrip("/")
         self._scope = scope
         self._sleeper = sleeper or time.sleep
+        self._skill_name = skill_name
 
     def list_workspaces(self) -> list[dict[str, Any]]:
         response = self.request_json("GET", "/workspaces", expected_statuses={200})
@@ -130,13 +132,17 @@ class FabricRestClient:
         return self._resolve_lro_result("POST", response)
 
     def create_ontology(self, workspace_id: str, body: dict[str, Any]) -> dict[str, Any]:
-        response = self.request_json(
+        client = self._ontology_client()
+        ontology_body = {key: value for key, value in body.items() if key != "type"}
+        if "definition" in ontology_body:
+            ontology_body["definition"] = {"parts": ontology_body["definition"]["parts"]}
+        response = client.request_json(
             "POST",
             f"/workspaces/{workspace_id}/ontologies",
-            body,
-            expected_statuses={201, 202},
+            ontology_body,
+            expected_statuses={200, 201, 202},
         )
-        return self._resolve_lro_result("POST", response)
+        return client._resolve_lro_result("POST", response)
 
     def create_data_agent(self, workspace_id: str, body: dict[str, Any]) -> dict[str, Any]:
         response = self.request_json(
@@ -167,13 +173,24 @@ class FabricRestClient:
         ontology_id: str,
         definition: dict[str, Any],
     ) -> dict[str, Any]:
-        response = self.request_json(
+        client = self._ontology_client()
+        response = client.request_json(
             "POST",
             f"/workspaces/{workspace_id}/ontologies/{ontology_id}/updateDefinition?updateMetadata=true",
-            {"definition": definition},
+            {"definition": {"parts": definition["parts"]}},
             expected_statuses={200, 202},
         )
-        return self._resolve_lro_result("POST", response)
+        return client._resolve_lro_result("POST", response)
+
+    def _ontology_client(self) -> FabricRestClient:
+        return FabricRestClient(
+            credential=self._credential,
+            transport=self._transport,
+            base_url=self._base_url,
+            scope=self._scope,
+            sleeper=self._sleeper,
+            skill_name="fabriciq-ontology-cli",
+        )
 
     def update_data_agent_definition(
         self,
@@ -199,6 +216,7 @@ class FabricRestClient:
     ) -> HttpResponse:
         url = self._qualify_url(path_or_url)
         headers = {"Authorization": f"Bearer {self._token()}"}
+        headers["x-ms-fabric-skill"] = self._skill_name
         if body is not None:
             headers["Content-Type"] = "application/json"
         if extra_headers:

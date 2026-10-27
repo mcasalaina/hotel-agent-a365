@@ -1,6 +1,6 @@
 # Microsoft Fabric artifacts
 
-This directory now contains source-controlled Phase 1 artifacts for the hotel demo workspace:
+This directory contains source-controlled Phase 1 artifacts for the hotel workspace:
 
 - `topology.json` defines the single workspace, exactly two lakehouses, limited `ops_` shortcuts, notebook inventory, and deployable downstream artifacts.
 - `notebooks/` contains executable Fabric notebooks for load/reset/validation, controlled mutations, aggregate refresh, and data-agent runtime publish.

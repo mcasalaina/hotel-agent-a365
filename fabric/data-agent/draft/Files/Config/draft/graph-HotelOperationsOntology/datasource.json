@@ -4,8 +4,8 @@
   "workspaceId": "{{WORKSPACE_ID}}",
   "displayName": "HotelOperationsOntology",
   "type": "graph",
-  "userDescription": "Ontology source for path-traversal questions across property, guest, stay, folio, request, and maintenance entities.",
-  "dataSourceInstructions": "Use the ontology only for relationship traversal, adjacency, and lineage-style questions. Do not use it for arithmetic KPI answers when the semantic model is available.",
+  "userDescription": "## Authority\n\nGoverned relationship source for connected hotel entities across operational and guest-service domains.\n\n## Use this source for\n\n- Traversing guests, reservations, stays, rooms, properties, and folios.\n- Following special-request and maintenance paths to their related records.\n- Answering adjacency, lineage, and connected-entity questions.\n\n## Boundary\n\nUse HotelOperationsModel for measures and the lakehouses for authoritative record attributes.",
+  "dataSourceInstructions": "Use HotelOperationsOntology only for relationship traversal, adjacency, and lineage questions; route arithmetic KPI questions to HotelOperationsModel. Data dictionary: `Property` represents a hotel. `Guest` represents a guest profile. `Reservation` represents a booking. `Stay` represents an occupied or completed visit. `MaintenanceRequest` represents a facilities issue. `GuestBookedReservation` connects a guest to a booking. `ReservationResultedInStay` connects a booking to its realized stay. `StayTriggeredMaintenanceRequest` connects a stay to a maintenance issue. Return entity identifiers needed for subsequent authoritative source lookups.",
   "elements": [
     {
       "id": "09176e73-9787-591a-9f14-8932f5a34c3d",

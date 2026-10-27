@@ -119,14 +119,17 @@ def build_artifact_definition(
                     template_values,
                 )
             )
-    parts.append(
-        _definition_part(
-            ".platform",
-            _platform_payload(artifact.item_type, artifact.display_name),
+    if ".platform" not in seen_paths:
+        parts.append(
+            _definition_part(
+                ".platform",
+                _platform_payload(artifact.item_type, artifact.display_name),
+            )
         )
-    )
     definition: dict[str, Any] = {"parts": parts}
-    if artifact.item_type not in {"Ontology", "DataAgent"}:
+    if artifact.item_type not in {"Ontology", "DataAgent"} or (
+        artifact.item_type == "Ontology" and artifact.definition_format == "TMDL"
+    ):
         definition["format"] = artifact.definition_format
     return definition
 
@@ -150,16 +153,27 @@ def build_artifact_create_body(
 def build_notebook_job_request(
     parameters: tuple[NotebookParameterSpec, ...],
     values: dict[str, Any],
-) -> dict[str, list[dict[str, Any]]]:
-    payload: list[dict[str, Any]] = []
+) -> dict[str, dict[str, dict[str, dict[str, Any]]]]:
+    notebook_types = {
+        "Text": "string",
+        "Guid": "string",
+        "DateTime": "string",
+        "Boolean": "bool",
+        "Integer": "int",
+        "Number": "float",
+    }
+    payload: dict[str, dict[str, Any]] = {}
     for parameter in parameters:
         if parameter.name not in values:
             if parameter.required:
                 raise ValueError(f"Missing required parameter: {parameter.name}")
             continue
         coerced = _coerce_parameter_value(parameter, values[parameter.name])
-        payload.append({"name": parameter.name, "type": parameter.type_name, "value": coerced})
-    return {"parameters": payload}
+        payload[parameter.name] = {
+            "type": notebook_types[parameter.type_name],
+            "value": coerced,
+        }
+    return {"executionData": {"parameters": payload}}
 
 
 def validate_item_display_name(item_type: str, display_name: str) -> None:

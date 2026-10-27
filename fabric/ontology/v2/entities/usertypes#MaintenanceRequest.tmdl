@@ -1,0 +1,45 @@
+/// Authoritative room or stay maintenance request and its current state.
+entity usertypes#MaintenanceRequest
+	lineageTag: a67a75ef-e37f-5bcb-ac03-8c7a0f623c6f
+	backingTable: maintenance_requests
+	keyProperty: MaintenanceRequestId
+
+	/// MaintenanceRequestId from HotelOperations.dbo.maintenance_requests.maintenance_request_id.
+	property MaintenanceRequestId
+		dataType: string
+		lineageTag: ca7b5aca-6515-5d6a-8480-4a316242c5c2
+
+		backingConfiguration
+			valueColumn: maintenance_requests.maintenance_request_id
+
+	/// StayId from HotelOperations.dbo.maintenance_requests.stay_id.
+	property StayId
+		dataType: string
+		lineageTag: 886a47a9-7e7d-5e1d-8408-a8404f4668fd
+
+		backingConfiguration
+			valueColumn: maintenance_requests.stay_id
+
+	/// RoomId from HotelOperations.dbo.maintenance_requests.room_id.
+	property RoomId
+		dataType: string
+		lineageTag: c6358209-cd33-5b69-89f6-89743c272caa
+
+		backingConfiguration
+			valueColumn: maintenance_requests.room_id
+
+	/// RequestType from HotelOperations.dbo.maintenance_requests.request_type.
+	property RequestType
+		dataType: string
+		lineageTag: 6800601d-aa9c-59e3-9455-5190508db262
+
+		backingConfiguration
+			valueColumn: maintenance_requests.request_type
+
+	/// Status from HotelOperations.dbo.maintenance_requests.status.
+	property Status
+		dataType: string
+		lineageTag: 807a0873-29ab-5717-b312-d8bbccde25d0
+
+		backingConfiguration
+			valueColumn: maintenance_requests.status

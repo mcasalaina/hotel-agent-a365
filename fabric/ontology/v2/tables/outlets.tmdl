@@ -1,0 +1,30 @@
+/// Authoritative HotelOperations.dbo.outlets.
+table outlets
+	lineageTag: 0abfd0d6-bcf2-5db6-9d3c-425bbacb8859
+
+	column outlet_id
+		dataType: string
+		sourceColumn: outlet_id
+		lineageTag: ec555b0c-613b-584c-9a5f-a52807709b53
+
+	column property_id
+		dataType: string
+		sourceColumn: property_id
+		lineageTag: 3fff0406-30a5-5b3f-bb81-b0b0a535a51c
+
+	column name
+		dataType: string
+		sourceColumn: name
+		lineageTag: 88aa700b-05f6-586e-b436-2089d917ff53
+
+	column outlet_type
+		dataType: string
+		sourceColumn: outlet_type
+		lineageTag: 3d631aeb-1ec8-5589-9acb-651e8d36468d
+
+	partition outlets = entity
+		mode: directLake
+		source
+			entityName: outlets
+			schemaName: dbo
+			expressionSource: HotelOperationsQuery

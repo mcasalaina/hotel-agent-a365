@@ -4,8 +4,8 @@
   "workspaceId": "{{WORKSPACE_ID}}",
   "displayName": "HotelOperationsModel",
   "type": "semantic_model",
-  "userDescription": "Governed KPI source for OCC, ADR, RevPAR, ALOS, disputes, requests, and maintenance response metrics.",
-  "dataSourceInstructions": "Use the semantic model when the user asks for governed KPIs or cross-domain metrics. Prefer DAX examples to raw SQL when answering semantic-model questions.",
+  "userDescription": "## Authority\n\nGoverned analytical source for cross-property hotel performance.\n\n## Use this source for\n\n- Certified occupancy, rate, revenue, length-of-stay, cancellation, and no-show measures.\n- Booking-channel trends, service-request patterns, dispute trends, and maintenance response.\n- Comparisons and aggregations that must use established semantic-model measures.\n\n## Boundary\n\nUse the lakehouses for record-level attributes and HotelOperationsOntology for relationship traversal.",
+  "dataSourceInstructions": "Use HotelOperationsModel for governed KPI calculations and cross-domain trends; prefer its measures and DAX rather than recalculating them in SQL. Data dictionary: `Property KPI Daily` is the daily property performance fact. Fields: `Service Date` is business date; `Room Revenue` is governed room revenue; `OCC` is occupancy rate; `ADR` is average daily rate; `RevPAR` is revenue per available room; `ALOS` is average length of stay. `Booking Pace Daily` is the booking-channel trend fact. Fields: `Channel` is booking origin; `Cancellation Rate` is cancelled reservations divided by reservations; `No Show Rate` is no-shows divided by reservations. `Maintenance Response Daily` is the service-response fact. Field: `Maintenance Response Hours` is governed elapsed response time.",
   "elements": [
     {
       "id": "955ee9d7-c61a-5ed3-b226-2cbcf0392db9",

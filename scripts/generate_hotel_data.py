@@ -17,12 +17,15 @@ from datetime import date, timedelta
 from itertools import chain
 from pathlib import Path
 
-from realistic_hotel_data import build_realistic_tables, profile_manifest
+from realistic_hotel_data import MARIA_GARCIA_EMAIL, build_realistic_tables, profile_manifest
 
 DATE_START = date(2026, 3, 1)
 DATE_END = date(2027, 3, 31)
+TEMPORAL_BOUNDARY = date(2026, 9, 1)
 DEFAULT_SEED = 20260301
-FIXTURES_PATH = Path(__file__).resolve().parents[1] / "data" / "fixtures" / "demo_scenarios.json"
+FIXTURES_PATH = (
+    Path(__file__).resolve().parents[1] / "data" / "fixtures" / "business_scenarios.json"
+)
 REQUIRED_TABLES = (
     "properties",
     "room_types",
@@ -426,7 +429,7 @@ def read_fixtures() -> list[dict[str, str]]:
     fixture_data = json.loads(FIXTURES_PATH.read_text(encoding="utf-8"))
     scenarios = fixture_data["scenarios"]
     if not isinstance(scenarios, list):
-        raise ValueError("demo_scenarios.json must contain a scenarios list")
+        raise ValueError("business_scenarios.json must contain a scenarios list")
     return [dict(item) for item in scenarios]
 
 
@@ -504,14 +507,14 @@ def build_reference(
 
 def build_guests(count: int) -> list[dict[str, str]]:
     named_guests = {
-        1: ("Maria", "Garcia", "mariagarcia@cam3652609.onmicrosoft.com"),
-        2: ("Marco", "Casalaina", "mcasalaina.local@cam3652609.onmicrosoft.com"),
+        1: ("Maria", "Garcia", MARIA_GARCIA_EMAIL),
+        2: ("Marco", "Casalaina", "mcasalaina.local@cam3652612.onmicrosoft.com"),
     }
     rows: list[dict[str, str]] = []
     for number in range(1, count + 1):
         first_name, last_name, email = named_guests.get(
             number,
-            (f"Guest{number:05d}", "Demo", f"guest{number:05d}@example.test"),
+            (f"Guest{number:05d}", "Traveler", f"guest{number:05d}@adatum.com"),
         )
         rows.append(
             {
@@ -560,25 +563,25 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
     profiles_by_id = {profile.property_id: profile for profile in profiles()}
     fixture_specs = {
         "family_accessibility": (
-            "RES-DEMO-FAMILY",
+            "RES-FAMILY-2026",
             "GST-000001",
-            date(2026, 8, 14),
+            date(2026, 9, 10),
             "future",
             "flexible",
-            3,
+            2,
             2,
         ),
         "rate_change": (
-            "RES-DEMO-RATE-CHANGE",
+            "RES-RATE-CHANGE",
             "GST-000002",
-            date(2026, 4, 11),
+            date(2026, 9, 15),
             "future",
             "flexible",
             2,
             1,
         ),
         "cancellable": (
-            "RES-DEMO-CANCEL-FLEX",
+            "RES-CANCEL-FLEX",
             "GST-000003",
             date(2026, 4, 5),
             "cancelled",
@@ -587,7 +590,7 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
             1,
         ),
         "nonrefundable": (
-            "RES-DEMO-CANCEL-NRF",
+            "RES-CANCEL-NRF-2026",
             "GST-000004",
             date(2026, 4, 8),
             "cancelled",
@@ -596,7 +599,7 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
             1,
         ),
         "folio_dispute": (
-            "RES-DEMO-FOLIO",
+            "RES-FOLIO-2026",
             "GST-000005",
             date(2026, 3, 3),
             "completed",
@@ -605,12 +608,12 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
             1,
         ),
         "maintenance": (
-            "RES-DEMO-INSTAY",
+            "RES-INSTAY",
             "GST-000006",
-            date(2026, 7, 9),
+            date(2026, 8, 30),
             "in_house",
             "flexible",
-            2,
+            4,
             1,
         ),
     }
@@ -633,13 +636,13 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
         profile = profiles()[(number - 1) % property_count]
         if number <= generated_stay_limit:
             status = "completed"
-            check_in = DATE_START + timedelta(days=(number * 3) % 275)
+            check_in = DATE_START + timedelta(days=(number * 3) % 177)
         else:
             property_cycle = (number - 1) // property_count
             status = NON_COMPLETED_RESERVATION_STATUSES[
                 property_cycle % len(NON_COMPLETED_RESERVATION_STATUSES)
             ]
-            check_in = DATE_START + timedelta(days=number % 392)
+            check_in = TEMPORAL_BOUNDARY + timedelta(days=1 + number % 205)
         policy = "nonrefundable" if number % 7 == 0 else "flexible"
         rows.append(
             reservation_row(
@@ -683,11 +686,11 @@ def build_restaurant_reservations(scale: str) -> list[dict[str, str]]:
     count = SCALE_COUNTS[scale]["restaurant_reservations"]
     rows = [
         {
-            "restaurant_reservation_id": "RR-DEMO-DINING",
+            "restaurant_reservation_id": "RR-DINING",
             "guest_id": "GST-000001",
             "property_id": "HTL-004",
             "outlet_id": "HTL-004-OUT-01",
-            "reservation_at": "2026-08-15T19:30:00",
+            "reservation_at": "2026-09-11T19:30:00",
             "party_size": "4",
             "status": "confirmed",
         }
@@ -749,7 +752,7 @@ def transaction_rows(folios: list[dict[str, str]]) -> Iterator[dict[str, str]]:
                 "folio_transaction_id": f"FTX-{folio_number:07d}-{item_number:02d}",
                 "folio_id": folio["folio_id"],
                 "transaction_type": transaction_type,
-                "description": "Synthetic " + transaction_type.replace("_", " "),
+                "description": transaction_type.replace("_", " ").capitalize(),
                 "amount": amount,
                 "currency": folio["currency"],
                 "posted_at": DATE_START.isoformat(),
@@ -762,7 +765,7 @@ def payment_rows(folios: list[dict[str, str]]) -> Iterator[dict[str, str]]:
             "payment_id": f"PAY-{number:07d}",
             "folio_id": folio["folio_id"],
             "payment_method": "card",
-            "payment_token": f"tok_syn_{number:012d}",
+            "payment_token": f"tok_pay_{number:012d}",
             "card_mask": f"**** **** **** {1000 + (number % 9000):04d}",
             "amount": "150.00",
             "currency": folio["currency"],
@@ -773,7 +776,7 @@ def payment_rows(folios: list[dict[str, str]]) -> Iterator[dict[str, str]]:
 def build_billing_disputes(scale: str, folios: list[dict[str, str]]) -> list[dict[str, str]]:
     rows = [
         {
-            "billing_dispute_id": "BD-DEMO-MINIBAR",
+            "billing_dispute_id": "BD-MINIBAR",
             "folio_id": "FOL-0000001",
             "dispute_type": "minibar",
             "status": "open",
@@ -801,8 +804,8 @@ def build_service_records(
 ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     special_requests: list[dict[str, str]] = [
         {
-            "special_request_id": "SR-DEMO-PREARRIVAL",
-            "reservation_id": "RES-DEMO-FAMILY",
+            "special_request_id": "SR-PREARRIVAL",
+            "reservation_id": "RES-FAMILY-2026",
             "guest_id": "GST-000001",
             "request_type": "accessibility_allergy_crib_late_arrival",
             "status": "confirmed",
@@ -812,7 +815,7 @@ def build_service_records(
     ]
     maintenance_requests: list[dict[str, str]] = [
         {
-            "maintenance_request_id": "MR-DEMO-HVAC",
+            "maintenance_request_id": "MR-HVAC",
             "property_id": "HTL-004",
             "stay_id": "STY-0000002",
             "room_id": "HTL-004-RM-002",
@@ -823,8 +826,8 @@ def build_service_records(
     ]
     work_orders: list[dict[str, str]] = [
         {
-            "work_order_id": "WO-DEMO-HVAC",
-            "maintenance_request_id": "MR-DEMO-HVAC",
+            "work_order_id": "WO-HVAC",
+            "maintenance_request_id": "MR-HVAC",
             "property_id": "HTL-004",
             "status": "assigned",
             "priority": "high",
@@ -842,7 +845,7 @@ def build_service_records(
                 "status": ("requested", "confirmed", "fulfilled")[number % 3],
                 "requested_at": (DATE_START + timedelta(days=number % 396)).isoformat()
                 + "T09:00:00",
-                "details": "Synthetic service request.",
+                "details": "Guest service request.",
             }
         )
     for number in range(2, SCALE_COUNTS[scale]["maintenance_requests"] + 1):
@@ -939,29 +942,29 @@ def build_control_records() -> tuple[
     return (
         [
             {
-                "confirmation_id": "CNF-DEMO-001",
+                "confirmation_id": "CNF-001",
                 "action_type": "restaurant_change",
-                "target_id": "RR-DEMO-DINING",
+                "target_id": "RR-DINING",
                 "status": "confirmed",
                 "confirmed_at": "2026-08-10T10:00:00",
             }
         ],
         [
             {
-                "idempotency_key": "idem-demo-restaurant-change",
+                "idempotency_key": "idem-restaurant-change",
                 "action_type": "restaurant_change",
-                "result_id": "RR-DEMO-DINING",
+                "result_id": "RR-DINING",
                 "created_at": "2026-08-10T10:00:00",
             }
         ],
         [
             {
-                "audit_event_id": "AUD-DEMO-001",
+                "audit_event_id": "AUD-001",
                 "entity_type": "restaurant_reservation",
-                "entity_id": "RR-DEMO-DINING",
+                "entity_id": "RR-DINING",
                 "action": "changed",
                 "occurred_at": "2026-08-10T10:00:01",
-                "actor_type": "synthetic_guest_services",
+                "actor_type": "guest_services",
             }
         ],
     )
@@ -1049,6 +1052,11 @@ confirmed special request.""",
         docs.append(path)
         notice_start = date(2026, 4, 1) + timedelta(days=(int(profile.property_id[-3:]) - 1) * 9)
         notice_end = notice_start + timedelta(days=20)
+        if notice_start == TEMPORAL_BOUNDARY:
+            notice_start += timedelta(days=1)
+            notice_end = notice_start + timedelta(days=20)
+        elif notice_start < TEMPORAL_BOUNDARY <= notice_end:
+            notice_end = TEMPORAL_BOUNDARY - timedelta(days=1)
         logical_path = f"foundryiq-docs/operations/{profile.property_id}.notice.generated.md"
         path = docs_output / "operations" / f"{profile.property_id}.notice.generated.md"
         write_document(
@@ -1121,11 +1129,11 @@ Refer to separately dated notices for temporary operational changes.""",
 
 ## Permanent policy
 
-This fictional chain-wide procedure governs {policy.replace("_", " ")} requests.
-Associates verify the synthetic guest record and reservation before sharing details or
+This chain-wide procedure governs {policy.replace("_", " ")} requests.
+Associates verify the guest record and reservation before sharing details or
 making a change. Confirm the exact change, any price or penalty impact, and the policy
 basis before recording an action. Payment records contain only a masked card value and
-a synthetic payment token. Escalate safety, privacy, or unresolved maintenance matters
+a payment token. Escalate safety, privacy, or unresolved maintenance matters
 to the property duty leader.""",
         )
         docs.append(path)
@@ -1153,6 +1161,7 @@ def generate(
         fixture_rows=fixture_rows,
         start=DATE_START,
         end=DATE_END,
+        temporal_boundary=TEMPORAL_BOUNDARY,
         seed=seed,
         amenities=AMENITIES,
     )
@@ -1187,6 +1196,7 @@ def generate(
         "seed": seed,
         "scale": scale,
         "date_range": {"start": DATE_START.isoformat(), "end": DATE_END.isoformat()},
+        "temporal_boundary": TEMPORAL_BOUNDARY.isoformat(),
         "operating_profiles": profile_manifest(),
         "counts": counts,
         "hashes": hashes,

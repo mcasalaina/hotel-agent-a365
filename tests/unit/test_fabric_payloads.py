@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from fabric.artifacts import (
     ArtifactSpec,
+    FabricTopology,
     LakehouseSpec,
     NotebookParameterSpec,
     NotebookSpec,
@@ -152,6 +153,48 @@ def test_build_specialized_artifact_definition_omits_format(tmp_path: Path) -> N
     assert "format" not in definition
 
 
+def test_repository_ontology_is_complete_v2_with_typed_sources() -> None:
+    repository = Path(__file__).resolve().parents[2]
+    topology = FabricTopology.from_file(repository / "fabric/topology.json", repository)
+    artifact = topology.blueprints["ontology"]
+    definition = build_artifact_definition(
+        artifact,
+        {
+            "FABRIC_SQL_SERVER": "example.datawarehouse.fabric.microsoft.com",
+            "HOTEL_OPERATIONS_SQL_ENDPOINT_ID": "operations-sql-id",
+            "HOTEL_GUEST_SERVICES_SQL_ENDPOINT_ID": "guest-sql-id",
+        },
+    )
+    parts = {
+        part["path"]: base64.b64decode(part["payload"]).decode() for part in definition["parts"]
+    }
+
+    assert definition["format"] == "TMDL"
+    assert len(definition["parts"]) == len(parts) == 28
+    assert len([name for name in parts if name.startswith("entities/")]) == 10
+    assert len([name for name in parts if name.startswith("tables/")]) == 10
+    assert "compatibilityLevel: 1000000" in parts["database.tmdl"]
+    assert "ref namespace default" in parts["model.tmdl"]
+    assert "ref namespace usertypes" in parts["model.tmdl"]
+    assert parts["entityRelationships.tmdl"].count("\nentityRelationship ") == 8
+    assert "property Balance\n\t\tdataType: decimal" in parts["entities/usertypes#Folio.tmdl"]
+    assert "column balance\n\t\tdataType: decimal" in parts["tables/folios.tmdl"]
+    assert "operations-sql-id" in parts["expressions.tmdl"]
+    assert "guest-sql-id" in parts["expressions.tmdl"]
+    assert "{{" not in "".join(parts.values())
+    assert not any(name.startswith(("EntityTypes/", "RelationshipTypes/")) for name in parts)
+    platform = json.loads(parts[".platform"])
+    assert platform["config"]["logicalId"] != "00000000-0000-0000-0000-000000000000"
+
+
+def test_repository_ontology_rejects_missing_sql_binding() -> None:
+    repository = Path(__file__).resolve().parents[2]
+    topology = FabricTopology.from_file(repository / "fabric/topology.json", repository)
+
+    with pytest.raises(ValueError, match="Missing template value"):
+        build_artifact_definition(topology.blueprints["ontology"], {})
+
+
 def test_build_notebook_job_request_validates_types() -> None:
     parameters = (
         NotebookParameterSpec(
@@ -176,7 +219,9 @@ def test_build_notebook_job_request_validates_types() -> None:
         },
     )
 
-    assert payload["parameters"][1]["value"] == "2026-07-11T18:00:00Z"
+    request_parameters = payload["executionData"]["parameters"]
+    assert request_parameters["confirmation_id"]["type"] == "string"
+    assert request_parameters["request_timestamp_utc"]["value"] == "2026-07-11T18:00:00Z"
 
 
 def test_validate_item_display_name_rejects_ontology_spaces() -> None:

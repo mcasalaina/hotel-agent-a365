@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import shutil
+from dataclasses import replace
 from pathlib import Path
 
+import fabric.validation as fabric_validation
+import pytest
 from fabric.artifacts import FabricTopology, load_notebook_contracts
-from fabric.validation import validate_topology
+from fabric.validation import validate_artifact_spec, validate_topology
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
@@ -19,6 +23,26 @@ def test_repository_fabric_topology_is_valid() -> None:
     assert validate_topology(topology, contracts) == []
 
 
+def test_fabric_topology_rejects_previous_tenant_capacity() -> None:
+    topology = FabricTopology.from_file(
+        REPOSITORY_ROOT / "fabric" / "topology.json",
+        REPOSITORY_ROOT,
+    )
+    contracts = load_notebook_contracts(REPOSITORY_ROOT / "fabric" / "notebooks" / "contracts.json")
+    assert topology.workspace.capacity_id == "de2ca443-9cac-49b5-8caa-567682a553c1"
+    previous = replace(
+        topology,
+        workspace=replace(
+            topology.workspace,
+            capacity_id="ddd12f72-ecd8-471d-a03e-345e8960d6f4",
+        ),
+    )
+
+    problems = validate_topology(previous, contracts)
+
+    assert any("Capacity ID must be de2ca443-9cac-49b5-8caa-567682a553c1" in p for p in problems)
+
+
 def test_repository_notebook_code_cells_compile() -> None:
     notebook_dir = REPOSITORY_ROOT / "fabric" / "notebooks"
     for notebook_path in notebook_dir.glob("*.ipynb"):
@@ -28,7 +52,19 @@ def test_repository_notebook_code_cells_compile() -> None:
                 compile("".join(cell.get("source", [])), str(notebook_path), "exec")
 
 
-def test_data_agent_publish_resynchronizes_lakehouse_schemas() -> None:
+def test_v2_ontology_requires_default_namespace(tmp_path: Path) -> None:
+    topology = FabricTopology.from_file(REPOSITORY_ROOT / "fabric/topology.json", REPOSITORY_ROOT)
+    original = topology.blueprints["ontology"]
+    root = tmp_path / "ontology-v2"
+    shutil.copytree(original.definition_root, root)
+    (root / "namespaces/default.tmdl").unlink()
+
+    problems = validate_artifact_spec("ontology", replace(original, definition_root=root))
+
+    assert any("missing namespaces/default.tmdl" in problem for problem in problems)
+
+
+def test_data_agent_publish_verifies_existing_sources_without_rewriting_them() -> None:
     notebook_path = REPOSITORY_ROOT / "fabric" / "notebooks" / "data_agent_runtime_publish.ipynb"
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     source = "\n".join(
@@ -38,13 +74,128 @@ def test_data_agent_publish_resynchronizes_lakehouse_schemas() -> None:
     )
 
     assert "FabricDataAgentManagement" in source
-    assert "management.delete_staging_datasource" in source
-    assert "management.add_staging_datasource" in source
+    assert "management.delete_staging_datasource" not in source
+    assert "management.add_staging_datasource" not in source
+    assert "require_native_readiness" in source
+    assert "verify_existing_source(matches[0], display_name, config)" in source
+    assert "lakehouse_source_tables(datasource)" in source
+    assert "synchronize_source_examples" in source
+    assert "is missing required tables" in source
     assert "management.publish_staging" in source
     assert "all 20 properties, including zero-count properties" in source
     assert "status IN ('future', 'arriving')" in source
     assert "official property name" in source
+    assert "run_isolation_checks" in source
+    assert "/v1/mcp/workspaces/{workspace_id}/dataagents/{data_agent_id}/agent" in source
+    assert "known-folio-minibar-dispute" in source
+    assert "requires at least 10 distinct native example queries" in source
     assert 'base + "/staging/publish"' not in source
+
+
+@pytest.mark.parametrize(
+    "marker",
+    [
+        "verify_existing_source",
+        "require_native_readiness",
+        "missing or mismatched native source metadata",
+        "requires at least 10 distinct native example queries",
+    ],
+)
+def test_data_agent_quality_gate_requires_preservation_checks(
+    monkeypatch: pytest.MonkeyPatch, marker: str
+) -> None:
+    topology = FabricTopology.from_file(
+        REPOSITORY_ROOT / "fabric" / "topology.json", REPOSITORY_ROOT
+    )
+    read_runner = fabric_validation._read_runner_text
+    monkeypatch.setattr(
+        fabric_validation,
+        "_read_runner_text",
+        lambda path: read_runner(path).replace(marker, "removed-readback-check"),
+    )
+    problems = validate_artifact_spec("dataAgent", topology.blueprints["dataAgent"])
+    assert any(f"is missing {marker!r}" in problem for problem in problems)
+
+
+def _copied_data_agent(tmp_path: Path):
+    topology = FabricTopology.from_file(
+        REPOSITORY_ROOT / "fabric" / "topology.json",
+        REPOSITORY_ROOT,
+    )
+    original = topology.blueprints["dataAgent"]
+    copied_root = tmp_path / "draft"
+    shutil.copytree(original.definition_root, copied_root)
+    return replace(original, definition_root=copied_root), copied_root
+
+
+def test_data_agent_quality_gate_manifest_is_required(tmp_path: Path) -> None:
+    artifact, copied_root = _copied_data_agent(tmp_path)
+    (copied_root / "quality-gates.json").unlink()
+
+    problems = validate_artifact_spec("dataAgent", artifact)
+
+    assert any("quality gates" in problem for problem in problems)
+
+
+def test_data_agent_rejects_weak_source_contracts(tmp_path: Path) -> None:
+    artifact, copied_root = _copied_data_agent(tmp_path)
+    source_dir = copied_root / "Files" / "Config" / "draft" / "lakehouse-HotelGuestServices"
+    datasource_path = source_dir / "datasource.json"
+    datasource = json.loads(datasource_path.read_text(encoding="utf-8"))
+    datasource["userDescription"] = "Guest data."
+    datasource["dataSourceInstructions"] = datasource["dataSourceInstructions"].replace(
+        "`balance`", "balance"
+    )
+    datasource_path.write_text(json.dumps(datasource), encoding="utf-8")
+    fewshots_path = source_dir / "fewshots.json"
+    fewshots = json.loads(fewshots_path.read_text(encoding="utf-8"))
+    fewshots["fewShots"] = fewshots["fewShots"][:9]
+    fewshots_path.write_text(json.dumps(fewshots), encoding="utf-8")
+
+    problems = validate_artifact_spec("dataAgent", artifact)
+
+    assert any("userDescription must contain at least" in problem for problem in problems)
+    assert any("missing exposed table/field 'balance'" in problem for problem in problems)
+    assert any("at least 10 example queries" in problem for problem in problems)
+
+
+def test_data_agent_rejects_runtime_presentation_labels(tmp_path: Path) -> None:
+    artifact, copied_root = _copied_data_agent(tmp_path)
+    datasource_path = (
+        copied_root / "Files" / "Config" / "draft" / "lakehouse-HotelOperations" / "datasource.json"
+    )
+    datasource = json.loads(datasource_path.read_text(encoding="utf-8"))
+    datasource["userDescription"] = (
+        "Authoritative property and operations source containing synthetic hotel records "
+        "for governed business questions."
+    )
+    datasource_path.write_text(json.dumps(datasource), encoding="utf-8")
+
+    problems = validate_artifact_spec("dataAgent", artifact)
+
+    assert any("prohibited presentation term 'synthetic'" in problem for problem in problems)
+
+
+def test_data_agent_requires_routing_acronyms_fixtures_and_isolation(
+    tmp_path: Path,
+) -> None:
+    artifact, copied_root = _copied_data_agent(tmp_path)
+    stage_path = copied_root / "Files" / "Config" / "draft" / "stage_config.json"
+    stage = json.loads(stage_path.read_text(encoding="utf-8"))
+    stage["aiInstructions"] = "Route HotelOperations."
+    stage_path.write_text(json.dumps(stage), encoding="utf-8")
+    quality_path = copied_root / "quality-gates.json"
+    quality = json.loads(quality_path.read_text(encoding="utf-8"))
+    quality["businessFixtures"] = []
+    quality["isolationChecks"] = []
+    quality_path.write_text(json.dumps(quality), encoding="utf-8")
+
+    problems = validate_artifact_spec("dataAgent", artifact)
+
+    assert any("detailed routing guidance" in problem for problem in problems)
+    assert any("Acronym compendium" in problem for problem in problems)
+    assert any("known business fixture" in problem for problem in problems)
+    assert any("published-agent isolation checks" in problem for problem in problems)
 
 
 def test_validation_rejects_non_ops_shortcuts(tmp_path: Path) -> None:

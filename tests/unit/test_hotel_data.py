@@ -8,7 +8,15 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from generate_hotel_data import DATE_END, DATE_START, FIXTURES_PATH, build_reservations, generate
+from generate_hotel_data import (
+    DATE_END,
+    DATE_START,
+    FIXTURES_PATH,
+    TEMPORAL_BOUNDARY,
+    build_reservations,
+    generate,
+    stable_hash,
+)
 from validate_hotel_data import (
     REAL_BRANDS,
     RESERVATION_STATUSES,
@@ -48,7 +56,7 @@ def test_demo_generation_is_deterministic(generated_manifest: dict[str, object])
 def test_property_completeness_and_named_fixtures(generated_manifest: dict[str, object]) -> None:
     property_rows = rows(OUTPUT / "properties.csv")
     guest_rows = rows(OUTPUT / "guests.csv")
-    scenario_data = json.loads((ROOT / "data" / "fixtures" / "demo_scenarios.json").read_text())
+    scenario_data = json.loads((ROOT / "data" / "fixtures" / "business_scenarios.json").read_text())
     reservation_ids = {row["reservation_id"] for row in rows(OUTPUT / "reservations.csv")}
 
     assert [row["property_id"] for row in property_rows] == [
@@ -63,7 +71,7 @@ def test_property_completeness_and_named_fixtures(generated_manifest: dict[str, 
         "guest_id": "GST-000001",
         "first_name": "Maria",
         "last_name": "Garcia",
-        "email": "mariagarcia@cam3652609.onmicrosoft.com",
+        "email": "mariagarcia@cam3652701.onmicrosoft.com",
         "country": "United States",
         "privacy_consent": "true",
     }
@@ -77,7 +85,8 @@ def test_dates_inventory_and_statuses_are_valid(generated_manifest: dict[str, ob
         date.fromordinal(DATE_START.toordinal() + offset).isoformat()
         for offset in range((DATE_END - DATE_START).days + 1)
     }
-    reservation_statuses = {row["status"] for row in rows(OUTPUT / "reservations.csv")}
+    reservation_rows = rows(OUTPUT / "reservations.csv")
+    reservation_statuses = {row["status"] for row in reservation_rows}
 
     assert inventory_dates == expected_dates
     assert metric_dates == expected_dates
@@ -87,7 +96,29 @@ def test_dates_inventory_and_statuses_are_valid(generated_manifest: dict[str, ob
         <= date.fromisoformat(row["check_in"])
         < date.fromisoformat(row["check_out"])
         <= DATE_END
-        for row in rows(OUTPUT / "reservations.csv")
+        for row in reservation_rows
+    )
+    assert all(
+        TEMPORAL_BOUNDARY
+        not in {date.fromisoformat(row["check_in"]), date.fromisoformat(row["check_out"])}
+        for row in reservation_rows
+    )
+    assert all(
+        date.fromisoformat(row["check_in"]) > TEMPORAL_BOUNDARY
+        for row in reservation_rows
+        if row["status"] in {"future", "arriving"}
+    )
+    assert all(
+        date.fromisoformat(row["check_out"]) < TEMPORAL_BOUNDARY
+        for row in reservation_rows
+        if row["status"] in {"completed", "departed", "no_show"}
+    )
+    assert all(
+        date.fromisoformat(row["check_in"])
+        < TEMPORAL_BOUNDARY
+        < date.fromisoformat(row["check_out"])
+        for row in reservation_rows
+        if row["status"] == "in_house"
     )
     assert {
         "future",
@@ -120,7 +151,7 @@ def test_full_scale_active_reservations_cover_every_property() -> None:
     active_by_property: defaultdict[str, int] = defaultdict(int)
     for reservation in reservations:
         check_in = date.fromisoformat(reservation["check_in"])
-        if date(2026, 7, 12) <= check_in <= date(2026, 7, 18) and reservation["status"] in {
+        if date(2026, 9, 2) <= check_in <= date(2026, 9, 8) and reservation["status"] in {
             "future",
             "arriving",
         }:
@@ -128,6 +159,28 @@ def test_full_scale_active_reservations_cover_every_property() -> None:
 
     assert set(active_by_property) == {f"HTL-{number:03d}" for number in range(1, 21)}
     assert all(count > 0 for count in active_by_property.values())
+
+
+def test_maria_garcia_has_coherent_future_acceptance_reservation(
+    generated_manifest: dict[str, object],
+) -> None:
+    reservations = {row["reservation_id"]: row for row in rows(OUTPUT / "reservations.csv")}
+    maria = reservations["RES-FAMILY-2026"]
+
+    assert maria == {
+        "reservation_id": "RES-FAMILY-2026",
+        "guest_id": "GST-000001",
+        "property_id": "HTL-004",
+        "room_type_id": "HTL-004-RT-03",
+        "check_in": "2026-09-10",
+        "check_out": "2026-09-12",
+        "status": "future",
+        "cancellation_policy": "flexible",
+        "room_count": "2",
+        "rate_total": maria["rate_total"],
+        "currency": "USD",
+        "channel": "direct",
+    }
 
 
 def test_referential_integrity_folio_reconciliation_and_masked_payments(
@@ -142,11 +195,49 @@ def test_referential_integrity_folio_reconciliation_and_masked_payments(
     assert validate_output(OUTPUT, DOCS) == []
     assert transaction_folio_ids == folio_ids
     assert {row["folio_id"] for row in payment_rows} == folio_ids
-    assert dispute_rows[0]["billing_dispute_id"] == "BD-DEMO-MINIBAR"
+    assert dispute_rows[0]["billing_dispute_id"] == "BD-MINIBAR"
     assert all(row["folio_id"] in folio_ids for row in dispute_rows)
     assert all(row["card_mask"].startswith("**** **** **** ") for row in payment_rows)
     assert all(
         "card_number" not in row and "cvv" not in row and "pan" not in row for row in payment_rows
+    )
+
+
+@pytest.mark.parametrize(
+    ("table", "key", "value", "expected_problem"),
+    [
+        ("guests", "email", "stale@example.com", "identity"),
+        ("reservations", "room_type_id", "HTL-004-RT-02", "reservation"),
+        ("reservations", "room_count", "1", "reservation"),
+    ],
+)
+def test_validator_rejects_stale_canonical_maria_records(
+    generated_manifest: dict[str, object],
+    tmp_path: Path,
+    table: str,
+    key: str,
+    value: str,
+    expected_problem: str,
+) -> None:
+    output = tmp_path / "generated"
+    shutil.copytree(OUTPUT, output)
+    path = output / f"{table}.csv"
+    records = rows(path)
+    id_column, record_id = (
+        ("guest_id", "GST-000001") if table == "guests" else ("reservation_id", "RES-FAMILY-2026")
+    )
+    next(record for record in records if record[id_column] == record_id)[key] = value
+    with path.open("w", newline="", encoding="utf-8") as destination:
+        writer = csv.DictWriter(destination, fieldnames=list(records[0]))
+        writer.writeheader()
+        writer.writerows(records)
+    manifest_path = output / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["hashes"][table] = stable_hash(path)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert f"Maria Garcia acceptance-test {expected_problem} is incoherent" in validate_output(
+        output, DOCS
     )
 
 

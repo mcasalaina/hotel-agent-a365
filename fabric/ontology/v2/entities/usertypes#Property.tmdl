@@ -1,0 +1,45 @@
+/// Official property identity, city, region, and currency. HotelOperations is authoritative.
+entity usertypes#Property
+	lineageTag: 37244919-22ff-54f2-a20c-dd4cdfdda117
+	backingTable: properties
+	keyProperty: PropertyId
+
+	/// PropertyId from HotelOperations.dbo.properties.property_id.
+	property PropertyId
+		dataType: string
+		lineageTag: 283a9d7e-d6c8-57cd-b7f5-c29535fa569c
+
+		backingConfiguration
+			valueColumn: properties.property_id
+
+	/// PropertyName from HotelOperations.dbo.properties.name.
+	property PropertyName
+		dataType: string
+		lineageTag: 5ebb5c9f-a8c0-5cc5-8139-fb3ccfa5f63c
+
+		backingConfiguration
+			valueColumn: properties.name
+
+	/// Region from HotelOperations.dbo.properties.region.
+	property Region
+		dataType: string
+		lineageTag: 4691f864-c724-5839-b300-1f6520ed7f13
+
+		backingConfiguration
+			valueColumn: properties.region
+
+	/// City from HotelOperations.dbo.properties.city.
+	property City
+		dataType: string
+		lineageTag: 10c826f7-8672-54ae-b470-785b5278aa58
+
+		backingConfiguration
+			valueColumn: properties.city
+
+	/// Currency from HotelOperations.dbo.properties.currency.
+	property Currency
+		dataType: string
+		lineageTag: ab82481b-e4b8-58c7-9d65-598f445a60fe
+
+		backingConfiguration
+			valueColumn: properties.currency

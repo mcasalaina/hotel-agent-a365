@@ -1,0 +1,37 @@
+/// Reservation-linked guest service request and its current operational state.
+entity usertypes#SpecialRequest
+	lineageTag: d5985584-47d7-58a5-bb70-3be52dfd3d4c
+	backingTable: special_requests
+	keyProperty: SpecialRequestId
+
+	/// SpecialRequestId from HotelGuestServices.dbo.special_requests.special_request_id.
+	property SpecialRequestId
+		dataType: string
+		lineageTag: 530e68f1-52a0-577e-92f1-d6649d6dd398
+
+		backingConfiguration
+			valueColumn: special_requests.special_request_id
+
+	/// ReservationId from HotelGuestServices.dbo.special_requests.reservation_id.
+	property ReservationId
+		dataType: string
+		lineageTag: 953dba20-705a-5173-9a9d-97a9408eeaaa
+
+		backingConfiguration
+			valueColumn: special_requests.reservation_id
+
+	/// RequestType from HotelGuestServices.dbo.special_requests.request_type.
+	property RequestType
+		dataType: string
+		lineageTag: f30c5195-9e0b-5c94-a820-006c81a9dfb7
+
+		backingConfiguration
+			valueColumn: special_requests.request_type
+
+	/// Status from HotelGuestServices.dbo.special_requests.status.
+	property Status
+		dataType: string
+		lineageTag: c997fd95-274b-5201-82c5-6693af9c3220
+
+		backingConfiguration
+			valueColumn: special_requests.status

@@ -34,6 +34,34 @@ Apply live changes only when you are ready:
 ```
 
 The CLI never publishes the Data Agent runtime. After a successful apply, run the
-`HotelDataAgentRuntimePublish` notebook explicitly. The notebook synchronizes both live lakehouse
-schemas with `fabric-data-agent-sdk`, selects their governed tables, reapplies instructions and
-few-shot queries, and publishes the resulting staging configuration.
+`HotelDataAgentRuntimePublish` notebook explicitly. The notebook requires independently reviewed
+native-readiness evidence bound to the exact draft, then verifies existing source bindings,
+governed tables, descriptions, and examples with `fabric-data-agent-sdk`. It never adds, removes,
+or rewrites native sources or model-owned Prep for AI. After publication it compares the published
+configuration with staging and calls the published Data Agent MCP endpoint directly, failing
+unless every isolation fixture passes. Prepared Topics and ontology context are not acceptance
+evidence.
+
+Generic apply refuses full-definition replacement of an existing Data Agent or
+semantic model before any remote writes or deployment-state save in an existing
+workspace. Those replacements cannot preserve reviewed native Data Agent settings
+or model-owned AI Instructions, AI Schema, and Verified Answers. Use the supported
+native-preserving configuration workflow, Power BI Prep for AI for model-owned
+configuration, and the readiness-gated publication notebook instead. There is no
+override. New-item creation, unrelated existing items, and non-native artifact
+updates retain their existing behavior. A dry-run remains a non-mutating plan,
+not authorization to replace protected items.
+
+Every `validate`, `plan`, and `apply` command runs the repository Data Agent quality gates before
+remote discovery or mutation. A deployable Data Agent must provide:
+
+- substantial source descriptions;
+- a complete data dictionary in every source instruction for all selected tables and fields;
+- at least ten example queries per source;
+- detailed global routing for every source;
+- an acronym compendium containing the artifact's required domain and organization-specific acronyms;
+- deterministic business fixtures with expected answer terms; and
+- direct, post-publication isolation coverage for every business fixture.
+
+The reusable thresholds and fixture contracts are declared in the Data Agent's
+`quality-gates.json`; the validator does not encode hotel-specific fixture values.

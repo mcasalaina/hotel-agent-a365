@@ -3,18 +3,53 @@
   "fewShots": [
     {
       "id": "418d22c8-d6fa-5065-8436-3daca6cfbbfc",
-      "question": "Show future reservations arriving at HTL-004.",
-      "query": "SELECT reservation_id, guest_id, check_in, check_out, status, channel FROM reservations WHERE property_id = 'HTL-004' AND status = 'future' ORDER BY check_in;"
+      "question": "Show Maria Garcia's future reservation strictly after the September 1, 2026 boundary.",
+      "query": "SELECT reservation_id, property_id, check_in, status, channel FROM reservations WHERE reservation_id = 'RES-FAMILY-2026' AND check_in > CAST('2026-09-01' AS date) AND status IN ('future', 'arriving');"
     },
     {
       "id": "5e53074c-509e-5afc-b8c1-a7ab01d35fa1",
       "question": "List open action sagas that still require reconciliation.",
-      "query": "SELECT saga_id, action_type, confirmation_id, state, pending_reconciliation FROM action_sagas WHERE pending_reconciliation = true;"
+      "query": "SELECT saga_id, action_type, confirmation_id, state, pending_reconciliation FROM action_sagas WHERE pending_reconciliation = 1;"
     },
     {
       "id": "0acb8ca6-a7e5-5b5f-9a79-b3d8654c08fd",
-      "question": "How many active reservations arrive at each property from 2026-07-12 through 2026-07-18?",
-      "query": "SELECT property_id, COUNT(*) AS reservation_count FROM reservations WHERE check_in BETWEEN DATE '2026-07-12' AND DATE '2026-07-18' AND status IN ('future', 'arriving') GROUP BY property_id ORDER BY reservation_count DESC, property_id;"
+      "question": "Show the completed past reservation for guest GST-000005 strictly before September 1, 2026.",
+      "query": "SELECT reservation_id, property_id, check_in, status, channel FROM reservations WHERE reservation_id = 'RES-FOLIO-2026' AND check_in < CAST('2026-09-01' AS date) AND status = 'completed';"
+    },
+    {
+      "id": "66445752-e97b-52b9-9087-71a01ba1fa69",
+      "question": "What disputed minibar charge is recorded for folio FOL-0000001?",
+      "query": "SELECT d.folio_id, d.dispute_type, d.amount, d.status FROM billing_disputes d WHERE d.folio_id = 'FOL-0000001' AND d.dispute_type = 'minibar' AND d.amount = 15.00;"
+    },
+    {
+      "id": "3a663131-084f-5592-b390-cb6894733f04",
+      "question": "What is the balance for folio FOL-0000001?",
+      "query": "SELECT folio_id, property_id, balance FROM folios WHERE folio_id = 'FOL-0000001';"
+    },
+    {
+      "id": "388d6e45-5f42-594d-8a05-5931e5d981d8",
+      "question": "List open billing disputes in descending amount order.",
+      "query": "SELECT billing_dispute_id, folio_id, status, amount FROM billing_disputes WHERE status IN ('open', 'under_review') ORDER BY amount DESC;"
+    },
+    {
+      "id": "3ce49f35-d4bb-520c-ae7b-25ae87558834",
+      "question": "Show reservation channels represented at HTL-004.",
+      "query": "SELECT channel, COUNT(*) AS reservation_count FROM reservations WHERE property_id = 'HTL-004' GROUP BY channel ORDER BY reservation_count DESC;"
+    },
+    {
+      "id": "9bfebca8-da56-51fe-b019-d6a39d6f4e34",
+      "question": "Show daily room revenue facts for HTL-005.",
+      "query": "SELECT service_date, occupied_rooms, sellable_rooms, room_revenue FROM agg_property_kpis_daily WHERE property_id = 'HTL-005' ORDER BY service_date;"
+    },
+    {
+      "id": "bba3e5c5-557f-5f4b-9fd0-c2aaa234eefb",
+      "question": "Which reconciliation workflows are not complete?",
+      "query": "SELECT saga_id, state, pending_reconciliation FROM action_sagas WHERE pending_reconciliation = 1 OR state <> 'completed' ORDER BY saga_id;"
+    },
+    {
+      "id": "a77a33e1-e8ce-552a-a0fc-b2271c149708",
+      "question": "Count reservations by lifecycle status.",
+      "query": "SELECT status, COUNT(*) AS reservation_count FROM reservations GROUP BY status ORDER BY reservation_count DESC;"
     }
   ]
 }

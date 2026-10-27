@@ -254,12 +254,16 @@ def test_mail_reply_preserves_language_with_foreign_names(
     result = asyncio.run(tool.reply_to_email("folder-message-id", body))
 
     assert questions[0] == user_request
-    actual_body = questions[1].split("Exact reply body:\n", 1)[1].split(
-        "\nPreserve the additional CC recipient list exactly.", 1
-    )[0]
+    actual_body = (
+        questions[1]
+        .split("Exact reply body:\n", 1)[1]
+        .split("\nPreserve the additional CC recipient list exactly.", 1)[0]
+    )
     assert actual_body == body
-    assert evidence == result == (
-        f"{LANGUAGE_RESPONSE_GUIDANCE}\n\nTool evidence:\nMail tool confirmed the reply."
+    assert (
+        evidence
+        == result
+        == (f"{LANGUAGE_RESPONSE_GUIDANCE}\n\nTool evidence:\nMail tool confirmed the reply.")
     )
     assert "latest complete utterance is authoritative" in result
     assert "not from the visitors' names" in result

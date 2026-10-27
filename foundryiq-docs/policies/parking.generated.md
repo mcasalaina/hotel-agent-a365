@@ -13,9 +13,9 @@ source_path: foundryiq-docs/policies/parking.generated.md
 
 ## Permanent policy
 
-This fictional chain-wide procedure governs parking requests.
-Associates verify the synthetic guest record and reservation before sharing details or
+This chain-wide procedure governs parking requests.
+Associates verify the guest record and reservation before sharing details or
 making a change. Confirm the exact change, any price or penalty impact, and the policy
 basis before recording an action. Payment records contain only a masked card value and
-a synthetic payment token. Escalate safety, privacy, or unresolved maintenance matters
+a payment token. Escalate safety, privacy, or unresolved maintenance matters
 to the property duty leader.

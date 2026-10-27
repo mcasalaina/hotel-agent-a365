@@ -4,12 +4,52 @@
     {
       "id": "d41a60f3-cc4c-5d6c-8323-6939882abb70",
       "question": "Trace a guest stay from reservation to room and property.",
-      "query": "MATCH (g:Guest)-[:GuestBookedReservation]->(r:Reservation)-[:ReservationResultedInStay]->(s:Stay)-[:StayAssignedRoom]->(rm:Room)-[:PropertyHasRoom]->(p:Property) WHERE g.GuestId = 'GST-DEMO-FAMILY' RETURN g, r, s, rm, p;"
+      "query": "MATCH (g:Guest)-[:GuestBookedReservation]->(r:Reservation)-[:ReservationResultedInStay]->(s:Stay)-[:StayAssignedRoom]->(rm:Room)-[:PropertyHasRoom]->(p:Property) WHERE g.GuestId = 'GST-000001' RETURN g, r, s, rm, p;"
     },
     {
       "id": "386b8095-3d2a-530c-9a97-c97bb032fac9",
       "question": "Show maintenance work connected to a stay.",
-      "query": "MATCH (s:Stay)-[:StayTriggeredMaintenanceRequest]->(m:MaintenanceRequest)-[:MaintenanceRequestTracksWorkOrder]->(w:WorkOrder) WHERE s.StayId = 'STY-DEMO-HVAC' RETURN s, m, w;"
+      "query": "MATCH (s:Stay)-[:StayTriggeredMaintenanceRequest]->(m:MaintenanceRequest)-[:MaintenanceRequestTracksWorkOrder]->(w:WorkOrder) WHERE s.StayId = 'STY-0000001' RETURN s, m, w;"
+    },
+    {
+      "id": "760a4dcf-bcad-523c-aecb-1af16a38ab7d",
+      "question": "Which reservations were booked by a guest?",
+      "query": "MATCH (g:Guest)-[:GuestBookedReservation]->(r:Reservation) WHERE g.GuestId = 'GST-000005' RETURN g, r;"
+    },
+    {
+      "id": "46815be9-bf48-510d-a63d-f13693af2119",
+      "question": "Which stay resulted from a reservation?",
+      "query": "MATCH (r:Reservation)-[:ReservationResultedInStay]->(s:Stay) WHERE r.ReservationId = 'RES-0000001' RETURN r, s;"
+    },
+    {
+      "id": "d927ca43-d9b0-5298-91c2-d02880c57ca5",
+      "question": "Trace a reservation to a maintenance request.",
+      "query": "MATCH (r:Reservation)-[:ReservationResultedInStay]->(s:Stay)-[:StayTriggeredMaintenanceRequest]->(m:MaintenanceRequest) WHERE r.ReservationId = 'RES-0000002' RETURN r, s, m;"
+    },
+    {
+      "id": "73d50be5-a35a-5342-9127-8434bb050fc4",
+      "question": "Show guests connected to completed stays.",
+      "query": "MATCH (g:Guest)-[:GuestBookedReservation]->(r:Reservation)-[:ReservationResultedInStay]->(s:Stay) RETURN g, r, s;"
+    },
+    {
+      "id": "f09f10f3-76c0-50c7-a244-201474bca347",
+      "question": "Show maintenance requests triggered by stays.",
+      "query": "MATCH (s:Stay)-[:StayTriggeredMaintenanceRequest]->(m:MaintenanceRequest) RETURN s, m;"
+    },
+    {
+      "id": "b8db6d5d-67d4-59b9-921a-c43d0445faac",
+      "question": "Trace a guest reservation into its realized stay.",
+      "query": "MATCH (g:Guest)-[:GuestBookedReservation]->(r:Reservation)-[:ReservationResultedInStay]->(s:Stay) WHERE g.GuestId = 'GST-000001' RETURN g, r, s;"
+    },
+    {
+      "id": "566ae893-4882-56c0-b278-ea16e6bc6c00",
+      "question": "Which maintenance requests relate to STY-0000001?",
+      "query": "MATCH (s:Stay)-[:StayTriggeredMaintenanceRequest]->(m:MaintenanceRequest) WHERE s.StayId = 'STY-0000001' RETURN s, m;"
+    },
+    {
+      "id": "658fbe29-0cc4-5244-a114-e8e8e8019996",
+      "question": "Show the guest and reservation path for RES-0000001.",
+      "query": "MATCH (g:Guest)-[:GuestBookedReservation]->(r:Reservation) WHERE r.ReservationId = 'RES-0000001' RETURN g, r;"
     }
   ]
 }
