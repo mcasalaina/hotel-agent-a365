@@ -1075,10 +1075,25 @@ Token renewal requiring interaction surfaces a reconnect error.
 
 Do not replace this with full-page MSAL redirect sign-in while retaining
 `memoryStorage`. That combination is unsupported. `AADSTS50058` means silent
-sign-in did not receive a usable IdP session. Record the actual error and obtain
-a user-mediated supported browser sign-in. Do not weaken token storage, alter
-browser cookie policy, borrow a CLI bearer, or claim authentication from consent
-or health alone.
+sign-in did not receive a usable IdP session.
+
+The separate **Sign in in this tab** action uses `oidc-client-ts` Authorization
+Code + PKCE, not MSAL redirect authentication. Add the exact owned origin plus
+`/` to the existing application's SPA redirect URIs, preserving `/redirect.html`.
+The new flow uses `response_type=code`, `response_mode=fragment`, `openid profile`
+and the existing API scope. It requests no offline-access scope or client secret.
+Only short-lived PKCE request state uses session storage. User records and all
+tokens use `InMemoryWebStorage`. The callback removes authorization parameters
+from the URL before processing, and the library rejects unknown state.
+Reloading loses authentication. Expired tokens require another interactive
+sign-in. Sign-out clears local app authentication, not other Microsoft sessions.
+The root callback stays in the app even if the original tab has an opener.
+MSAL popup and silent flows continue to use their dedicated `/redirect.html`
+bridge, not the root callback.
+
+Record the actual browser result. Do not weaken token storage, alter browser
+cookie policy, borrow a CLI bearer, or claim authentication from consent,
+registered redirects, a successful image deployment, or health alone.
 
 With the required `{"clientContext":"web"}` JSON request body, verify
 missing/invalid browser tokens return HTTP 401. An invalid client context returns
@@ -1201,13 +1216,21 @@ The reference rollout as of October 27, 2026 established:
   existing-tab silent sign-in returned `AADSTS50058`, with no authenticated API,
   WebSocket, or audio acceptance reached. The deployment did not change hosted
   version 7 or bridge `em4`, and it did not weaken memory-only token storage.
-- A separate direct v7 prerecorded-audio test established the hosted WebSocket
-  upgrade, then failed at the inner Voice Live handshake with HTTP 401 before
-  transcription or audio. Role inspection found the actual hosted identity
-  missing the documented account-scoped Cognitive Services User and
-  project-scoped Foundry User assignments. Those grants remained unapplied while
-  explicit approval was unavailable. This was separate from the browser cookie
-  failure, not a successful voice test.
+- A separate direct v7 prerecorded-audio test initially failed at the inner
+  Voice Live handshake with HTTP 401. The actual hosted identity then received
+  the documented account-scoped Cognitive Services User and project-scoped
+  Foundry User assignments after the user's renewed instruction to proceed.
+  Independent role readback confirmed both grants. A fresh direct session
+  `hotel2701-voice-acceptance-20261027b` returned `auth_ack`, the actual Maria ASR,
+  correct Scottsdale reservation dates and USD 25 valet answer, and 1,120,800
+  output audio bytes. This establishes direct hosted voice, not browser SPA/proxy
+  authentication, browser audio playback, or a separately traced IQ call.
+- Same-tab PKCE frontend revision `pkce2` was subsequently deployed Healthy,
+  Running, and receiving all traffic. Both same-origin SPA redirects were read
+  back. The live bundle contains the correct tenant, application and API scope.
+  The existing-tab authenticated browser acceptance remained pending at this
+  checkpoint. The root no longer forwards authorization responses to the MSAL
+  bridge based on an opener. Hosted version 7 and bridge `em4` were unchanged.
 - Live proxy negative checks rejected missing/invalid bearer tokens with HTTP
   401 and an invalid WebSocket handle with an auth error and close code 1008.
   Correct rejection behavior did not establish a successful authorized call.
