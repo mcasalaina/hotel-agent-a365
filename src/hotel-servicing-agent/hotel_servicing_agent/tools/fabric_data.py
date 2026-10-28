@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from collections.abc import Awaitable, Callable
 from datetime import date, timedelta
@@ -9,6 +10,7 @@ from typing import Any
 from agent_framework import FunctionTool
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
+from mcp.types import BlobResourceContents, TextResourceContents
 
 from hotel_servicing_agent.config import HOTEL_TEMPORAL_BOUNDARY
 from hotel_servicing_agent.language import with_language_response_guidance
@@ -168,6 +170,35 @@ async def _query_data_agent(
         text = "\n".join(block.text for block in result.content if block.type == "text").strip()
         if result.isError:
             raise RuntimeError(f"Fabric Data Agent query failed: {text}")
-        if not text:
-            raise RuntimeError("Fabric Data Agent returned no text response")
-        return text
+        evidence: list[str] = []
+        for block in result.content:
+            if block.type == "text":
+                if block.text.strip():
+                    evidence.append(block.text)
+            elif block.type == "resource":
+                evidence.append(_resource_evidence(block.resource))
+            elif block.type == "resource_link":
+                resource_result = await session.read_resource(block.uri)
+                if not resource_result.contents:
+                    raise RuntimeError(f"Fabric Data Agent returned an empty resource: {block.uri}")
+                evidence.extend(_resource_evidence(item) for item in resource_result.contents)
+            else:
+                raise RuntimeError(
+                    f"Fabric Data Agent returned unsupported query evidence: {block.type}"
+                )
+        if result.structuredContent:
+            evidence.append(
+                "Structured query results:\n"
+                + json.dumps(result.structuredContent, ensure_ascii=False)
+            )
+        if not evidence:
+            raise RuntimeError("Fabric Data Agent returned no query evidence")
+        return "\n\n".join(evidence)
+
+
+def _resource_evidence(resource: TextResourceContents | BlobResourceContents) -> str:
+    if not isinstance(resource, TextResourceContents):
+        raise RuntimeError(f"Fabric Data Agent returned a non-text query resource: {resource.uri}")
+    if not resource.text.strip():
+        raise RuntimeError(f"Fabric Data Agent returned an empty query resource: {resource.uri}")
+    return f"Authoritative query result ({resource.uri}):\n{resource.text}"

@@ -1,15 +1,30 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import date
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock
 
+import pytest
+from hotel_servicing_agent.tools import fabric_data
 from hotel_servicing_agent.tools.fabric_data import (
     FABRIC_TOKEN_SCOPE,
     PROPERTY_CONTEXT_DIRECTIVE,
     FabricDataAgentTool,
     _governed_question,
+    _query_data_agent,
+)
+from mcp.types import (
+    BlobResourceContents,
+    CallToolResult,
+    EmbeddedResource,
+    ImageContent,
+    ReadResourceResult,
+    ResourceLink,
+    TextContent,
+    TextResourceContents,
 )
 
 
@@ -133,3 +148,168 @@ def test_governed_exact_id_lookup_does_not_inject_date_window() -> None:
     assert "join its property_id to the authoritative property roster" in question
     assert "return the official property name" in question
     assert "Today's authoritative UTC date" not in question
+
+
+@pytest.fixture
+def mcp_session(monkeypatch: pytest.MonkeyPatch) -> SimpleNamespace:
+    session = SimpleNamespace(
+        initialize=AsyncMock(),
+        list_tools=AsyncMock(
+            return_value=SimpleNamespace(
+                tools=[SimpleNamespace(name="data_agent", inputSchema={"properties": {"q": {}}})]
+            )
+        ),
+        call_tool=AsyncMock(),
+        read_resource=AsyncMock(),
+    )
+
+    @asynccontextmanager
+    async def transport(*args: Any, **kwargs: Any) -> Any:
+        yield object(), object(), None
+
+    @asynccontextmanager
+    async def client(*args: Any, **kwargs: Any) -> Any:
+        yield session
+
+    monkeypatch.setattr(fabric_data, "streamablehttp_client", transport)
+    monkeypatch.setattr(fabric_data, "ClientSession", client)
+    return session
+
+
+def test_mcp_query_preserves_actual_result_tables(mcp_session: SimpleNamespace) -> None:
+    rows = "reservation_id,property_id,check_in\r\nRES-1,HTL-004,2026-09-10\r\n"
+    roster = "property_id,official_property_name\r\nHTL-004,Lyrenza Scottsdale Sonoran Resort\r\n"
+    mcp_session.call_tool.return_value = CallToolResult(
+        content=[
+            TextContent(type="text", text="Details are in the results table."),
+            EmbeddedResource(
+                type="resource",
+                resource=TextResourceContents(
+                    uri="file:///result_1.csv", mimeType="text/csv", text=rows
+                ),
+            ),
+            EmbeddedResource(
+                type="resource",
+                resource=TextResourceContents(
+                    uri="file:///result_2.csv", mimeType="text/csv", text=roster
+                ),
+            ),
+        ]
+    )
+
+    answer = asyncio.run(_query_data_agent("https://example.test/mcp", {}, "Read reservations"))
+
+    assert "Details are in the results table." in answer
+    assert "Authoritative query result (file:///result_1.csv):\n" + rows in answer
+    assert "Authoritative query result (file:///result_2.csv):\n" + roster in answer
+    mcp_session.read_resource.assert_not_awaited()
+
+
+def test_mcp_query_accepts_resource_only_evidence(mcp_session: SimpleNamespace) -> None:
+    mcp_session.call_tool.return_value = CallToolResult(
+        content=[
+            EmbeddedResource(
+                type="resource",
+                resource=TextResourceContents(uri="file:///result.json", text='{"count": 0}'),
+            )
+        ]
+    )
+
+    answer = asyncio.run(_query_data_agent("https://example.test/mcp", {}, "Count reservations"))
+
+    assert '{"count": 0}' in answer
+
+
+def test_mcp_query_preserves_structured_results(mcp_session: SimpleNamespace) -> None:
+    mcp_session.call_tool.return_value = CallToolResult(
+        content=[], structuredContent={"reservation_id": "RES-1", "count": 0}
+    )
+
+    answer = asyncio.run(_query_data_agent("https://example.test/mcp", {}, "Read reservations"))
+
+    assert answer == 'Structured query results:\n{"reservation_id": "RES-1", "count": 0}'
+
+
+def test_mcp_query_reads_linked_evidence_through_same_server(mcp_session: SimpleNamespace) -> None:
+    mcp_session.call_tool.return_value = CallToolResult(
+        content=[ResourceLink(type="resource_link", uri="file:///result.csv", name="result.csv")]
+    )
+    mcp_session.read_resource.return_value = ReadResourceResult(
+        contents=[TextResourceContents(uri="file:///result.csv", text="count\n6\n")]
+    )
+
+    answer = asyncio.run(_query_data_agent("https://example.test/mcp", {}, "Count reservations"))
+
+    assert "count\n6\n" in answer
+    assert str(mcp_session.read_resource.await_args.args[0]) == "file:///result.csv"
+
+
+def test_mcp_query_propagates_tool_errors_before_reading_links(
+    mcp_session: SimpleNamespace,
+) -> None:
+    mcp_session.call_tool.return_value = CallToolResult(
+        content=[
+            TextContent(type="text", text="Query execution failed"),
+            ResourceLink(type="resource_link", uri="file:///result.csv", name="result.csv"),
+        ],
+        isError=True,
+    )
+
+    with pytest.raises(
+        RuntimeError, match="Fabric Data Agent query failed: Query execution failed"
+    ):
+        asyncio.run(_query_data_agent("https://example.test/mcp", {}, "Read reservations"))
+
+    mcp_session.read_resource.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("result", "message"),
+    [
+        (CallToolResult(content=[]), "no query evidence"),
+        (CallToolResult(content=[TextContent(type="text", text=" ")]), "no query evidence"),
+        (
+            CallToolResult(
+                content=[
+                    EmbeddedResource(
+                        type="resource",
+                        resource=TextResourceContents(uri="file:///empty.csv", text=""),
+                    )
+                ]
+            ),
+            "empty query resource",
+        ),
+        (
+            CallToolResult(
+                content=[
+                    EmbeddedResource(
+                        type="resource",
+                        resource=BlobResourceContents(uri="file:///binary.bin", blob="AA=="),
+                    )
+                ]
+            ),
+            "non-text query resource",
+        ),
+        (
+            CallToolResult(content=[ImageContent(type="image", mimeType="image/png", data="AA==")]),
+            "unsupported query evidence: image",
+        ),
+    ],
+)
+def test_mcp_query_rejects_missing_or_unsupported_evidence(
+    mcp_session: SimpleNamespace, result: CallToolResult, message: str
+) -> None:
+    mcp_session.call_tool.return_value = result
+
+    with pytest.raises(RuntimeError, match=message):
+        asyncio.run(_query_data_agent("https://example.test/mcp", {}, "Read reservations"))
+
+
+def test_mcp_query_rejects_empty_linked_resource(mcp_session: SimpleNamespace) -> None:
+    mcp_session.call_tool.return_value = CallToolResult(
+        content=[ResourceLink(type="resource_link", uri="file:///result.csv", name="result.csv")]
+    )
+    mcp_session.read_resource.return_value = ReadResourceResult(contents=[])
+
+    with pytest.raises(RuntimeError, match="returned an empty resource"):
+        asyncio.run(_query_data_agent("https://example.test/mcp", {}, "Read reservations"))
