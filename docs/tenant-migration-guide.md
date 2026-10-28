@@ -401,8 +401,8 @@ For each SQL source:
    the Open Data Source Topic run step's selected heading path and returned
    instructions. Read back the saved configuration after reopening the editor.
    A heading called `Topics` in an ordinary instruction string is not a Topic.
-5. Check native ontology context and refresh its target bindings through the
-   supported editor.
+5. Configure native ontology context separately through the supported Sources
+   experience described below. SQL instructions are not ontology context.
 
 Semantic models have a different contract. Data Agent source descriptions,
 source instructions, native examples, and Topics are not effective semantic-model
@@ -430,7 +430,10 @@ required. Verify the live model and real Data Agent answers separately. See
 and the
 [published element contract](https://learn.microsoft.com/rest/api/fabric/dataagent/published/list-datasource-elements).
 
-In the Power BI service, open the target model's Prep data for AI experience.
+The user must configure Prep data for AI through the Power BI service's
+supported experience. The agent may assess and suggest changes for review, but
+must not author the persisted AI instructions, AI Schema or Verified Answers.
+Open the target model's Prep data for AI experience.
 Use Simplify data schema for the AI Schema, Add AI instructions for the model's
 business rules, and the supported Verified Answers workflow to save approved
 visuals and their trigger questions. Create at least ten reviewed actual Verified
@@ -450,6 +453,33 @@ The product contracts are documented in
 The semantic-model guidance explicitly says that model metadata and Prep for AI
 drive DAX generation. General Data Agent instructions still govern cross-source
 routing and response presentation, but do not replace model-owned DAX guidance.
+
+### Native ontology context
+
+Follow the documented
+[Ontology context workflow](https://learn.microsoft.com/fabric/data-science/data-agent-ontology-sources):
+
+1. Open the target Data Agent. In Sources, select Add sources, then Add an
+   ontology. Choose the target Ontology item, not the source tenant's item.
+2. Expand it and review the entity types and associated Ontology data sources.
+   Mount eligible underlying sources before adding supported source-specific
+   descriptions, instructions or examples.
+3. Use the Ontology's more-options menu to Download ontology context. Retain the
+   actual read-only context and verify the expected entities, relationships,
+   mappings and target bindings, including `GuestBookedReservation`.
+4. If the context is stale, use Refresh and download it again. The documented
+   automatic refresh interval is ten minutes, not an indefinite propagation
+   allowance.
+5. Run the relationship acceptance question and inspect its run steps and
+   generated SQL, KQL or DAX against the selected underlying source. Ontology
+   supplies semantic context. It is not the query execution endpoint.
+
+The retained SDK's `OntologySource` query connection and the legacy declarative
+graph datasource do not establish this native context integration. The checked
+Learn workflows and retained SDK do not document a Topics/context authoring API.
+Do not invent an internal endpoint or replace the existing definition to bypass
+an inaccessible editor. Keep the gate unverified until the supported UI
+configuration and its actual context/run-step readback are available.
 
 ### Staging, publication, and evidence
 
@@ -1255,7 +1285,15 @@ The reference rollout as of October 27, 2026 established:
 - The original eight-case v7 batch passed language 8/8, primary Hotel rubric 8/8,
   and strict combined checks 8/8. The Hotel definition aggregate was 0/8 because
   of inapplicable graders. It remained a separate reported result, not an
-  aggregate pass.
+  aggregate pass. A retained-output review identified `temporal-boundary:2`
+  failing all eight cases and `mail-recipient-integrity:3` failing seven.
+  Both specialized dimensions were `always_applicable`, although these were
+  knowledge/language questions without reservation-date or mail-recipient tasks.
+  Judge reasons explicitly acknowledged the absent tasks. This is a suite
+  applicability mismatch, not evidence that these turns misrouted email or
+  misclassified reservations. Preserve all original scores and thresholds.
+  Review task-specific suite selection before an approved fresh run rather
+  than changing the old judgments to manufacture an aggregate pass.
 - The Fabric Data Agent was actually published with matching native source
   fingerprints. Six of seven production MCP isolation cases passed. The ontology
   relationship case failed and remained recorded as a failure.
@@ -1409,6 +1447,12 @@ the single distinct Cc address without duplicating it. Raw message IDs,
 recipient fields, source hashes and comparisons are retained privately in
 `hotel2701-reply-headers-raw.json` and `hotel2701-reply-headers-verified.json`.
 This verifies headers, not a new body/language run or a newer-version replay.
+
+A separate read-only Agent 365 Teams connection check authenticated the existing
+agent user and found its operator chat. The latest message was dated
+October 27 at 16:53:56 UTC, before hosted v7. This verifies the delegated Teams
+connection, not current-version reservation acceptance. No test message was
+sent, and the older chat must not be relabelled as a v7 result.
 
 SQL native Topics readback, ontology-context acceptance, model-owned AI
 setup/Verified Answers, current Teams reservation acceptance, French-with-Cc
