@@ -57,6 +57,10 @@ the remaining web configuration and production offline-playback guards.
 and native-state replacement guard. Its complete staged source passed 373
 offline unit tests and the repository's lint, formatting, type, naming and
 configuration checks.
+`8726f15` subsequently preserves complete Fabric MCP query evidence, including
+embedded CSV resources, and keeps both instruction copies synchronized.
+The targeted runtime checks passed 98 cases. Hosted v8 was deployed from that
+repair and independently verified as described in Section 17.
 These commits do not promote all remaining worktree changes or merge the
 implementation branch into main. Source preservation does not itself redeploy
 the hosted agent, bridge, evaluators or browser proxy.
@@ -923,6 +927,23 @@ an unknown-guest negative control. For the reference fixture, require Scottsdale
 September 10-12, 2026, and USD 25/night. For the unknown guest, require an honest
 inability to confirm the reservation/property/price.
 
+Preserve the complete Fabric MCP evidence, not just text blocks. The service can
+return a short generated summary plus embedded CSV query resources. Retain the
+resource rows and structured results, and resolve linked resources through the
+same authenticated MCP session rather than treating `file://` resource identifiers
+as local paths. Reject unreadable or unsupported evidence explicitly. Ground
+record IDs, dates, counts and property mappings in the actual rows, even when a
+generated summary disagrees. If requested fields are absent, query again or
+report that they could not be verified instead of reconstructing a result table.
+The deployment package must exclude local `.foundry` state.
+
+Add a full reservation-list control, not just the nearest booking. With the
+reference Maria Garcia fixture and strict `check_in > 2026-09-01`, require all six
+canonical upcoming records with exact reservation/property/date mappings.
+Confirm `check_in < 2026-09-01` separately for past records. A September 1 check-in
+belongs to neither group. Compare exact record sets and mappings, not merely the
+answer's count or its explanation of the boundary.
+
 Inspect real App Insights tool spans, not just plausible answer text:
 
 1. Fabric completes successfully and actually returns `HTL-004`.
@@ -1259,6 +1280,7 @@ decision.
 | Fabric "Failed to get publish info" | Real production publication, not just a draft definition or saved notebook |
 | Fabric metadata disappears | A redeploy replaced native sources. Restore reviewed settings and adopt/preserve rather than overwrite. |
 | Wrong property or valet price | Guest resolution, canonical source bundle, actual Fabric property evidence, IQ property filter, returned source content |
+| Reservation list has invented IDs or dates | Ensure the adapter preserves embedded CSV/structured MCP results. Compare every final record to actual query rows, not a generated summary or a claim that a table exists. |
 | Reservation found but policy unavailable | Dependent Fabric/IQ calls ran in parallel. Inspect actual tool timestamps and serialized `parallel_tool_calls`. |
 | Two email replies | Both Work IQ and bridge are sending. Restore one delivery owner and verify actual inbox counts. |
 | Reply is an action summary | Email final-answer prompt is wrong. Require only guest-facing text and grounded facts. |
@@ -1277,11 +1299,33 @@ effective identity, endpoint, and trace before changing the next layer.
 
 ## 17. Verified rollout status and remaining work
 
-The reference rollout as of October 27, 2026 established:
+The reference rollout through October 28, 2026 UTC established:
 
 - Hosted version 7 was active. Its exact family-reservation-to-Scottsdale-valet
   test passed, with successful sequential Fabric then IQ tool spans. An unknown
   guest control declined to invent the property, dates, or price.
+- A later read-only v7 boundary check correctly returned all four canonical past
+  reservations. The corresponding upcoming-list check failed: the final answer
+  invented five `R-*` reservation IDs and supplied incorrect dates. Its tool
+  output retained only a generated summary that claimed five records and
+  referred to missing result tables. A separate complete production Fabric MCP
+  response contained six correct upcoming records in embedded CSV resources.
+  The adapter had discarded those resource blocks. This was an application
+  evidence-loss defect, separate from the evaluator applicability mismatch below.
+  Source repair `8726f15` preserves embedded, linked and structured query evidence,
+  rejects unreadable evidence, and requires final answers to use the result rows.
+  A local conflicting-summary replay returned all six exact IDs and dates.
+  Hosted version 8 was then deployed and independently read back as Active,
+  with code hash
+  `02b2e940710eac892676079eb43c6973f5e070748aed54f70ee149d9710649fe`
+  and the same hosted principal as v7. The exact previously failing query in a
+  fresh v8 Responses conversation returned all six canonical reservation IDs,
+  official hotels and check-in dates, with the strict September 1 boundary.
+  Its response was
+  `caresp_01ab61e172f28a6600ZVDHq7nCdw1OUH2ynZSjoXeglBEH87QD`.
+  This verifies the non-voice repair, not a new multilingual, channel or voice
+  run. The existing evaluation configuration and original v7 judgments were
+  preserved. No new formal evaluation job was started.
 - The original eight-case v7 batch passed language 8/8, primary Hotel rubric 8/8,
   and strict combined checks 8/8. The Hotel definition aggregate was 0/8 because
   of inapplicable graders. It remained a separate reported result, not an
@@ -1366,7 +1410,10 @@ The reference rollout as of October 27, 2026 established:
   on session1 with a text call active. Its second text turn was not confirmed,
   the text/end/prerecorded sequence was not run, and there is no second-call
   audio result. No observers are installed. Do not end, retry, refresh or
-  navigate that tab, including to Fabric, until the user explicitly resumes.
+  navigate that tab, including to Fabric, without specific authorization.
+  The user subsequently stated that no further voice testing is required.
+  Remaining browser-audio acceptance is therefore waived, not passed. No
+  subsequent voice test or browser-call action was performed for the v8 repair.
 - The same existing proxy subsequently enabled supported single-revision HTTP
   sticky sessions without changing the image, replica limits or roles. Live
   root, config and health responses issued `acaAffinity`, and an in-memory
@@ -1456,11 +1503,13 @@ sent, and the older chat must not be relabelled as a v7 result.
 
 SQL native Topics readback, ontology-context acceptance, model-owned AI
 setup/Verified Answers, current Teams reservation acceptance, French-with-Cc
-coverage and browser audio acceptance remain incomplete. Browser authentication
-and text-mode retrieval were verified separately. Browser voice testing remains
-explicitly paused by the user. Do not use this guide, the publication operation,
-or the successful v7 direct invocation as a claim that those remaining gates
-passed.
+coverage remain incomplete. Browser authentication and text-mode retrieval were
+verified separately. The user waived further voice testing, so browser audio
+remains unverified and is no longer a requested acceptance gate. Do not resume
+voice tests. Hosted v8's exact upcoming-reservation query is verified, but the
+older v6/v7 channel and evaluation receipts are not v8 reruns. Do not use this
+guide, the publication operation, or successful direct invocations as a claim
+that the remaining native and channel gates passed.
 
 For a new tenant, run every gate again against that tenant's actual resources and
 identities. Previous-tenant receipts are reference material, not target acceptance.
