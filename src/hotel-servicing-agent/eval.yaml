@@ -1,17 +1,15 @@
-name: smoke-core
+name: hotel-servicing-rubric
 agent:
     name: hotel-servicing-agent
     kind: hosted
-    version: "37"
-    config: .agent_configs/baseline/metadata.yaml
+    version: "8"
 dataset:
-    name: smoke-core
-    version: "1.0"
-    local_uri: datasets/smoke-core
+    local_uri: ../../evaluation/hotel-servicing-rubric-cases.jsonl
 evaluators:
-    - name: smoke-core
-      version: "3"
-      local_uri: evaluators/smoke-core/rubric_dimensions.json
+    - name: hotel-agent-rubric
+      version: "9"
+      local_uri: ../../evaluation/hotel-servicing-rubric.json
 options:
     eval_model: gpt-5.4-mini
-max_samples: 15
+    pass_threshold: 0.90
+max_samples: 24

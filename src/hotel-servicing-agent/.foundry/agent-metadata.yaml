@@ -1,28 +1,38 @@
 defaultEnvironment: dev
 environments:
   dev:
-    azd:
-      environmentName: hotel-dev
-      service: hotel-servicing-agent
+    projectEndpoint: https://mcasalaina-4iqs-2701-resource.services.ai.azure.com/api/projects/mcasalaina-4iqs-2701
+    agentName: hotel-servicing-agent
+    agentVersion: "8"
     evaluationSuites:
-      - id: smoke-core
-        generationSource: eval-yaml
+      - id: hotel-servicing-rubric
+        generationSource: manual-reviewed
         tags:
-          tier: smoke
-          purpose: baseline
-        dataset: smoke-core
-        datasetVersion: "1.0"
-        datasetContentPath: datasets/smoke-core/smoke-core_dg.jsonl
+          tier: regression
+          purpose: security-compliance-correctness
+        datasetContentPath: ../../evaluation/hotel-servicing-rubric-cases.jsonl
         evaluators:
-          - name: smoke-core
-            version: "3"
-            definitionFile: evaluators/smoke-core/rubric_dimensions.json
+          - name: hotel-agent-rubric
+            version: "9"
+            threshold: 0.90
+            definitionFile: ../../evaluation/hotel-servicing-rubric.json
     lastEval:
-      evalId: eval_94eee407db4c428d9d4be8cd58608371
-      runId: evalrun_3de1cde9ec8a464fb8afbdf4d81340c3
-      agentVersion: "37"
-      status: Completed
-      passed: 15
-      failed: 0
-      errored: 0
-      resultFile: .foundry/results/dev/eval_94eee407db4c428d9d4be8cd58608371/evalrun_3de1cde9ec8a464fb8afbdf4d81340c3.json
+      evalId: eval_a0b937fbd0e34c8f88b9deb0706861f8
+      evalRunId: evalrun_4ac48225e84244428e339e01d457530d
+      runName: hotel-rubric-v9-agent-v8
+      evaluationSuiteId: hotel-servicing-rubric
+      agentVersion: "8"
+      evaluatorVersion: "9"
+      status: completed_direct_judge_fallback
+      nativeStatus: failed
+      generationSource: live-hosted-response-capture-direct-judge
+      attempted: 24
+      scored: 23
+      providerBlocked: 1
+      aggregatePassed: 17
+      passed: 12
+      failed: 11
+      incomplete: 0
+      resultFile: .foundry/results/dev/hotel-rubric-v9-direct/output-items.json
+      summaryFile: .foundry/results/dev/hotel-rubric-v9-direct/summary.json
+      nativeResultFile: .foundry/results/dev/hotel-rubric-v9-hosted/status.json
