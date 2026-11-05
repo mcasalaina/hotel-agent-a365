@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
-  "name": "occ_by_property",
+  "name": "cancel_rate",
   "position": {
-    "x": 20,
-    "y": 20,
-    "z": 0,
-    "height": 320,
-    "width": 620,
-    "tabOrder": 0
+    "x": 1208,
+    "y": 168,
+    "z": 6,
+    "height": 492,
+    "width": 568,
+    "tabOrder": 6
   },
   "visual": {
-    "visualType": "clusteredColumnChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Property"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Property Name"
+                  "Property": "Date"
                 }
               },
-              "queryRef": "Property.Property Name",
+              "queryRef": "Date.Date",
               "active": true
             }
           ]
@@ -38,13 +38,13 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Property KPI Daily"
+                      "Entity": "Booking Pace Daily"
                     }
                   },
-                  "Property": "OCC"
+                  "Property": "Cancellation Rate"
                 }
               },
-              "queryRef": "Property KPI Daily.OCC"
+              "queryRef": "Booking Pace Daily.Cancellation Rate"
             }
           ]
         }

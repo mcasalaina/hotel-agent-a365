@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
-  "name": "dining_reservations",
+  "name": "occ_by_property",
   "position": {
-    "x": 20,
-    "y": 20,
-    "z": 0,
+    "x": 24,
+    "y": 168,
+    "z": 2,
     "height": 320,
-    "width": 620,
-    "tabOrder": 0
+    "width": 568,
+    "tabOrder": 2
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "clusteredColumnChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Date"
+                      "Entity": "Property"
                     }
                   },
-                  "Property": "Date"
+                  "Property": "Property Name"
                 }
               },
-              "queryRef": "Date.Date",
+              "queryRef": "Property.Property Name",
               "active": true
             }
           ]
@@ -38,13 +38,13 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Restaurant Daily"
+                      "Entity": "Property KPI Daily"
                     }
                   },
-                  "Property": "Restaurant Reservations"
+                  "Property": "OCC"
                 }
               },
-              "queryRef": "Restaurant Daily.Restaurant Reservations"
+              "queryRef": "Property KPI Daily.OCC"
             }
           ]
         }

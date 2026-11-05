@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
   "name": "channel_table",
   "position": {
-    "x": 680,
-    "y": 20,
-    "z": 0,
-    "height": 660,
-    "width": 540,
-    "tabOrder": 0
+    "x": 912,
+    "y": 684,
+    "z": 8,
+    "height": 492,
+    "width": 864,
+    "tabOrder": 8
   },
   "visual": {
     "visualType": "tableEx",
@@ -31,30 +31,40 @@
             },
             {
               "field": {
-                "Column": {
+                "Aggregation": {
                   "Expression": {
-                    "SourceRef": {
-                      "Entity": "Booking Pace Daily"
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Booking Pace Daily"
+                        }
+                      },
+                      "Property": "Future Bookings"
                     }
                   },
-                  "Property": "Future Bookings"
+                  "Function": 0
                 }
               },
-              "queryRef": "Booking Pace Daily.Future Bookings",
+              "queryRef": "Sum(Booking Pace Daily.Future Bookings)",
               "active": true
             },
             {
               "field": {
-                "Column": {
+                "Aggregation": {
                   "Expression": {
-                    "SourceRef": {
-                      "Entity": "Booking Pace Daily"
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Booking Pace Daily"
+                        }
+                      },
+                      "Property": "Booked Revenue"
                     }
                   },
-                  "Property": "Booked Revenue"
+                  "Function": 0
                 }
               },
-              "queryRef": "Booking Pace Daily.Booked Revenue",
+              "queryRef": "Sum(Booking Pace Daily.Booked Revenue)",
               "active": true
             }
           ]

@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
   "name": "maintenance_line",
   "position": {
-    "x": 20,
-    "y": 240,
-    "z": 0,
-    "height": 380,
-    "width": 620,
-    "tabOrder": 0
+    "x": 24,
+    "y": 856,
+    "z": 8,
+    "height": 320,
+    "width": 864,
+    "tabOrder": 8
   },
   "visual": {
     "visualType": "lineChart",

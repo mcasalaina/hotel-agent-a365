@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
-  "name": "future_bookings",
+  "name": "dining_reservations",
   "position": {
-    "x": 20,
-    "y": 20,
-    "z": 0,
+    "x": 24,
+    "y": 512,
+    "z": 5,
     "height": 320,
-    "width": 620,
-    "tabOrder": 0
+    "width": 568,
+    "tabOrder": 5
   },
   "visual": {
-    "visualType": "clusteredColumnChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Property"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Property Name"
+                  "Property": "Date"
                 }
               },
-              "queryRef": "Property.Property Name",
+              "queryRef": "Date.Date",
               "active": true
             }
           ]
@@ -35,17 +35,16 @@
           "projections": [
             {
               "field": {
-                "Column": {
+                "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Booking Pace Daily"
+                      "Entity": "Restaurant Daily"
                     }
                   },
-                  "Property": "Future Bookings"
+                  "Property": "Restaurant Reservations"
                 }
               },
-              "queryRef": "Booking Pace Daily.Future Bookings",
-              "active": true
+              "queryRef": "Restaurant Daily.Restaurant Reservations"
             }
           ]
         }

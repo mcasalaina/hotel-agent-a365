@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
   "name": "service_table",
   "position": {
-    "x": 680,
-    "y": 20,
-    "z": 0,
-    "height": 600,
-    "width": 540,
-    "tabOrder": 0
+    "x": 912,
+    "y": 856,
+    "z": 9,
+    "height": 320,
+    "width": 864,
+    "tabOrder": 9
   },
   "visual": {
     "visualType": "tableEx",
@@ -40,7 +40,8 @@
                   "Property": "Open Dispute Count"
                 }
               },
-              "queryRef": "Disputes Daily.Open Dispute Count"
+              "queryRef": "Disputes Daily.Open Dispute Count",
+              "active": true
             },
             {
               "field": {
@@ -53,7 +54,8 @@
                   "Property": "Pending Reconciliation Request Count"
                 }
               },
-              "queryRef": "Requests Daily.Pending Reconciliation Request Count"
+              "queryRef": "Requests Daily.Pending Reconciliation Request Count",
+              "active": true
             }
           ]
         }

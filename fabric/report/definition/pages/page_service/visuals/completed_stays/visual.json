@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
-  "name": "covers",
+  "name": "completed_stays",
   "position": {
-    "x": 20,
-    "y": 360,
-    "z": 0,
+    "x": 616,
+    "y": 168,
+    "z": 3,
     "height": 320,
-    "width": 620,
-    "tabOrder": 0
+    "width": 568,
+    "tabOrder": 3
   },
   "visual": {
-    "visualType": "clusteredColumnChart",
+    "visualType": "lineChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Outlet"
+                      "Entity": "Date"
                     }
                   },
-                  "Property": "Outlet Name"
+                  "Property": "Date"
                 }
               },
-              "queryRef": "Outlet.Outlet Name",
+              "queryRef": "Date.Date",
               "active": true
             }
           ]
@@ -38,13 +38,13 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Restaurant Daily"
+                      "Entity": "Property KPI Daily"
                     }
                   },
-                  "Property": "Restaurant Covers"
+                  "Property": "Completed Stay Count"
                 }
               },
-              "queryRef": "Restaurant Daily.Restaurant Covers"
+              "queryRef": "Property KPI Daily.Completed Stay Count"
             }
           ]
         }

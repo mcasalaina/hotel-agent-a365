@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
-  "name": "completed_stays",
+  "name": "future_bookings",
   "position": {
-    "x": 20,
-    "y": 360,
-    "z": 0,
-    "height": 320,
-    "width": 620,
-    "tabOrder": 0
+    "x": 616,
+    "y": 168,
+    "z": 5,
+    "height": 492,
+    "width": 568,
+    "tabOrder": 5
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "clusteredColumnChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Date"
+                      "Entity": "Property"
                     }
                   },
-                  "Property": "Date"
+                  "Property": "Property Name"
                 }
               },
-              "queryRef": "Date.Date",
+              "queryRef": "Property.Property Name",
               "active": true
             }
           ]
@@ -35,16 +35,21 @@
           "projections": [
             {
               "field": {
-                "Measure": {
+                "Aggregation": {
                   "Expression": {
-                    "SourceRef": {
-                      "Entity": "Property KPI Daily"
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Booking Pace Daily"
+                        }
+                      },
+                      "Property": "Future Bookings"
                     }
                   },
-                  "Property": "Completed Stay Count"
+                  "Function": 0
                 }
               },
-              "queryRef": "Property KPI Daily.Completed Stay Count"
+              "queryRef": "Sum(Booking Pace Daily.Future Bookings)"
             }
           ]
         }

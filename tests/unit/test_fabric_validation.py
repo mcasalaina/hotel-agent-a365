@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import json
+import shutil
+from dataclasses import replace
+from itertools import combinations
 from pathlib import Path
 
+import pytest
 from fabric.artifacts import FabricTopology, load_notebook_contracts
-from fabric.validation import validate_topology
+from fabric.validation import validate_artifact_spec, validate_topology
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 
@@ -26,6 +30,179 @@ def test_repository_notebook_code_cells_compile() -> None:
         for cell in notebook.get("cells", []):
             if cell.get("cell_type") == "code":
                 compile("".join(cell.get("source", [])), str(notebook_path), "exec")
+
+
+@pytest.mark.parametrize("version", ["1.0.0", None])
+def test_report_validation_rejects_legacy_or_missing_format_version(
+    tmp_path: Path, version: str | None
+) -> None:
+    topology = FabricTopology.from_file(
+        REPOSITORY_ROOT / "fabric" / "topology.json",
+        REPOSITORY_ROOT,
+    )
+    report = topology.blueprints["report"]
+    definition_root = tmp_path / "report"
+    shutil.copytree(report.definition_root, definition_root)
+    version_path = definition_root / "definition" / "version.json"
+    if version is None:
+        version_path.unlink()
+    else:
+        metadata = json.loads(version_path.read_text(encoding="utf-8"))
+        metadata["version"] = version
+        version_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    problems = validate_artifact_spec("report", replace(report, definition_root=definition_root))
+
+    assert len(problems) == 1
+    assert "definition/version.json" in problems[0]
+
+
+@pytest.mark.parametrize(
+    ("page", "visual", "role", "table", "columns"),
+    [
+        ("page_exec", "future_bookings", "Y", "Booking Pace Daily", ["Future Bookings"]),
+        ("page_exec", "booking_revenue", "Y", "Booking Pace Daily", ["Booked Revenue"]),
+        (
+            "page_exec",
+            "channel_table",
+            "Values",
+            "Booking Pace Daily",
+            ["Future Bookings", "Booked Revenue"],
+        ),
+        (
+            "page_service",
+            "restaurant_table",
+            "Values",
+            "Restaurant Daily",
+            ["Confirmed Reservations", "Seated Reservations", "Cancelled Reservations"],
+        ),
+    ],
+)
+def test_report_numeric_values_use_explicit_sums(
+    page: str, visual: str, role: str, table: str, columns: list[str]
+) -> None:
+    path = (
+        REPOSITORY_ROOT
+        / "fabric/report/definition/pages"
+        / page
+        / "visuals"
+        / visual
+        / "visual.json"
+    )
+    definition = json.loads(path.read_text(encoding="utf-8"))
+    projections = definition["visual"]["query"]["queryState"][role]["projections"]
+    numeric_projections = projections if role == "Y" else projections[1:]
+
+    assert len(numeric_projections) == len(columns)
+    for projection, column in zip(numeric_projections, columns, strict=True):
+        assert projection["field"] == {
+            "Aggregation": {
+                "Expression": {
+                    "Column": {
+                        "Expression": {"SourceRef": {"Entity": table}},
+                        "Property": column,
+                    }
+                },
+                "Function": 0,
+            }
+        }
+        assert projection["queryRef"] == f"Sum({table}.{column})"
+
+
+def test_report_tables_activate_all_value_projections() -> None:
+    paths = (REPOSITORY_ROOT / "fabric/report/definition/pages").glob("*/visuals/*/visual.json")
+    for path in paths:
+        definition = json.loads(path.read_text(encoding="utf-8"))
+        visual = definition["visual"]
+        if visual["visualType"] == "tableEx":
+            projections = visual["query"]["queryState"]["Values"]["projections"]
+            assert all(projection.get("active") is True for projection in projections), path
+
+
+def test_report_preserves_all_visuals_on_two_non_overlapping_dashboard_pages() -> None:
+    root = REPOSITORY_ROOT / "fabric/report/definition/pages"
+    metadata = json.loads((root / "pages.json").read_text(encoding="utf-8"))
+    expected = {
+        "page_exec": {
+            "occ_card",
+            "revenue_card",
+            "alos_card",
+            "fb_card",
+            "revpar_line",
+            "future_bookings",
+            "cancel_rate",
+            "booking_revenue",
+            "channel_table",
+        },
+        "page_service": {
+            "disputes_card",
+            "request_card",
+            "occ_by_property",
+            "completed_stays",
+            "requests_table",
+            "dining_reservations",
+            "covers",
+            "restaurant_table",
+            "maintenance_line",
+            "service_table",
+        },
+    }
+
+    assert metadata["pageOrder"] == list(expected)
+    assert metadata["activePageName"] == "page_exec"
+    assert {path.parent.name for path in root.glob("*/page.json")} == set(expected)
+    for name, visual_names in expected.items():
+        page = json.loads((root / name / "page.json").read_text(encoding="utf-8"))
+        visuals = [
+            json.loads(path.read_text(encoding="utf-8"))
+            for path in (root / name).glob("visuals/*/visual.json")
+        ]
+        assert page["name"] == name
+        assert page["displayOption"] == "FitToPage"
+        assert len(visuals) == len(visual_names)
+        assert {visual["name"] for visual in visuals} == visual_names
+        assert {visual["position"]["tabOrder"] for visual in visuals} == set(range(len(visuals)))
+        for visual in visuals:
+            position = visual["position"]
+            assert position["width"] > 0 and position["height"] > 0
+            assert 0 <= position["x"] < position["x"] + position["width"] <= page["width"]
+            assert 0 <= position["y"] < position["y"] + position["height"] <= page["height"]
+        for left, right in combinations(visuals, 2):
+            a, b = left["position"], right["position"]
+            assert (
+                a["x"] + a["width"] <= b["x"]
+                or b["x"] + b["width"] <= a["x"]
+                or a["y"] + a["height"] <= b["y"]
+                or b["y"] + b["height"] <= a["y"]
+            ), (name, left["name"], right["name"])
+
+
+@pytest.mark.parametrize(
+    "page_order",
+    [
+        ["page_exec"],
+        ["page_exec", "page_service", "page_guest"],
+        ["page_exec", "page_exec"],
+    ],
+)
+def test_report_validation_requires_exactly_two_distinct_pages(
+    tmp_path: Path, page_order: list[str]
+) -> None:
+    topology = FabricTopology.from_file(
+        REPOSITORY_ROOT / "fabric/topology.json",
+        REPOSITORY_ROOT,
+    )
+    report = topology.blueprints["report"]
+    definition_root = tmp_path / "report"
+    shutil.copytree(report.definition_root, definition_root)
+    metadata_path = definition_root / "definition/pages/pages.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["pageOrder"] = page_order
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    problems = validate_artifact_spec("report", replace(report, definition_root=definition_root))
+
+    assert "Report must define exactly two distinct pages." in problems
 
 
 def test_data_agent_publish_resynchronizes_lakehouse_schemas() -> None:
@@ -89,9 +266,9 @@ def test_validation_rejects_non_ops_shortcuts(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     (tmp_path / "fabric" / "report" / "definition" / "pages" / "pages.json").write_text(
-        json.dumps({"pageOrder": ["a", "b", "c", "d", "e", "f"]}), encoding="utf-8"
+        json.dumps({"pageOrder": ["a", "b"]}), encoding="utf-8"
     )
-    for page in ["a", "b", "c", "d", "e", "f"]:
+    for page in ["a", "b"]:
         (tmp_path / "fabric" / "report" / "definition" / "pages" / page).mkdir(
             parents=True, exist_ok=True
         )

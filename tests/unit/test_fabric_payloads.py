@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from fabric.artifacts import (
     ArtifactSpec,
+    FabricTopology,
     LakehouseSpec,
     NotebookParameterSpec,
     NotebookSpec,
@@ -150,6 +151,48 @@ def test_build_specialized_artifact_definition_omits_format(tmp_path: Path) -> N
     definition = build_artifact_definition(artifact, {})
 
     assert "format" not in definition
+
+
+def test_repository_report_payload_recreates_both_dashboards_for_a_new_model() -> None:
+    root = Path(__file__).resolve().parents[2]
+    topology = FabricTopology.from_file(root / "fabric/topology.json", root)
+    artifact = topology.blueprints["report"]
+    model_id = "00000000-0000-0000-0000-000000000123"
+
+    definition = build_artifact_definition(artifact, {"SEMANTICMODEL_ID": model_id})
+
+    parts = {
+        part["path"]: json.loads(base64.b64decode(part["payload"])) for part in definition["parts"]
+    }
+    assert definition["format"] == "PBIR"
+    assert parts["definition.pbir"]["datasetReference"]["byConnection"] == {
+        "connectionString": f"semanticmodelid={model_id}"
+    }
+    assert parts["definition/version.json"]["version"] == "2.0.0"
+    page_order = parts["definition/pages/pages.json"]["pageOrder"]
+    assert page_order == ["page_exec", "page_service"]
+    pages = {
+        path.split("/")[2]: content
+        for path, content in parts.items()
+        if path.startswith("definition/pages/") and path.endswith("/page.json")
+    }
+    assert set(pages) == set(page_order)
+    blueprint = json.loads(artifact.manifest_path.read_text(encoding="utf-8"))
+    assert (
+        [pages[name]["displayName"] for name in page_order]
+        == blueprint["pages"]
+        == [
+            "Performance & bookings",
+            "Operations & service",
+        ]
+    )
+    visuals = {path: content for path, content in parts.items() if path.endswith("/visual.json")}
+    assert len(visuals) == 19
+    assert {path.split("/")[2] for path in visuals} == set(page_order)
+    for path in visuals:
+        assert visuals[path] == json.loads(
+            (artifact.definition_root / path).read_text(encoding="utf-8")
+        )
 
 
 def test_build_notebook_job_request_validates_types() -> None:

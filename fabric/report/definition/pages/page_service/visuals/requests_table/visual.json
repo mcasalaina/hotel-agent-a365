@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
   "name": "requests_table",
   "position": {
-    "x": 680,
-    "y": 20,
-    "z": 0,
-    "height": 660,
-    "width": 540,
-    "tabOrder": 0
+    "x": 1208,
+    "y": 168,
+    "z": 4,
+    "height": 320,
+    "width": 568,
+    "tabOrder": 4
   },
   "visual": {
     "visualType": "tableEx",
@@ -40,7 +40,8 @@
                   "Property": "Requests"
                 }
               },
-              "queryRef": "Requests Daily.Requests"
+              "queryRef": "Requests Daily.Requests",
+              "active": true
             },
             {
               "field": {
@@ -53,7 +54,8 @@
                   "Property": "Open Request Count"
                 }
               },
-              "queryRef": "Requests Daily.Open Request Count"
+              "queryRef": "Requests Daily.Open Request Count",
+              "active": true
             }
           ]
         }

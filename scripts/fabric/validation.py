@@ -226,14 +226,24 @@ def _validate_report(artifact: ArtifactSpec) -> list[str]:
         problems.append(
             "Report definition.pbir must bind byConnection using the semantic model ID placeholder."
         )
+    version_path = artifact.definition_root / "definition" / "version.json"
+    if not version_path.is_file():
+        problems.append("Report is missing definition/version.json.")
+    else:
+        version = json.loads(version_path.read_text(encoding="utf-8"))
+        if version.get("version") != "2.0.0":
+            problems.append(
+                "Report definition/version.json must declare PBIR version 2.0.0; "
+                "version 1.0.0 uses the legacy renderer and loads no pages."
+            )
     pages_metadata_path = artifact.definition_root / "definition" / "pages" / "pages.json"
     if not pages_metadata_path.is_file():
         problems.append("Report is missing definition/pages/pages.json.")
         return problems
     pages_metadata = json.loads(pages_metadata_path.read_text(encoding="utf-8"))
     page_order = pages_metadata.get("pageOrder", [])
-    if len(page_order) < 6:
-        problems.append("Report must define at least six pages.")
+    if len(page_order) != 2 or len(set(page_order)) != 2:
+        problems.append("Report must define exactly two distinct pages.")
     for page_name in page_order:
         page_dir = artifact.definition_root / "definition" / "pages" / page_name
         if not (page_dir / "page.json").is_file():

@@ -1,16 +1,16 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
-  "name": "cancel_rate",
+  "name": "covers",
   "position": {
-    "x": 20,
-    "y": 360,
-    "z": 0,
+    "x": 616,
+    "y": 512,
+    "z": 6,
     "height": 320,
-    "width": 620,
-    "tabOrder": 0
+    "width": 568,
+    "tabOrder": 6
   },
   "visual": {
-    "visualType": "lineChart",
+    "visualType": "clusteredColumnChart",
     "query": {
       "queryState": {
         "Category": {
@@ -20,13 +20,13 @@
                 "Column": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Date"
+                      "Entity": "Outlet"
                     }
                   },
-                  "Property": "Date"
+                  "Property": "Outlet Name"
                 }
               },
-              "queryRef": "Date.Date",
+              "queryRef": "Outlet.Outlet Name",
               "active": true
             }
           ]
@@ -38,13 +38,13 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "Booking Pace Daily"
+                      "Entity": "Restaurant Daily"
                     }
                   },
-                  "Property": "Cancellation Rate"
+                  "Property": "Restaurant Covers"
                 }
               },
-              "queryRef": "Booking Pace Daily.Cancellation Rate"
+              "queryRef": "Restaurant Daily.Restaurant Covers"
             }
           ]
         }

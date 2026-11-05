@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
   "name": "booking_revenue",
   "position": {
-    "x": 20,
-    "y": 240,
-    "z": 0,
-    "height": 380,
-    "width": 800,
-    "tabOrder": 0
+    "x": 24,
+    "y": 684,
+    "z": 7,
+    "height": 492,
+    "width": 864,
+    "tabOrder": 7
   },
   "visual": {
     "visualType": "lineChart",
@@ -35,17 +35,21 @@
           "projections": [
             {
               "field": {
-                "Column": {
+                "Aggregation": {
                   "Expression": {
-                    "SourceRef": {
-                      "Entity": "Booking Pace Daily"
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "Booking Pace Daily"
+                        }
+                      },
+                      "Property": "Booked Revenue"
                     }
                   },
-                  "Property": "Booked Revenue"
+                  "Function": 0
                 }
               },
-              "queryRef": "Booking Pace Daily.Booked Revenue",
-              "active": true
+              "queryRef": "Sum(Booking Pace Daily.Booked Revenue)"
             }
           ]
         }
