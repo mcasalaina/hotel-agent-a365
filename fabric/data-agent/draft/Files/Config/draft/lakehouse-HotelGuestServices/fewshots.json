@@ -4,17 +4,17 @@
     {
       "id": "418d22c8-d6fa-5065-8436-3daca6cfbbfc",
       "question": "Show future reservations arriving at HTL-004.",
-      "query": "SELECT reservation_id, guest_id, check_in, check_out, status, channel FROM reservations WHERE property_id = 'HTL-004' AND status = 'future' ORDER BY check_in;"
+      "query": "SELECT reservation_id, guest_id, check_in, check_out, status, channel FROM dbo.reservations WHERE property_id = 'HTL-004' AND status = 'future' ORDER BY check_in;"
     },
     {
       "id": "5e53074c-509e-5afc-b8c1-a7ab01d35fa1",
       "question": "List open action sagas that still require reconciliation.",
-      "query": "SELECT saga_id, action_type, confirmation_id, state, pending_reconciliation FROM action_sagas WHERE pending_reconciliation = true;"
+      "query": "SELECT saga_id, action_type, confirmation_id, state, pending_reconciliation FROM dbo.action_sagas WHERE pending_reconciliation = 1;"
     },
     {
       "id": "0acb8ca6-a7e5-5b5f-9a79-b3d8654c08fd",
       "question": "How many active reservations arrive at each property from 2026-07-12 through 2026-07-18?",
-      "query": "SELECT property_id, COUNT(*) AS reservation_count FROM reservations WHERE check_in BETWEEN DATE '2026-07-12' AND DATE '2026-07-18' AND status IN ('future', 'arriving') GROUP BY property_id ORDER BY reservation_count DESC, property_id;"
+      "query": "SELECT property_id, COUNT(*) AS reservation_count FROM dbo.reservations WHERE check_in BETWEEN CAST('2026-07-12' AS date) AND CAST('2026-07-18' AS date) AND status IN ('future', 'arriving') GROUP BY property_id ORDER BY reservation_count DESC, property_id;"
     }
   ]
 }
