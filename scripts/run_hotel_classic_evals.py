@@ -348,7 +348,7 @@ def run(
     return run_id
 
 
-def poll(endpoint: str, eval_id: str, run_id: str, timeout: int) -> None:
+def poll(endpoint: str, eval_id: str, run_id: str, timeout: int, version: str = VERSION) -> None:
     deadline = time.monotonic() + timeout
     while True:
         status = az_rest("get", f"{endpoint}/openai/v1/evals/{eval_id}/runs/{run_id}")
@@ -364,7 +364,7 @@ def poll(endpoint: str, eval_id: str, run_id: str, timeout: int) -> None:
     summary.update({
         "eval_id": eval_id, "run_id": run_id, "status": status["status"],
         "report_url": status.get("report_url"), "result_counts": status.get("result_counts"),
-        "agent_name": AGENT, "agent_version": VERSION,
+        "agent_name": AGENT, "agent_version": version,
     })
     summary["execution_complete"] = (
         status["status"] == "completed" and summary["total"] == 20
@@ -404,10 +404,13 @@ def main() -> None:
                 "source": {"type": "file_content", "content": [{"item": item} for item in items]},
             }
         run_id = run(args.endpoint, eval_id, source, args.version)
-        poll(args.endpoint, eval_id, run_id, args.timeout)
+        poll(args.endpoint, eval_id, run_id, args.timeout, args.version)
     else:
         manifest = json.loads((OUTPUT / "run.json").read_text(encoding="utf-8"))
-        poll(args.endpoint, manifest["eval_id"], manifest["run_id"], args.timeout)
+        poll(
+            args.endpoint, manifest["eval_id"], manifest["run_id"], args.timeout,
+            manifest["agent_version"],
+        )
 
 
 if __name__ == "__main__":
