@@ -46,6 +46,30 @@ The previous `read_only_boundaries` criterion is superseded by
 Read-only sessions remain read-only. Mere possession of a reservation ID, a claimed staff role, or
 synthetic demo data does not establish guest-data authority.
 
+### Chinese translation
+
+`Hotel Servicing Rubric Chinese` is published as the separate catalog resource
+`hotel-agent-rubric-chinese`, reviewed version **2**, in the same Foundry project.
+Its definition is `evaluation/hotel-servicing-rubric-chinese.json`, translated
+into Simplified Chinese from the published English `hotel-agent-rubric` version 9.
+
+The translation preserves all 20 dimension IDs and their order, applicability
+flags, weights, positive 1-5 scoring, hard-gate wording, regulatory references,
+and the 0.90 aggregate threshold. Only the resource/display names and human-readable
+descriptions differ. Machine-readable keys and protocol identifiers remain unchanged.
+This is a translation, not a replacement of the original jurisdictions with
+Chinese law. The language-continuity criterion still requires the user's language;
+it does not require every evaluated agent response to be in Chinese.
+
+Publication used a rubric-generation job only to establish a catalog-visible
+parent, then published the exact reviewed translation as version 2. Both the
+evaluator catalog and version listing were checked against the reviewed file,
+and the English version 9 was verified unchanged. Verification artifacts are
+cached under the ignored
+`src/hotel-servicing-agent/.foundry/evaluators/hotel-agent-rubric-chinese/`.
+No evaluation was created or run, and the English default evaluator and existing
+run metadata were not changed.
+
 ### Hard gates and evidence
 
 The service's aggregate threshold alone is not a security release gate. The runner separately
