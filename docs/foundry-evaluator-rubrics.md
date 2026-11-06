@@ -154,7 +154,102 @@ version retrieval.
 - [GDPR text](https://eur-lex.europa.eu/eli/reg/2016/679/oj)
 - [PCI DSS standards](https://www.pcisecuritystandards.org/standards/)
 
-### Verified evaluation, November 5, 2026 UTC
+### Completed native evaluation, November 6, 2026 UTC
+
+The requested run `Hotel Servicing Rubric v9` is genuinely `completed`. All ten
+realistic customer interactions were evaluated using the full published
+version-9 rubric, with all 20 dimension records present on every row. All
+applicable dimensions have complete scored evidence. There are no missing cases,
+provider-blocked prompts, incomplete results, or execution errors.
+
+- Group: `eval_1b72ff497fda4a86b174581a1091dff5`
+- Completed run: `evalrun_08584076767201870328831715266CU62`
+- [Native evaluation report](https://ai.azure.com/nextgen/r/ji1zPie9TfWL5dalQFKRBg,rg-mcasalaina-4iqs-2701,,mcasalaina-4iqs-2701-resource,mcasalaina-4iqs-2701/build/evaluations/eval_1b72ff497fda4a86b174581a1091dff5/run/evalrun_08584076767201870328831715266CU62)
+
+| Measure | Result |
+| --- | --- |
+| Actual version-8 customer responses evaluated | 10 |
+| Native aggregate passes | 7 |
+| Native aggregate quality failures | 3 |
+| Native execution errors | 0 |
+| Strict local release-gate passes | 2 |
+| Strict local release-gate failures | 8 |
+| Incomplete results | 0 |
+
+The native aggregate failures concern accessible-room guidance, service-animal
+guidance, and cancellation. The stricter local gates also report authoritative
+source routing in five cases, fee transparency in four, and unsupported-fact
+transparency in three. A score below 5 on an applicable weight-10 criterion fails
+the local gate, even for an otherwise useful answer. These judge-reported
+shortcomings are not all demonstrated legal violations or security exploits.
+Date-change clarification and the privacy-safe visiting-friend response pass
+all applicable hard gates.
+
+The independent [classic run](hotel-classic-evals.md#completed-native-execution-november-6-2026-utc)
+also completed on 20 realistic interactions with the bank reference's exact 13
+criteria and zero execution errors. Neither workflow changed the deployed agent.
+
+SDK-downloaded evidence, live native status, strict summaries, unchanged input
+requests, and cleanup records are retained under the ignored
+`src/hotel-servicing-agent/.foundry/results/dev/managed-identity-bounded-cron/`
+directory. `verified-results.json` records both runs as execution-complete after
+checking exact names, exact case IDs, complete results, and original criteria.
+The selected root is `src/hotel-servicing-agent`, environment `dev`, and overlay
+`.foundry/agent-metadata.yaml`, using the previously verified manual Azure CLI
+deployment context. Its `lastEval` now references this completed rubric run.
+
+### Native execution workaround
+
+Direct submissions still fail before scoring. The successful native runs used
+Foundry evaluation schedules executing as the project managed identity, with
+the same existing evaluation groups, full captured inputs, rubric, and judges.
+This is not a local fallback or an uploaded status.
+
+1. Verify the project identity's existing judge-inference and dataset-storage
+   permissions. After authorization, temporarily grant missing `Foundry User`
+   access at the project scope, leaving existing assignments intact.
+2. Create a uniquely named schedule with
+   `PUT {project-endpoint}/schedules/{schedule-id}?api-version=v1` and the required
+   header `Foundry-Features: Schedules=V1Preview`. Set `enabled: true`,
+   `task.type: Evaluation`, `task.evalId` to the existing evaluation group, and
+   `task.evalRun` to the exact requested name and unchanged native `data_source`.
+3. Use a UTC `Cron` trigger with exactly one occurrence inside its bounded
+   `startTime`/`endTime` window. Allow role propagation before that occurrence.
+   The successful execution waited eleven minutes. `OneTime` triggers were
+   rejected by this project with `ScheduledTime is invalid`.
+4. Read `/schedules/{schedule-id}/runs?api-version=v1` with the same preview header,
+   obtain the actual native run ID from the successful schedule run, and poll
+   the ordinary native evaluation run. Download all output items and verify
+   original criteria, case IDs, dimensions or metrics, applicability, and errors.
+5. After terminal execution, delete only the temporary schedules and any role
+   assignment created for this attempt. Verify their absence. Both schedules
+   and the temporary project role were removed successfully on November 6.
+
+The actual trigger below allowed only the single November 6 occurrence.
+For another evaluation, use a new future window rather than these historical
+timestamps:
+
+```json
+{
+  "type": "Cron",
+  "expression": "56 1 6 11 *",
+  "timeZone": "UTC",
+  "startTime": "2026-11-06T01:55:05Z",
+  "endTime": "2026-11-06T01:57:05Z"
+}
+```
+
+The scheduler appended ` - Scheduled Run [schedule-id]` despite the requested
+bare run name. Correct only the display name through the official
+[Azure ML RunHistory API](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/machinelearningservices/data-plane/RunHistory/stable/v1.0/run-history.json):
+`PATCH https://{region}.api.azureml.ms/history/v1.0/subscriptions/{subscription}/resourceGroups/{resource-group}/providers/Microsoft.MachineLearningServices/workspaces/{discovered-workspace}/runs/{run-id}`,
+using the management-plane token audience and a body containing only
+`{"displayName": "<exact requested name>"}`. This project's discovered workspace
+is `mcasalaina-4iqs-2701-resource@mcasalaina-4iqs-2701@AML` in `eastus2`.
+Do not change status, metrics, or results. A fresh Foundry native GET confirmed
+both exact names and unchanged completed status after these display-only edits.
+
+### Earlier fallback evaluation, November 5, 2026 UTC
 
 The existing catalog entry now exposes version **9** with the reviewed **20 dimensions** and
 **0.90** aggregate threshold. Both catalog listing and version listing confirmed publication.
@@ -267,8 +362,9 @@ No new persistent application credential remains.
 Raw run statuses, empty output-item arrays, the legacy submission error, and the nonsecret identity
 lifecycle record are retained under the ignored
 `src/hotel-servicing-agent/.foundry/results/dev/application-identity-retry/` directory.
-The native-completion requirement remains unmet; no local scores or manually uploaded status
-have been substituted for completed native execution.
+These direct-submission attempts did not satisfy native completion. The subsequent
+managed-identity runs documented above did, without substituting local scores
+or manually uploaded execution status.
 
 ## Historical catalog bootstrap
 

@@ -42,6 +42,7 @@ METRICS = (
     "task_completion",
     "task_adherence",
 )
+TOOL_METRICS = {name for name in METRICS if name.startswith("tool_")}
 TERMINAL = {"completed", "failed", "canceled", "cancelled"}
 
 
@@ -267,23 +268,77 @@ def prepare_evaluation(endpoint: str, version: str) -> str:
     return str(evaluation["id"])
 
 
+def native_tool_skips(item: dict[str, Any]) -> set[int]:
+    """Recognize native N/A results only when the captured output confirms no tool use."""
+    evidence = (item.get("datasource_item") or {}).get("evidence_response")
+    if not isinstance(evidence, str):
+        return set()
+    parsed = json.loads(evidence)
+    if not isinstance(parsed, dict):
+        raise ValueError("Tool-skip evidence must be a captured response object")
+    observed = parsed.get("observed_response_output")
+    if not isinstance(observed, list) or not observed or not all(
+        isinstance(output, dict) and output.get("type") == "message" for output in observed
+    ):
+        return set()
+    results = item.get("results") or []
+    skipped: set[int] = set()
+    composite_skips: set[str] = set()
+    for index, result in enumerate(results):
+        name = result.get("name")
+        metric = result.get("metric", name)
+        reason = result.get("reason")
+        properties = result.get("properties") or {}
+        if (
+            name not in TOOL_METRICS or metric != name
+            or result.get("score") is not None or result.get("passed") is not None
+            or result.get("error") or not isinstance(reason, str)
+            or not reason.startswith("Not applicable:")
+        ):
+            continue
+        if name == "tool_use_quality":
+            native_skips = properties.get("skipped_evaluators")
+            if (
+                not isinstance(native_skips, list)
+                or set(native_skips) != TOOL_METRICS - {"tool_use_quality"}
+                or properties.get("failed_evaluators") != []
+            ):
+                continue
+            composite_skips = set(native_skips)
+        skipped.add(index)
+    for index, result in enumerate(results):
+        metric = result.get("metric")
+        reason = result.get("reason")
+        if (
+            result.get("name") == "tool_use_quality" and metric in composite_skips
+            and result.get("score") is None and result.get("passed") is None
+            and not result.get("error") and isinstance(reason, str) and reason.strip()
+        ):
+            skipped.add(index)
+    return skipped
+
+
 def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
-    rows = []
+    rows: list[dict[str, Any]] = []
     metrics: dict[str, dict[str, int]] = {}
     for item in items:
         results = item.get("results") or []
+        skipped = native_tool_skips(item)
+        skipped_metrics: list[str] = []
         present = {result.get("name") for result in results}
         incomplete = (
             not set(METRICS).issubset(present) or bool(item.get("error"))
             or item.get("status", "completed") != "completed"
         )
-        for result in results:
+        for index, result in enumerate(results):
             name = str(result.get("name"))
             metric = result.get("metric", name)
             key = name if metric == name else f"{name}/{metric}"
-            counts = metrics.setdefault(key, {"passed": 0, "failed": 0, "incomplete": 0})
+            counts = metrics.setdefault(
+                key, {"passed": 0, "failed": 0, "incomplete": 0, "not_applicable": 0}
+            )
             score = result.get("score")
-            valid = (
+            scored = (
                 name in METRICS
                 and isinstance(score, int | float) and not isinstance(score, bool)
                 and math.isfinite(score)
@@ -291,12 +346,20 @@ def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
                 and bool(result.get("reason"))
                 and not result.get("error")
             )
+            not_applicable = index in skipped
+            if not_applicable:
+                skipped_metrics.append(key)
+            valid = scored or not_applicable
             incomplete |= not valid
-            key = "incomplete" if not valid else "passed" if result["passed"] else "failed"
+            key = (
+                "not_applicable" if not_applicable else
+                "incomplete" if not valid else "passed" if result["passed"] else "failed"
+            )
             counts[key] += 1
         rows.append({
             "case_id": (item.get("datasource_item") or {}).get("case_id"),
             "incomplete": incomplete,
+            "not_applicable_metrics": sorted(skipped_metrics),
             "failed_metrics": sorted({
                 r["name"] for r in results if r.get("passed") is False and r.get("name")
             }),
@@ -304,6 +367,8 @@ def summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "total": len(rows),
         "incomplete": sum(row["incomplete"] for row in rows),
+        "not_applicable_rows": sum(bool(row["not_applicable_metrics"]) for row in rows),
+        "not_applicable": sum(len(row["not_applicable_metrics"]) for row in rows),
         "passed": sum(not row["incomplete"] and not row["failed_metrics"] for row in rows),
         "quality_failed": sum(
             not row["incomplete"] and bool(row["failed_metrics"]) for row in rows
@@ -376,7 +441,7 @@ def poll(endpoint: str, eval_id: str, run_id: str, timeout: int, version: str = 
     write_json(OUTPUT / "summary.json", summary)
     print(json.dumps({k: v for k, v in summary.items() if k not in {"rows", "metrics"}}, indent=2))
     if not summary["execution_complete"]:
-        raise RuntimeError("Native evaluation did not produce 20 fully scored, error-free rows")
+        raise RuntimeError("Native evaluation did not produce 20 complete, error-free rows")
 
 
 def main() -> None:

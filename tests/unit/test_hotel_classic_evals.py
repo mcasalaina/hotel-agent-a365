@@ -146,3 +146,116 @@ def test_composite_metric_subscores_remain_separate() -> None:
     assert summary["metrics"]["tool_use_quality"]["passed"] == 1
     assert summary["metrics"]["tool_use_quality/tool_input_accuracy"]["failed"] == 1
     assert summary["quality_failed"] == 1
+
+
+def no_tool_skip_item() -> dict[str, Any]:
+    results = [
+        {"name": name, "score": 5, "passed": True, "reason": "Observed evidence."}
+        for name in METRICS
+    ]
+    for result in results:
+        if result["name"] in {"tool_call_accuracy", "tool_selection", "tool_use_quality"}:
+            result.update(score=None, passed=None, reason="Not applicable: no tool calls.")
+    composite = next(result for result in results if result["name"] == "tool_use_quality")
+    composite["properties"] = {
+        "failed_evaluators": [],
+        "skipped_evaluators": [
+            "tool_call_accuracy", "tool_selection", "tool_input_accuracy",
+            "tool_output_utilization", "tool_call_success",
+        ],
+    }
+    results.append({
+        "name": "tool_use_quality", "metric": "tool_selection",
+        "score": None, "passed": None, "reason": "No tools were selected.",
+    })
+    return {
+        "datasource_item": {
+            "case_id": "clarification",
+            "evidence_response": json.dumps({"observed_response_output": [
+                {"type": "message", "role": "assistant", "content": []},
+            ]}),
+        },
+        "results": results,
+    }
+
+
+def test_native_tool_skips_require_explicit_reasons_and_actual_no_tool_evidence() -> None:
+    summary = summarize([no_tool_skip_item()])
+    assert summary["incomplete"] == 0
+    assert summary["passed"] == 1
+    assert summary["not_applicable_rows"] == 1
+    assert summary["not_applicable"] == 4
+    assert summary["metrics"]["tool_call_accuracy"]["not_applicable"] == 1
+    assert summary["metrics"]["tool_call_accuracy"]["passed"] == 0
+    assert summary["metrics"]["tool_use_quality/tool_selection"]["not_applicable"] == 1
+
+
+@pytest.mark.parametrize("output_type", [None, "function_call", "unknown"])
+def test_missing_or_conflicting_tool_evidence_cannot_turn_null_scores_into_skips(
+    output_type: str | None,
+) -> None:
+    item = no_tool_skip_item()
+    if output_type is None:
+        item["datasource_item"].pop("evidence_response")
+    else:
+        item["datasource_item"]["evidence_response"] = json.dumps({
+            "observed_response_output": [{"type": output_type}],
+        })
+    summary = summarize([item])
+    assert summary["incomplete"] == 1
+    assert summary["not_applicable"] == 0
+
+
+def test_quality_metric_null_is_not_a_tool_skip() -> None:
+    item = no_tool_skip_item()
+    item["results"][0].update(score=None, passed=None, reason="Not applicable: no tools.")
+    assert summarize([item])["incomplete"] == 1
+
+
+def test_composite_skip_cannot_hide_failed_evaluators() -> None:
+    item = no_tool_skip_item()
+    composite = next(result for result in item["results"] if result["name"] == "tool_use_quality")
+    composite["properties"]["failed_evaluators"] = ["tool_selection"]
+    summary = summarize([item])
+    assert summary["incomplete"] == 1
+    assert summary["metrics"]["tool_use_quality"]["incomplete"] == 1
+    assert summary["metrics"]["tool_use_quality/tool_selection"]["incomplete"] == 1
+
+
+def test_unexplained_null_tool_score_is_still_incomplete() -> None:
+    item = no_tool_skip_item()
+    item["results"][4]["reason"] = "Could not produce a score."
+    assert summarize([item])["incomplete"] == 1
+
+
+def test_native_tool_skip_does_not_hide_an_evaluator_error() -> None:
+    item = no_tool_skip_item()
+    item["results"][4]["error"] = {"message": "Judge failed"}
+    assert summarize([item])["incomplete"] == 1
+
+
+def test_native_tool_skip_cannot_mask_an_invalid_duplicate_result() -> None:
+    item = no_tool_skip_item()
+    item["results"].append({
+        "name": "tool_call_accuracy", "score": None, "passed": None,
+        "reason": "Not applicable: no tool calls.", "error": {"message": "Judge failed"},
+    })
+    summary = summarize([item])
+    assert summary["incomplete"] == 1
+    assert summary["metrics"]["tool_call_accuracy"]["incomplete"] == 1
+    assert summary["metrics"]["tool_call_accuracy"]["not_applicable"] == 1
+
+
+def test_composite_skip_requires_native_skipped_evaluator_metadata() -> None:
+    item = no_tool_skip_item()
+    composite = next(result for result in item["results"] if result["name"] == "tool_use_quality")
+    composite.pop("properties")
+    assert summarize([item])["incomplete"] == 1
+
+
+@pytest.mark.parametrize("evidence", ["not JSON", "[]"])
+def test_malformed_tool_skip_evidence_is_an_explicit_error(evidence: str) -> None:
+    item = no_tool_skip_item()
+    item["datasource_item"]["evidence_response"] = evidence
+    with pytest.raises(ValueError):
+        summarize([item])

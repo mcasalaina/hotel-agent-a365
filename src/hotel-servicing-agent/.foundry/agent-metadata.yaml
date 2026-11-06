@@ -21,18 +21,27 @@ environments:
             definitionFile: ../../evaluation/hotel-servicing-rubric.json
     lastEval:
       evalId: eval_1b72ff497fda4a86b174581a1091dff5
-      evalRunId: evalrun_f6dac68358c0497197cb5d414b753f76
+      evalRunId: evalrun_08584076767201870328831715266CU62
       runName: Hotel Servicing Rubric v9
       evaluationSuiteId: hotel-servicing-rubric
       agentVersion: "8"
       evaluatorVersion: "9"
-      status: failed
-      nativeStatus: failed
+      status: completed
+      nativeStatus: completed
+      executionComplete: true
+      executionSource: project-managed-identity-schedule
       generationSource: live-hosted-response-capture
       attempted: 10
       captured: 10
-      scored: 0
+      scored: 10
       providerBlocked: 0
-      incomplete: 10
-      resultFile: .foundry/results/dev/application-identity-retry/rubric-output-items.json
-      nativeResultFile: .foundry/results/dev/application-identity-retry/rubric-status.json
+      incomplete: 0
+      executionErrors: 0
+      aggregatePassed: 7
+      aggregateFailed: 3
+      releasePassed: 2
+      releaseFailed: 8
+      resultFile: .foundry/results/dev/managed-identity-bounded-cron/rubric-sdk-output-items.json
+      nativeResultFile: .foundry/results/dev/managed-identity-bounded-cron/rubric-status.json
+      summaryFile: .foundry/results/dev/managed-identity-bounded-cron/rubric-summary.json
+      reportUrl: https://ai.azure.com/nextgen/r/ji1zPie9TfWL5dalQFKRBg,rg-mcasalaina-4iqs-2701,,mcasalaina-4iqs-2701-resource,mcasalaina-4iqs-2701/build/evaluations/eval_1b72ff497fda4a86b174581a1091dff5/run/evalrun_08584076767201870328831715266CU62
