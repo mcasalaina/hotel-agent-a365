@@ -37,7 +37,7 @@ def scored_item(rubric: dict[str, Any]) -> dict[str, Any]:
 
 
 def test_reviewed_rubric_has_depth_positive_scoring_and_coverage() -> None:
-    rubric, cases = load_inputs()
+    rubric, cases = load_inputs(runner.ROOT / "evaluation/hotel-servicing-rubric-cases.jsonl")
     dimensions = rubric["definition"]["dimensions"]
     assert len(dimensions) >= 20
     assert rubric["definition"]["pass_threshold"] == 0.9
@@ -54,6 +54,124 @@ def test_reviewed_rubric_has_depth_positive_scoring_and_coverage() -> None:
         "correctness-date-boundary",
     } <= {case["case_id"] for case in cases}
     assert all(case["query"] and case["expected_behavior"] for case in cases)
+
+
+def test_realistic_customer_dataset_has_exactly_ten_distinct_interactions() -> None:
+    _, cases = load_inputs()
+    assert len(cases) == 10
+    assert len({case["query"] for case in cases}) == 10
+    assert all(case["query"] and case["expected_behavior"] for case in cases)
+    items = runner.evaluation_items(cases)
+    assert all(item["expected_behavior"] in item["evaluation_query"] for item in items)
+    assert all(item["query"] == case["query"] for item, case in zip(items, cases, strict=True))
+
+
+@pytest.mark.parametrize("registered_dataset", [False, True])
+@pytest.mark.parametrize("reuse_evaluation", [False, True])
+@pytest.mark.parametrize("result_variant", ["complete", "missing", "wrong-case"])
+def test_native_run_uses_exact_name_full_rubric_and_ten_cases(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    registered_dataset: bool,
+    reuse_evaluation: bool,
+    result_variant: str,
+) -> None:
+    rubric, cases = load_inputs(
+        runner.ROOT / "evaluation/hotel-servicing-customer-interactions.jsonl"
+    )
+    requests: list[tuple[str, str, dict[str, Any] | None]] = []
+    items = []
+    for case in cases:
+        item = scored_item(rubric)
+        item["datasource_item"]["case_id"] = case["case_id"]
+        items.append(item)
+    if result_variant == "missing":
+        items.pop()
+    elif result_variant == "wrong-case":
+        items[0]["datasource_item"]["case_id"] = "unexpected"
+
+    def request(method: str, url: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+        requests.append((method, url, body))
+        if "/agents/" in url:
+            return {"status": "active"}
+        if "/evaluators/" in url:
+            return rubric
+        if url.endswith("/evals"):
+            return {"id": "eval_test", **(body or {})}
+        if url.endswith("/evals/eval_test"):
+            return {
+                "id": "eval_test",
+                "name": "Hotel Servicing Rubric v9",
+                "testing_criteria": [
+                    {
+                        "id": "service-assigned-criterion-id",
+                        "type": "azure_ai_evaluator",
+                        "name": rubric["name"],
+                        "evaluator_name": rubric["name"],
+                        "evaluator_version": "9",
+                        "initialization_parameters": {"model": "gpt-5.4-mini"},
+                        "data_mapping": {
+                            "query": "{{item.evaluation_query}}",
+                            "response": "{{item.response}}",
+                        },
+                    }
+                ],
+            }
+        if method == "post" and url.endswith("/runs"):
+            return {"id": "run_test"}
+        if "/output_items?" in url:
+            return {"data": items, "has_more": False}
+        return {"status": "completed", "result_counts": {"total": 10, "errored": 0}}
+
+    monkeypatch.setattr(runner, "az_rest", request)
+    monkeypatch.setattr(
+        runner,
+        "capture_hosted_responses",
+        lambda *_: [{**case, "response": "Actual captured output"} for case in cases],
+    )
+    argv = [
+        "run_hotel_rubric_eval.py",
+        "--endpoint",
+        "https://example.test/project",
+        "--agent-version",
+        "8",
+        "--evaluator-version",
+        "9",
+        "--capture-hosted",
+        "--cases",
+        str(runner.ROOT / "evaluation/hotel-servicing-customer-interactions.jsonl"),
+        "--output",
+        str(tmp_path),
+    ]
+    if registered_dataset:
+        argv.extend(["--dataset-id", "azureai://reviewed/dataset/versions/9.0"])
+    if reuse_evaluation:
+        argv.extend(["--evaluation-id", "eval_test"])
+    monkeypatch.setattr("sys.argv", argv)
+    if result_variant != "complete":
+        with pytest.raises(RuntimeError, match="Evaluation incomplete"):
+            runner.main()
+        summary = json.loads((tmp_path / "summary.json").read_text())
+        assert summary["incomplete"] == 1
+        assert len(summary["missing_case_ids"]) == 1
+        return
+    runner.main()
+    if reuse_evaluation:
+        assert not any(url.endswith("/evals") for _, url, _ in requests)
+        evaluation = request("get", "https://example.test/project/openai/v1/evals/eval_test")
+    else:
+        evaluation = next(body for _, url, body in requests if url.endswith("/evals"))
+    run = next(body for method, url, body in requests if method == "post" and url.endswith("/runs"))
+    assert evaluation is not None and run is not None
+    assert evaluation["name"] == run["name"] == "Hotel Servicing Rubric v9"
+    assert evaluation["testing_criteria"][0]["evaluator_version"] == "9"
+    assert evaluation["testing_criteria"][0]["evaluator_name"] == rubric["name"]
+    source = run["data_source"]["source"]
+    if registered_dataset:
+        assert source == {"type": "file_id", "id": "azureai://reviewed/dataset/versions/9.0"}
+    else:
+        assert len(source["content"]) == 10
+    assert json.loads((tmp_path / "summary.json").read_text())["incomplete"] == 0
 
 
 def test_fully_scored_safe_response_passes() -> None:

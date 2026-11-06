@@ -12,7 +12,8 @@ version but is absent from the evaluator catalog and invisible in the Foundry po
 - Resource name: `hotel-agent-rubric`
 - Display name: `Hotel Servicing Rubric`
 - Reviewed definition: `evaluation/hotel-servicing-rubric.json`
-- Evaluation cases: `evaluation/hotel-servicing-rubric-cases.jsonl`
+- Customer evaluation cases: `evaluation/hotel-servicing-customer-interactions.jsonl` (10)
+- Additional adversarial/quality cases: `evaluation/hotel-servicing-rubric-cases.jsonl` (24)
 - Runner: `scripts/run_hotel_rubric_eval.py`
 - Judge model: `gpt-5.4-mini`
 - Pass threshold: `0.90`
@@ -69,11 +70,15 @@ old agent versions just because they remain in historical configuration.
 python scripts/run_hotel_rubric_eval.py \
   --endpoint "<verified-project-endpoint>" \
   --agent-version "<verified-active-version>" \
-  --publish \
+  --evaluator-version 9 \
+  --cases evaluation/hotel-servicing-customer-interactions.jsonl \
+  --name "Hotel Servicing Rubric v9" \
+  --capture-hosted \
   --output src/hotel-servicing-agent/.foundry/results/dev/<unique-run-folder>
 ```
 
-`--publish` adds a version to the existing `hotel-agent-rubric` resource and retains its display
+Use `--publish` instead of `--evaluator-version` only when intentionally publishing a new version.
+It adds a version to the existing `hotel-agent-rubric` resource and retains its display
 name. It does not create a replacement catalog entry or change the deployed agent. To evaluate an
 already published identical definition, replace `--publish` with `--evaluator-version <version>`.
 To resume polling and downloading a previously created run, use the same endpoint, agent version,
@@ -97,6 +102,21 @@ version before and after capture and records the target and case set to prevent 
 of another target's cached outputs. Agent conversations are independent and expected behavior is
 never sent to the agent. Preserve the failed target run separately rather than presenting it as
 a completed evaluation.
+
+The evaluation group and run default to exactly `Hotel Servicing Rubric v<version>`, without
+diagnostic suffixes. `--name` overrides both names. The default dataset contains the ten customer
+interactions. Use `--cases evaluation/hotel-servicing-rubric-cases.jsonl` for the larger adversarial
+baseline. `--capture-only --capture-hosted` captures actual
+responses without starting an evaluation, and writes raw, unwrapped rows to `native-data.jsonl`
+for dataset registration. For a registered version of those same rows, pass its returned
+`azureai://...` ID with `--dataset-id`. Inline and registered sources preserve identical queries,
+responses, tool evidence, and evaluator-only expected behavior.
+
+Use `--evaluation-id` to reuse an existing group with the same name and pinned evaluator criteria,
+including judge model and data mappings. It rejects changed criteria. Preserve each attempt in a
+separate output folder. Native completion additionally requires the exact expected case IDs,
+the complete expected row count, every rubric dimension, and no provider-blocked prompts.
+Quality failures do not make a completed evaluation an execution failure.
 
 Provider content-filter blocks are preserved separately in `provider-blocked-cases.json`, not
 retried, bypassed, converted into invented assistant refusals, or counted as scored passes.
@@ -178,6 +198,39 @@ booking cases also lost gate points for incomplete guidance or missing clarifica
 preserving the central safety boundary. The 12-of-23 result is deliberately stricter than the
 aggregate threshold. These findings describe the existing deployed agent, not fixes to its runtime.
 The synthetic data exemption does not excuse cross-guest disclosure under the new rubric.
+
+### Native customer evaluation attempts, November 6, 2026 UTC
+
+The requested evaluation and run name is exactly `Hotel Servicing Rubric v9`.
+The ten realistic customer queries in `evaluation/hotel-servicing-customer-interactions.jsonl`
+were all sent to deployed agent version 8. All ten returned completed actual responses, including
+their structured tool evidence, with no provider-blocked prompts. The full published twenty-dimension
+version-9 rubric was retained unchanged.
+
+The captured rows were also registered as Foundry dataset
+`hotel-servicing-customer-interactions`, version `9.0`. Registered input did not resolve the native
+startup failure. Group `eval_1b72ff497fda4a86b174581a1091dff5`, run
+`evalrun_8c04283ba0534b84acc4dfb059e248fd`, failed with zero scored rows.
+
+Following Microsoft's evaluation troubleshooting instructions, the user approved granting the
+Foundry account managed identity `Storage Blob Data Contributor` on `hotelagent2701`. The project
+identity already had that role. The account-level assignment was added at `2026-11-06T01:01:49Z`.
+After waiting ten minutes for propagation, run `evalrun_5a35f71887784f908edfc74a46da023e`
+in the same group still failed before producing any rows. Storage networking allows access and
+the dataset credentials use user-delegation SAS, not disabled shared-key authentication.
+The role assignment is not a verified fix.
+
+An alternate deployed judge, `gpt-6.1-sol`, was tested against the same captured rows and unchanged
+rubric. Group `eval_31d9181c23f34e1e8dbadd6403d2cd2e`, run
+`evalrun_2a2cad3338004c89a7a7229a5c5161b0`, also failed with zero rows. The primary judge
+remains `gpt-5.4-mini`.
+
+These attempts returned `error: null`, no report URL, and no backend log reference.
+They are incomplete native executions, not customer quality failures or completed evaluations.
+No new direct-judge fallback was substituted. The root cause is not established by the returned
+service diagnostics. Current captures and attempts are retained under the ignored
+`hotel-rubric-v9-customers*` result directories. The independent twenty-interaction standard-metric
+workflow and its status are documented in [Hotel classic evaluations](hotel-classic-evals.md).
 
 ## Historical catalog bootstrap
 

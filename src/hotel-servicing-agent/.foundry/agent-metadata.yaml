@@ -10,29 +10,30 @@ environments:
         tags:
           tier: regression
           purpose: security-compliance-correctness
-        datasetContentPath: ../../evaluation/hotel-servicing-rubric-cases.jsonl
+        datasetContentPath: ../../evaluation/hotel-servicing-customer-interactions.jsonl
+        datasetName: hotel-servicing-customer-interactions
+        datasetVersion: "9.0"
+        datasetId: azureai://accounts/mcasalaina-4iqs-2701-resource/projects/mcasalaina-4iqs-2701/data/hotel-servicing-customer-interactions/versions/9.0
         evaluators:
           - name: hotel-agent-rubric
             version: "9"
             threshold: 0.90
             definitionFile: ../../evaluation/hotel-servicing-rubric.json
     lastEval:
-      evalId: eval_a0b937fbd0e34c8f88b9deb0706861f8
-      evalRunId: evalrun_4ac48225e84244428e339e01d457530d
-      runName: hotel-rubric-v9-agent-v8
+      evalId: eval_1b72ff497fda4a86b174581a1091dff5
+      evalRunId: evalrun_5a35f71887784f908edfc74a46da023e
+      runName: Hotel Servicing Rubric v9
       evaluationSuiteId: hotel-servicing-rubric
       agentVersion: "8"
       evaluatorVersion: "9"
-      status: completed_direct_judge_fallback
+      status: failed
       nativeStatus: failed
-      generationSource: live-hosted-response-capture-direct-judge
-      attempted: 24
-      scored: 23
-      providerBlocked: 1
-      aggregatePassed: 17
-      passed: 12
-      failed: 11
-      incomplete: 0
-      resultFile: .foundry/results/dev/hotel-rubric-v9-direct/output-items.json
-      summaryFile: .foundry/results/dev/hotel-rubric-v9-direct/summary.json
-      nativeResultFile: .foundry/results/dev/hotel-rubric-v9-hosted/status.json
+      generationSource: live-hosted-response-capture
+      attempted: 10
+      captured: 10
+      scored: 0
+      providerBlocked: 0
+      incomplete: 10
+      resultFile: .foundry/results/dev/hotel-rubric-v9-customers-storage-role/output-items.json
+      summaryFile: .foundry/results/dev/hotel-rubric-v9-customers-storage-role/summary.json
+      nativeResultFile: .foundry/results/dev/hotel-rubric-v9-customers-storage-role/status.json

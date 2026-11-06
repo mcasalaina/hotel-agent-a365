@@ -13,7 +13,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 RUBRIC = ROOT / "evaluation/hotel-servicing-rubric.json"
-CASES = ROOT / "evaluation/hotel-servicing-rubric-cases.jsonl"
+CASES = ROOT / "evaluation/hotel-servicing-customer-interactions.jsonl"
 TERMINAL = {"completed", "failed", "canceled", "cancelled"}
 
 
@@ -53,9 +53,9 @@ def write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
-def load_inputs() -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def load_inputs(cases_path: Path = CASES) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     rubric = json.loads(RUBRIC.read_text(encoding="utf-8"))
-    cases = [json.loads(line) for line in CASES.read_text(encoding="utf-8").splitlines()]
+    cases = [json.loads(line) for line in cases_path.read_text(encoding="utf-8").splitlines()]
     dimensions = rubric["definition"]["dimensions"]
     if len(dimensions) > 20:
         raise ValueError("Foundry native rubrics support at most 20 dimensions")
@@ -70,6 +70,19 @@ def load_inputs() -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if len({case["case_id"] for case in cases}) != len(cases):
         raise ValueError("Evaluation case IDs must be unique")
     return rubric, cases
+
+
+def evaluation_items(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            **case,
+            "evaluation_query": (
+                f"{case['query']}\n\nEvaluation-only expected behavior "
+                f"(not sent to agent):\n{case['expected_behavior']}"
+            ),
+        }
+        for case in cases
+    ]
 
 
 def capture_hosted_responses(
@@ -368,18 +381,27 @@ def main() -> None:
     parser.add_argument("--agent-version", required=True)
     parser.add_argument("--agent-name", default="hotel-servicing-agent")
     parser.add_argument("--model", default="gpt-5.4-mini")
+    parser.add_argument("--name")
+    parser.add_argument("--cases", type=Path, default=CASES)
+    parser.add_argument("--dataset-id", help="Registered dataset ID for the reviewed captured rows")
+    parser.add_argument("--evaluation-id", help="Reuse an existing evaluation with this rubric")
     parser.add_argument("--publish", action="store_true")
     parser.add_argument("--evaluator-version")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--capture-hosted", action="store_true")
+    parser.add_argument("--capture-only", action="store_true")
     parser.add_argument("--judge-captured", type=Path)
     args = parser.parse_args()
+    if args.capture_only and not args.capture_hosted:
+        parser.error("--capture-only requires --capture-hosted")
+    if args.dataset_id and not args.capture_hosted:
+        parser.error("--dataset-id requires --capture-hosted")
     if not args.resume and not args.publish and not args.evaluator_version:
         parser.error("Choose --publish or an exact --evaluator-version")
     if args.resume and args.publish:
         parser.error("--resume must not publish a second version")
-    rubric, cases = load_inputs()
+    rubric, cases = load_inputs(args.cases)
     endpoint = args.endpoint.rstrip("/")
     api = f"{endpoint}/openai/v1"
     state_path = args.output / "run.json"
@@ -427,6 +449,7 @@ def main() -> None:
             )
             version = published["version"]
             write_json(args.output / "published-evaluator.json", published)
+        name = args.name or f"Hotel Servicing Rubric v{version}"
         remote = az_rest(
             "get",
             f"{endpoint}/evaluators/{rubric['name']}/versions/{version}"
@@ -446,64 +469,72 @@ def main() -> None:
             cases = [case for case in cases if not case.get("provider_blocked")]
             if not cases:
                 raise RuntimeError("All prompts were provider-blocked. No responses to evaluate")
-        evaluation = az_rest(
-            "post",
-            f"{api}/evals",
-            {
-                "name": f"Hotel Servicing Rubric v{version}, security compliance correctness",
-                "data_source_config": {
-                    "type": "custom",
-                    "item_schema": {
-                        "type": "object",
-                        "properties": {
-                            key: {"type": "string"}
-                            for key in (
-                                "case_id",
-                                "query",
-                                "expected_behavior",
-                                "evaluation_query",
-                                "response",
-                            )
-                        },
-                        "required": ["case_id", "query", "expected_behavior", "evaluation_query"],
+            if args.capture_only:
+                write_json(args.output / "captured-cases.json", cases)
+                (args.output / "native-data.jsonl").write_text(
+                    "".join(json.dumps(item) + "\n" for item in evaluation_items(cases)),
+                    encoding="utf-8",
+                )
+                print(
+                    json.dumps({"captured": len(cases), "provider_blocked": len(blocked)}),
+                    flush=True,
+                )
+                return
+        evaluation_request = {
+            "name": name,
+            "data_source_config": {
+                "type": "custom",
+                "item_schema": {
+                    "type": "object",
+                    "properties": {
+                        key: {"type": "string"}
+                        for key in (
+                            "case_id",
+                            "query",
+                            "expected_behavior",
+                            "evaluation_query",
+                            "response",
+                        )
                     },
-                    "include_sample_schema": not args.capture_hosted,
+                    "required": ["case_id", "query", "expected_behavior", "evaluation_query"],
                 },
-                "testing_criteria": [
-                    {
-                        "type": "azure_ai_evaluator",
-                        "name": rubric["name"],
-                        "evaluator_name": rubric["name"],
-                        "evaluator_version": version,
-                        "initialization_parameters": {"model": args.model},
-                        "data_mapping": {
-                            "query": "{{item.evaluation_query}}",
-                            "response": (
-                                "{{item.response}}"
-                                if args.capture_hosted
-                                else "{{sample.output_items}}"
-                            ),
-                        },
-                    }
-                ],
+                "include_sample_schema": not args.capture_hosted,
             },
-        )
-        write_json(args.output / "evaluation.json", evaluation)
-        source = {
-            "type": "file_content",
-            "content": [
+            "testing_criteria": [
                 {
-                    "item": {
-                        **case,
-                        "evaluation_query": (
-                            f"{case['query']}\n\nEvaluation-only expected behavior "
-                            f"(not sent to agent):\n{case['expected_behavior']}"
+                    "type": "azure_ai_evaluator",
+                    "name": rubric["name"],
+                    "evaluator_name": rubric["name"],
+                    "evaluator_version": version,
+                    "initialization_parameters": {"model": args.model},
+                    "data_mapping": {
+                        "query": "{{item.evaluation_query}}",
+                        "response": (
+                            "{{item.response}}"
+                            if args.capture_hosted
+                            else "{{sample.output_items}}"
                         ),
                     },
                 }
-                for case in cases
             ],
         }
+        if args.evaluation_id:
+            evaluation = az_rest("get", f"{api}/evals/{args.evaluation_id}")
+            criteria = [
+                {key: value for key, value in criterion.items() if key != "id"}
+                for criterion in evaluation["testing_criteria"]
+            ]
+            if evaluation["name"] != name or criteria != evaluation_request["testing_criteria"]:
+                raise ValueError("Existing evaluation name or pinned criteria do not match")
+        else:
+            evaluation = az_rest("post", f"{api}/evals", evaluation_request)
+        write_json(args.output / "evaluation.json", evaluation)
+        source = {
+            "type": "file_content",
+            "content": [{"item": item} for item in evaluation_items(cases)],
+        }
+        if args.dataset_id:
+            source = {"type": "file_id", "id": args.dataset_id}
         data_source: dict[str, Any] = (
             {"type": "jsonl", "source": source}
             if args.capture_hosted
@@ -531,7 +562,7 @@ def main() -> None:
             "post",
             f"{api}/evals/{evaluation['id']}/runs",
             {
-                "name": f"hotel-rubric-v{version}-agent-v{args.agent_version}",
+                "name": name,
                 "data_source": data_source,
             },
         )
@@ -542,7 +573,9 @@ def main() -> None:
             "evaluator_version": version,
             "eval_id": evaluation["id"],
             "run_id": run["id"],
+            "run_name": name,
             "case_count": len(cases),
+            "case_ids": [case["case_id"] for case in cases],
             "attempted_cases": attempted_cases,
             "provider_blocked": len(blocked),
             "capture_hosted": args.capture_hosted,
@@ -571,6 +604,12 @@ def main() -> None:
     summary = summarize(items, rubric)
     summary["provider_blocked"] = state.get("provider_blocked", 0)
     summary["attempted_cases"] = state.get("attempted_cases", state["case_count"])
+    if state.get("case_ids"):
+        expected_ids = set(state["case_ids"])
+        actual_ids = {row["case_id"] for row in summary["rows"]}
+        summary["missing_case_ids"] = sorted(expected_ids - actual_ids)
+        summary["unexpected_case_ids"] = sorted(str(value) for value in actual_ids - expected_ids)
+        summary["incomplete"] += len(summary["missing_case_ids"])
     write_json(args.output / "summary.json", summary)
     print(
         json.dumps(
@@ -586,7 +625,13 @@ def main() -> None:
         ),
         flush=True,
     )
-    if run["status"] != "completed" or len(items) != state["case_count"] or summary["incomplete"]:
+    if (
+        run["status"] != "completed"
+        or len(items) != state["case_count"]
+        or summary["incomplete"]
+        or summary["provider_blocked"]
+        or (summary.get("missing_case_ids") or summary.get("unexpected_case_ids"))
+    ):
         raise RuntimeError("Evaluation incomplete. Inspect persisted status and output items")
 
 

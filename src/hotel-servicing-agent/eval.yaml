@@ -4,7 +4,7 @@ agent:
     kind: hosted
     version: "8"
 dataset:
-    local_uri: ../../evaluation/hotel-servicing-rubric-cases.jsonl
+    local_uri: ../../evaluation/hotel-servicing-customer-interactions.jsonl
 evaluators:
     - name: hotel-agent-rubric
       version: "9"
@@ -12,4 +12,4 @@ evaluators:
 options:
     eval_model: gpt-5.4-mini
     pass_threshold: 0.90
-max_samples: 24
+max_samples: 10

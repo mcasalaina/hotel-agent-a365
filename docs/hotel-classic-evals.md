@@ -69,3 +69,22 @@ pass/fail values, nonempty reasons, and no evaluator errors. Honest quality
 failures remain failures and do not prevent an execution-complete evaluation.
 Failed or empty native jobs are persisted as incomplete, never reported as
 passed. No local judge fallback changes that outcome.
+
+## Latest execution, November 6, 2026 UTC
+
+All twenty actual hotel version-8 responses were captured. Eighteen included
+tool traces. No booking mutations or outbound messages were requested.
+The native criteria preserve all thirteen reference metrics unchanged.
+
+Group `eval_1911543c25dd4a8880ca239b0fea1401`, latest run
+`evalrun_277a7d0a6d3a4694a12601113a545dee`, has status `failed`, zero scored
+rows, `error: null`, no report URL, and no backend log reference.
+Retries remained unsuccessful after the approved Foundry account storage-role
+assignment and its propagation wait. The native rubric workflow fails at
+the same pre-scoring stage. No completed classic evaluation is claimed.
+The source of the shared early failure is not established.
+
+The exact run status, original service counts, and empty output are retained
+in the ignored result directory, including files prefixed with the run ID.
+`execution_complete: false` is authoritative. Zero row-level errors or zero
+quality failures in an empty result are not evidence of success.
