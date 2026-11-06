@@ -25,7 +25,7 @@ def test_dataset_is_twenty_independent_realistic_interactions() -> None:
 
 
 def test_registered_tool_definitions_preserve_real_signatures() -> None:
-    definitions = {tool["function"]["name"]: tool["function"] for tool in source_tool_definitions()}
+    definitions = {tool["name"]: tool for tool in source_tool_definitions()}
     assert len(definitions) == 7
     mutation = definitions["manage_reservation"]["parameters"]
     assert mutation["properties"]["room_count"] == {"type": "integer"}

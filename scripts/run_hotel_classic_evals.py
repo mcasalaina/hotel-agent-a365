@@ -108,18 +108,16 @@ def source_tool_definitions() -> list[dict[str, Any]]:
                 properties[argument.arg] = annotation_schema(annotation)
             definitions.append({
                 "type": "function",
-                "function": {
-                    "name": name,
-                    "description": description,
-                    "parameters": {
-                        "type": "object",
-                        "properties": properties,
-                        "required": [argument.arg for argument in arguments
-                                     if argument.arg not in optional],
-                    },
+                "name": name,
+                "description": description,
+                "parameters": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": [argument.arg for argument in arguments
+                                 if argument.arg not in optional],
                 },
             })
-    if len({tool["function"]["name"] for tool in definitions}) != 7:
+    if len({tool["name"] for tool in definitions}) != 7:
         raise ValueError("Expected all seven registered hotel tools")
     return definitions
 
@@ -374,6 +372,7 @@ def poll(endpoint: str, eval_id: str, run_id: str, timeout: int) -> None:
         and {row["case_id"] for row in summary["rows"]}
         == {case["case_id"] for case in load_cases()}
     )
+    write_json(OUTPUT / f"{run_id}-summary.json", summary)
     write_json(OUTPUT / "summary.json", summary)
     print(json.dumps({k: v for k, v in summary.items() if k not in {"rows", "metrics"}}, indent=2))
     if not summary["execution_complete"]:
