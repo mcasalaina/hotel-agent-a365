@@ -154,7 +154,69 @@ version retrieval.
 - [GDPR text](https://eur-lex.europa.eu/eli/reg/2016/679/oj)
 - [PCI DSS standards](https://www.pcisecuritystandards.org/standards/)
 
-### Completed native evaluation, November 6, 2026 UTC
+### Verified fresh native rerun, November 6, 2026 UTC
+
+The fresh run `Hotel Servicing Rubric v9` is `completed` in Foundry and `Completed`
+in its backing Azure ML RunHistory record. Independent reads after execution and
+cleanup confirmed both states at `2026-11-06T04:35:10Z`, not just the schedule's
+success flag. All ten newly captured deployed version-8 responses exactly match
+the scored input, and every row has all 20 published rubric dimensions.
+The rubric, thresholds, data mappings, and judge deployment remain unchanged.
+
+- Group: `eval_1b72ff497fda4a86b174581a1091dff5`
+- Fresh run: `evalrun_08584076673896646728446437215CU44`
+- Created: `2026-11-06T04:31:39Z`, or 12:31:39 PM UTC+8
+- [Verified fresh native report](https://ai.azure.com/nextgen/r/ji1zPie9TfWL5dalQFKRBg,rg-mcasalaina-4iqs-2701,,mcasalaina-4iqs-2701-resource,mcasalaina-4iqs-2701/build/evaluations/eval_1b72ff497fda4a86b174581a1091dff5/run/evalrun_08584076673896646728446437215CU44)
+
+| Measure | Result |
+| --- | --- |
+| Foundry run status | completed |
+| Backing RunHistory status | Completed |
+| Fresh actual responses evaluated | 10 |
+| Dimension records per row | 20 |
+| Native execution errors / skipped rows | 0 / 0 |
+| Incomplete results / provider-blocked prompts | 0 / 0 |
+| Native aggregate quality passes / failures | 5 / 5 |
+| Strict local release-gate passes / failures | 3 / 7 |
+
+The five aggregate quality failures concern service-animal guidance, cancellation,
+date-change clarification, a visiting-friend inquiry, and payment-card guidance.
+The visiting-friend response refused disclosure, but the judge criticized its
+private reservation lookup before that refusal. Other deductions include missing
+ADA guidance, insufficiently constrained lookup requests, and citation detail.
+Some failed rows still preserve important safety boundaries, so the quality
+results are not all demonstrated violations. The native execution itself did
+not fail, and no agent runtime changes were made.
+
+The screenshot's failed run was
+`evalrun_2a2cad3338004c89a7a7229a5c5161b0`, created at
+`2026-11-06T01:16:57Z` in the separate same-named group
+`eval_31d9181c23f34e1e8dbadd6403d2cd2e`. It failed before scoring.
+Its delete request initially returned `deleted: false`, so deletion was not
+claimed then. Subsequent unpaginated listing returned zero runs, and direct
+retrieval returned 404, confirming its removal. The completed runs in the
+full-rubric group were not deleted.
+
+The fresh schedule initially could not be created immediately after its
+temporary project-role grant. No evaluation run was created by that rejected
+setup. Waiting eleven minutes for role propagation before creating the bounded
+schedule resolved that precondition. Schedule deletion was also asynchronous,
+so cleanup was verified by subsequent absence checks rather than the initial
+delete response. The temporary schedule and role assignment are both absent.
+
+The selected agent root remains `src/hotel-servicing-agent`, environment `dev`,
+with manual Azure CLI deployment context and overlay
+`.foundry/agent-metadata.yaml`. Its `lastEval` points to the fresh run above,
+explicitly recording fresh inline captured data rather than claiming reuse of
+the earlier registered response dataset.
+Runtime artifacts are retained under the ignored
+`.foundry/results/dev/hotel-rubric-v9-verified-rerun-20261106/` directory.
+The `propagated/final-verification.json` proof records both live statuses,
+all-case/all-dimension validation, exact fresh-input equality, failed-run removal,
+and temporary-resource cleanup. Original statuses and the display-name-only
+update are preserved separately. No execution status or score was edited.
+
+### Earlier completed native evaluation, November 6, 2026 UTC
 
 The requested run `Hotel Servicing Rubric v9` is genuinely `completed`. All ten
 realistic customer interactions were evaluated using the full published
@@ -196,7 +258,8 @@ directory. `verified-results.json` records both runs as execution-complete after
 checking exact names, exact case IDs, complete results, and original criteria.
 The selected root is `src/hotel-servicing-agent`, environment `dev`, and overlay
 `.foundry/agent-metadata.yaml`, using the previously verified manual Azure CLI
-deployment context. Its `lastEval` now references this completed rubric run.
+deployment context. The overlay recorded this run at that point and now references
+the fresh verified rerun above.
 
 ### Native execution workaround
 
@@ -207,15 +270,19 @@ This is not a local fallback or an uploaded status.
 
 1. Verify the project identity's existing judge-inference and dataset-storage
    permissions. After authorization, temporarily grant missing `Foundry User`
-   access at the project scope, leaving existing assignments intact.
+   access at the project scope, leaving existing assignments intact. Wait for
+   role propagation before creating the schedule, not just before its trigger.
+   Schedule creation itself validates project-identity access and can reject a
+   freshly granted identity for missing
+   `Microsoft.MachineLearningServices/workspaces/datasets/registered/read`.
 2. Create a uniquely named schedule with
    `PUT {project-endpoint}/schedules/{schedule-id}?api-version=v1` and the required
    header `Foundry-Features: Schedules=V1Preview`. Set `enabled: true`,
    `task.type: Evaluation`, `task.evalId` to the existing evaluation group, and
    `task.evalRun` to the exact requested name and unchanged native `data_source`.
 3. Use a UTC `Cron` trigger with exactly one occurrence inside its bounded
-   `startTime`/`endTime` window. Allow role propagation before that occurrence.
-   The successful execution waited eleven minutes. `OneTime` triggers were
+   `startTime`/`endTime` window. Leave enough time after schedule creation for
+   the trigger to be registered. `OneTime` triggers were
    rejected by this project with `ScheduledTime is invalid`.
 4. Read `/schedules/{schedule-id}/runs?api-version=v1` with the same preview header,
    obtain the actual native run ID from the successful schedule run, and poll

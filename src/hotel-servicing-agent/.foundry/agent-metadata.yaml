@@ -21,27 +21,37 @@ environments:
             definitionFile: ../../evaluation/hotel-servicing-rubric.json
     lastEval:
       evalId: eval_1b72ff497fda4a86b174581a1091dff5
-      evalRunId: evalrun_08584076767201870328831715266CU62
+      evalRunId: evalrun_08584076673896646728446437215CU44
       runName: Hotel Servicing Rubric v9
       evaluationSuiteId: hotel-servicing-rubric
       agentVersion: "8"
       evaluatorVersion: "9"
       status: completed
       nativeStatus: completed
+      underlyingStatus: Completed
       executionComplete: true
       executionSource: project-managed-identity-schedule
       generationSource: live-hosted-response-capture
+      datasetSource: captured-inline-jsonl
+      freshCapture: true
+      createdAt: "2026-11-06T04:31:39.2425664+00:00"
+      finishedAt: "2026-11-06T04:31:58.8639599+00:00"
+      verifiedAt: "2026-11-06T04:35:10.085026+00:00"
       attempted: 10
       captured: 10
       scored: 10
       providerBlocked: 0
       incomplete: 0
       executionErrors: 0
-      aggregatePassed: 7
-      aggregateFailed: 3
-      releasePassed: 2
-      releaseFailed: 8
-      resultFile: .foundry/results/dev/managed-identity-bounded-cron/rubric-sdk-output-items.json
-      nativeResultFile: .foundry/results/dev/managed-identity-bounded-cron/rubric-status.json
-      summaryFile: .foundry/results/dev/managed-identity-bounded-cron/rubric-summary.json
-      reportUrl: https://ai.azure.com/nextgen/r/ji1zPie9TfWL5dalQFKRBg,rg-mcasalaina-4iqs-2701,,mcasalaina-4iqs-2701-resource,mcasalaina-4iqs-2701/build/evaluations/eval_1b72ff497fda4a86b174581a1091dff5/run/evalrun_08584076767201870328831715266CU62
+      dimensionsPerRow: 20
+      aggregatePassed: 5
+      aggregateFailed: 5
+      releasePassed: 3
+      releaseFailed: 7
+      captureFile: .foundry/results/dev/hotel-rubric-v9-verified-rerun-20261106/capture/native-data.jsonl
+      resultFile: .foundry/results/dev/hotel-rubric-v9-verified-rerun-20261106/propagated/sdk-output-items.json
+      nativeResultFile: .foundry/results/dev/hotel-rubric-v9-verified-rerun-20261106/propagated/native-status.json
+      underlyingResultFile: .foundry/results/dev/hotel-rubric-v9-verified-rerun-20261106/propagated/underlying-status.json
+      summaryFile: .foundry/results/dev/hotel-rubric-v9-verified-rerun-20261106/propagated/summary.json
+      verificationFile: .foundry/results/dev/hotel-rubric-v9-verified-rerun-20261106/propagated/final-verification.json
+      reportUrl: https://ai.azure.com/nextgen/r/ji1zPie9TfWL5dalQFKRBg,rg-mcasalaina-4iqs-2701,,mcasalaina-4iqs-2701-resource,mcasalaina-4iqs-2701/build/evaluations/eval_1b72ff497fda4a86b174581a1091dff5/run/evalrun_08584076673896646728446437215CU44
