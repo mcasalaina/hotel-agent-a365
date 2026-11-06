@@ -76,7 +76,7 @@ All twenty actual hotel version-8 responses were captured. Eighteen included
 tool traces. No booking mutations or outbound messages were requested.
 The native criteria preserve all thirteen reference metrics unchanged.
 
-Group `eval_1911543c25dd4a8880ca239b0fea1401`, latest run
+Group `eval_1911543c25dd4a8880ca239b0fea1401`, delegated-user run
 `evalrun_277a7d0a6d3a4694a12601113a545dee`, has status `failed`, zero scored
 rows, `error: null`, no report URL, and no backend log reference.
 Retries remained unsuccessful after the approved Foundry account storage-role
@@ -88,3 +88,18 @@ The exact run status, original service counts, and empty output are retained
 in the ignored result directory, including files prefixed with the run ID.
 `execution_complete: false` is authoritative. Zero row-level errors or zero
 quality failures in an empty result are not evidence of success.
+
+A subsequent certificate-authenticated application-identity attempt submitted the same group,
+twenty captured interactions, and all thirteen unchanged reference criteria. Run
+`evalrun_d15b0799716c47b38c806d0e6b5fc8a5` also failed with zero scored rows and no
+native error detail or report URL. Its raw status and output are retained under the adjacent
+ignored `application-identity-retry/` directory. The temporary application, service principal,
+role assignment, and local credential/profile were removed, with active directory and role
+queries independently confirming cleanup.
+
+The legacy rubric submission endpoint additionally exposes an Azure ML backend token-exchange
+failure, `Getting user token was not successful.` This is concrete authentication-stage evidence
+for that submission path, not proof of the underlying cause of the classic run's silent failure.
+Fresh user tokens, explicit ML-token forwarding, and application authentication did not resolve
+the failures. See [authentication-stage diagnostics](foundry-evaluator-rubrics.md#authentication-stage-diagnostics-november-6-2026-utc)
+for the shared investigation. Neither requested native evaluation has completed.

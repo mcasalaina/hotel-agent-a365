@@ -21,7 +21,7 @@ environments:
             definitionFile: ../../evaluation/hotel-servicing-rubric.json
     lastEval:
       evalId: eval_1b72ff497fda4a86b174581a1091dff5
-      evalRunId: evalrun_5a35f71887784f908edfc74a46da023e
+      evalRunId: evalrun_f6dac68358c0497197cb5d414b753f76
       runName: Hotel Servicing Rubric v9
       evaluationSuiteId: hotel-servicing-rubric
       agentVersion: "8"
@@ -34,6 +34,5 @@ environments:
       scored: 0
       providerBlocked: 0
       incomplete: 10
-      resultFile: .foundry/results/dev/hotel-rubric-v9-customers-storage-role/output-items.json
-      summaryFile: .foundry/results/dev/hotel-rubric-v9-customers-storage-role/summary.json
-      nativeResultFile: .foundry/results/dev/hotel-rubric-v9-customers-storage-role/status.json
+      resultFile: .foundry/results/dev/application-identity-retry/rubric-output-items.json
+      nativeResultFile: .foundry/results/dev/application-identity-retry/rubric-status.json

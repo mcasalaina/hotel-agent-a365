@@ -232,6 +232,44 @@ service diagnostics. Current captures and attempts are retained under the ignore
 `hotel-rubric-v9-customers*` result directories. The independent twenty-interaction standard-metric
 workflow and its status are documented in [Hotel classic evaluations](hotel-classic-evals.md).
 
+### Authentication-stage diagnostics, November 6, 2026 UTC
+
+The legacy evaluation submission endpoint,
+`/evaluations/runs:run?api-version=2025-05-15-preview`, exposes more detail than the
+OpenAI-compatible run status. Submitting the same registered ten-response dataset and published
+version-9 evaluator returns HTTP 400 from `raisvc`, with a downstream `obotoken` validation error:
+`Getting user token was not successful.` The failing operation is `getuseraccesstoken`.
+The persisted diagnostic at `2026-11-06T01:36:14Z` has operation correlation ID
+`7c2add8913f03cbc30456c3223df5be0`.
+
+Fresh Azure CLI tokens for both the AI and Machine Learning audiences did not resolve that error.
+Forwarding the Machine Learning token through the SDK's `x-azureml-token` header also failed.
+The signed-in user, project identity, and account identity have storage data-contributor access;
+the default storage connection uses Microsoft Entra ID. Foundry account public networking is
+enabled without network ACL restrictions. These checks do not establish the underlying cause of
+the failed backend token exchange.
+
+A separate certificate-authenticated application identity with account-scoped `Foundry User`
+was also tried. It successfully authenticated and read the published evaluator, but both unchanged
+evaluation groups still failed before scoring:
+
+| Evaluation | Run | Native status | Scored rows |
+| --- | --- | --- | --- |
+| Hotel Servicing Rubric v9 | `evalrun_f6dac68358c0497197cb5d414b753f76` | failed | 0 of 10 |
+| hotel-servicing-classic-evals | `evalrun_d15b0799716c47b38c806d0e6b5fc8a5` | failed | 0 of 20 |
+
+Neither run returned an evaluator error detail, report URL, or backend log reference.
+Application authentication therefore did not fix the startup failure. The temporary application,
+service principal, role assignment, and local certificate/profile were removed. Independent
+directory and role-list queries confirmed no remaining active application, principal, or assignment.
+No new persistent application credential remains.
+
+Raw run statuses, empty output-item arrays, the legacy submission error, and the nonsecret identity
+lifecycle record are retained under the ignored
+`src/hotel-servicing-agent/.foundry/results/dev/application-identity-retry/` directory.
+The native-completion requirement remains unmet; no local scores or manually uploaded status
+have been substituted for completed native execution.
+
 ## Historical catalog bootstrap
 
 ## Why the first attempt did not appear
