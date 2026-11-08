@@ -572,9 +572,20 @@ architecture. Blob archival is optional and requires both
 After setting the target environment and reviewed source paths:
 
 ```bash
-.venv/bin/python scripts/setup_foundry_iq.py --dry-run
-.venv/bin/python scripts/setup_foundry_iq.py
+.venv/bin/python scripts/setup_foundry_iq.py --dry-run --check-canonical --retrieval-mode native
+.venv/bin/python scripts/setup_foundry_iq.py --check-canonical --retrieval-mode native
+.venv/bin/python scripts/setup_foundry_iq.py --verify-only --check-canonical
 ```
+
+The default setup mode remains `vector` for existing vector deployments; select
+`--retrieval-mode native` explicitly for the accepted no-embedding path.
+Canonical checking regenerates documents in a temporary directory and compares
+every source file/hash without changing the frozen corpus, normalizing checkout
+line endings to LF. Integrate any approved branding/date generator changes and
+regenerate before final loading. Setup refuses
+populated indexes before changing their definitions unless `--replace-existing`
+is supplied after explicit approval. Verification checks indexed content and
+source metadata as well as knowledge-base membership.
 
 Inspect the script's effective corpus before execution. Never use successful
 setup as a reason to overwrite target knowledge with a stale generated folder.

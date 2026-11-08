@@ -18,6 +18,29 @@ The existing Foundry account, project, model deployments, Application Insights r
 
 The Search and storage resources use managed identities and disable local/key authentication. Resource names are generic and receive a deterministic uniqueness suffix.
 
+## Dedicated native Foundry IQ
+
+`foundry-iq.bicep` is a narrower resource-group-scope migration/demo deployment.
+It references an explicitly supplied existing Foundry account/project and never
+creates a model, hosted agent, toolbox, or Fabric resource. It provisions one
+Standard S1 Search service, a private Standard_LRS `hotel-docs` archive, and an AAD
+`hotel-search-connection` using the shared project-connection module.
+
+The project receives only Search Index Data Reader. The Search identity receives
+Cognitive Services User on the existing account for chat query planning, not
+an embedding/vectorization role. The setup principal receives Search Service
+Contributor and Search Index Data Contributor on Search, and Storage Blob Data
+Contributor scoped to the archive container. A separately created hosted identity
+must receive its own approved Search Index Data Reader grant.
+
+Supply verified target account/project/principal parameters, review deployment
+validation and what-if, and obtain cost/RBAC approval before deploying. Select
+`--retrieval-mode native --check-canonical` in the document setup helper after
+integrating final source branding/date changes; use `--verify-only` to compare
+indexed IDs, content and source metadata with the frozen corpus.
+`searchLocation` can override only Search's region if regional capacity is
+unavailable; the archive's `location` and existing Foundry resources stay unchanged.
+
 ## Voice web application
 
 `voice-web.bicep` is the active deployment template for the browser frontend and authenticated proxy.

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import tempfile
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,6 +35,7 @@ from azure.search.documents.indexes.models import (
 )
 from azure.storage.blob import BlobServiceClient
 from foundry_iq_common import select_search_credential
+from generate_hotel_data import generate_documents
 from openai import AzureOpenAI
 
 EMBEDDING_DEPLOYMENT = "text-embedding-3-small"
@@ -106,6 +108,9 @@ def load_corpus(corpus_dir: Path, expected_documents: int = 95) -> list[CorpusDo
         route = path.parent.name
         if route not in INDEXES:
             raise ValueError(f"{path}: unsupported corpus route {route!r}")
+        expected_source_path = f"foundryiq-docs/{path.relative_to(corpus_dir).as_posix()}"
+        if metadata["source_path"] != expected_source_path:
+            raise ValueError(f"{path}: source_path must match {expected_source_path}")
         documents.append(
             CorpusDocument(
                 document_id=metadata["document_id"],
@@ -125,6 +130,28 @@ def load_corpus(corpus_dir: Path, expected_documents: int = 95) -> list[CorpusDo
     if len({document.document_id for document in documents}) != len(documents):
         raise ValueError("Corpus document_id values must be unique")
     return documents
+
+
+def verify_canonical_corpus(corpus_dir: Path) -> None:
+    with tempfile.TemporaryDirectory(prefix="hotel-iq-canonical-") as temporary_dir:
+        manifest = generate_documents(Path(temporary_dir))
+        expected_hashes = {
+            name.replace("\\", "/"): digest
+            for name, digest in cast(dict[str, str], manifest["hashes"]).items()
+        }
+        actual_hashes = {
+            path.relative_to(corpus_dir).as_posix(): hashlib.sha256(
+                path.read_text(encoding="utf-8").encode("utf-8")
+            ).hexdigest()
+            for path in corpus_dir.rglob("*.generated.md")
+        }
+    if actual_hashes != expected_hashes:
+        mismatched = sorted(
+            name
+            for name in actual_hashes.keys() | expected_hashes.keys()
+            if actual_hashes.get(name) != expected_hashes.get(name)
+        )
+        raise ValueError(f"Corpus does not match the canonical generator: {', '.join(mismatched)}")
 
 
 def chunk_document(document: CorpusDocument, max_chars: int = 1_600) -> list[Chunk]:
@@ -160,14 +187,16 @@ def build_chunks(documents: Iterable[CorpusDocument]) -> list[Chunk]:
     return [chunk for document in documents for chunk in chunk_document(document)]
 
 
-def build_index_document(chunk: Chunk, embedding: Sequence[float]) -> dict[str, object]:
-    if len(embedding) != EMBEDDING_DIMENSIONS:
+def build_index_document(
+    chunk: Chunk, embedding: Sequence[float] | None = None
+) -> dict[str, object]:
+    if embedding is not None and len(embedding) != EMBEDDING_DIMENSIONS:
         raise ValueError(
             f"{chunk.id}: expected {EMBEDDING_DIMENSIONS} embedding dimensions, "
             f"got {len(embedding)}"
         )
     document = chunk.document
-    return {
+    indexed: dict[str, object] = {
         "id": chunk.id,
         "document_id": document.document_id,
         "title": document.title,
@@ -179,24 +208,21 @@ def build_index_document(chunk: Chunk, embedding: Sequence[float]) -> dict[str, 
         "source_path": document.source_path,
         "chunk_ordinal": chunk.ordinal,
         "content": chunk.content,
-        "content_vector": list(embedding),
     }
+    if embedding is not None:
+        indexed["content_vector"] = list(embedding)
+    return indexed
 
 
 def build_search_index(
     name: str,
     openai_endpoint: str,
     openai_api_key: str | None = None,
+    *,
+    retrieval_mode: str = "vector",
 ) -> SearchIndex:
-    vectorizer = AzureOpenAIVectorizer(
-        vectorizer_name="hotel-openai-vectorizer",
-        parameters=AzureOpenAIVectorizerParameters(
-            resource_url=openai_endpoint,
-            deployment_name=EMBEDDING_DEPLOYMENT,
-            model_name=EMBEDDING_DEPLOYMENT,
-            api_key=openai_api_key,
-        ),
-    )
+    if retrieval_mode not in ("native", "vector"):
+        raise ValueError("retrieval_mode must be native or vector")
     fields = [
         SimpleField(name="id", type="Edm.String", key=True, filterable=True),
         SimpleField(name="document_id", type="Edm.String", filterable=True),
@@ -229,18 +255,19 @@ def build_search_index(
             searchable=True,
             retrievable=True,
         ),
-        SearchField(
-            name="content_vector",
-            type="Collection(Edm.Single)",
-            searchable=True,
-            vector_search_dimensions=EMBEDDING_DIMENSIONS,
-            vector_search_profile_name="hotel-vector-profile",
-        ),
     ]
-    return SearchIndex(
-        name=name,
-        fields=fields,
-        vector_search=VectorSearch(
+    vector_search = None
+    if retrieval_mode == "vector":
+        fields.append(
+            SearchField(
+                name="content_vector",
+                type="Collection(Edm.Single)",
+                searchable=True,
+                vector_search_dimensions=EMBEDDING_DIMENSIONS,
+                vector_search_profile_name="hotel-vector-profile",
+            )
+        )
+        vector_search = VectorSearch(
             algorithms=[HnswAlgorithmConfiguration(name="hotel-hnsw")],
             profiles=[
                 VectorSearchProfile(
@@ -249,8 +276,22 @@ def build_search_index(
                     vectorizer_name="hotel-openai-vectorizer",
                 )
             ],
-            vectorizers=[vectorizer],
-        ),
+            vectorizers=[
+                AzureOpenAIVectorizer(
+                    vectorizer_name="hotel-openai-vectorizer",
+                    parameters=AzureOpenAIVectorizerParameters(
+                        resource_url=openai_endpoint,
+                        deployment_name=EMBEDDING_DEPLOYMENT,
+                        model_name=EMBEDDING_DEPLOYMENT,
+                        api_key=openai_api_key,
+                    ),
+                )
+            ],
+        )
+    return SearchIndex(
+        name=name,
+        fields=fields,
+        vector_search=vector_search,
         semantic_search=SemanticSearch(
             configurations=[
                 SemanticConfiguration(
@@ -337,8 +378,15 @@ def embed_chunks(openai_client: AzureOpenAI, chunks: Sequence[Chunk]) -> list[li
     return embeddings
 
 
-def replace_documents(search_client: SearchClient, documents: Sequence[dict[str, object]]) -> None:
-    old_ids = [result["id"] for result in search_client.search("*", select=["id"], top=1_000)]
+def replace_documents(
+    search_client: SearchClient,
+    documents: Sequence[dict[str, object]],
+    *,
+    replace_existing: bool = False,
+) -> None:
+    old_ids = [result["id"] for result in search_client.search("*", select=["id"])]
+    if old_ids and not replace_existing:
+        raise RuntimeError("Refusing to replace populated indexes without --replace-existing.")
     if old_ids:
         results = search_client.delete_documents(
             documents=[{"id": document_id} for document_id in old_ids]
@@ -349,6 +397,27 @@ def replace_documents(search_client: SearchClient, documents: Sequence[dict[str,
             documents=list(documents[start : start + 100])
         )
         _require_success(results, "upload")
+
+
+def verify_indexed_documents(search_client: SearchClient, chunks: Sequence[Chunk]) -> None:
+    expected = {chunk.id: build_index_document(chunk) for chunk in chunks}
+    fields = list(next(iter(expected.values()))) if expected else ["id"]
+    actual: dict[str, dict[str, object]] = {}
+    for result in search_client.search("*", select=fields):
+        document_id = result["id"]
+        if document_id in actual:
+            raise RuntimeError(f"Duplicate indexed document: {document_id}")
+        actual[document_id] = {field: result.get(field) for field in fields}
+    if actual != expected:
+        mismatched = sorted(
+            document_id
+            for document_id in actual.keys() | expected.keys()
+            if actual.get(document_id) != expected.get(document_id)
+        )
+        raise RuntimeError(
+            "Indexed document IDs, content, or source metadata do not match the corpus: "
+            + ", ".join(mismatched)
+        )
 
 
 def archive_corpus(
@@ -399,6 +468,22 @@ def parse_args() -> argparse.Namespace:
         help="Verify existing index and knowledge-base definitions.",
     )
     parser.add_argument("--expected-documents", type=int, default=95)
+    parser.add_argument(
+        "--retrieval-mode",
+        choices=("native", "vector"),
+        default="vector",
+        help="Use native semantic lexical retrieval or the existing embedding/vector path.",
+    )
+    parser.add_argument(
+        "--check-canonical",
+        action="store_true",
+        help="Require every source file/hash to match the current canonical generator.",
+    )
+    parser.add_argument(
+        "--replace-existing",
+        action="store_true",
+        help="Explicitly permit replacing populated target indexes after approval.",
+    )
     return parser.parse_args()
 
 
@@ -408,6 +493,8 @@ def main() -> int:
         raise ValueError("--dry-run and --verify-only cannot be used together")
     corpus_dir = args.corpus_dir.resolve()
     documents = load_corpus(corpus_dir, args.expected_documents)
+    if args.check_canonical:
+        verify_canonical_corpus(corpus_dir)
     chunks = build_chunks(documents)
     print(f"Validated {len(documents)} documents and {len(chunks)} chunks.")
     if args.dry_run:
@@ -422,44 +509,69 @@ def main() -> int:
     )
     if args.verify_only:
         verify_existing_resources(index_client)
-        print("Foundry IQ index and knowledge-base definitions are present.")
+        for route, index_name in INDEXES.items():
+            verify_indexed_documents(
+                SearchClient(
+                    endpoint=search_endpoint, index_name=index_name, credential=credential
+                ),
+                [chunk for chunk in chunks if chunk.document.route == route],
+            )
+        print("Foundry IQ definitions and all indexed document content/metadata match.")
         return 0
 
     openai_endpoint = _required_environment("AZURE_OPENAI_ENDPOINT")
     openai_api_key = os.getenv("AZURE_OPENAI_API_KEY")
+    container_name = os.getenv("FOUNDRY_IQ_BLOB_CONTAINER")
+    account_url = os.getenv("AZURE_STORAGE_ACCOUNT_URL")
+    if bool(container_name) != bool(account_url):
+        raise RuntimeError(
+            "Set both FOUNDRY_IQ_BLOB_CONTAINER and AZURE_STORAGE_ACCOUNT_URL for archival."
+        )
+    if not args.replace_existing:
+        existing_indexes = set(index_client.list_index_names())
+        for index_name in INDEXES.values():
+            if index_name in existing_indexes:
+                client = SearchClient(
+                    endpoint=search_endpoint, index_name=index_name, credential=credential
+                )
+                if client.get_document_count():
+                    raise RuntimeError(
+                        f"Refusing to update populated {index_name} without --replace-existing."
+                    )
     for index_name in INDEXES.values():
         index_client.create_or_update_index(
-            build_search_index(index_name, openai_endpoint, openai_api_key)
+            build_search_index(
+                index_name, openai_endpoint, openai_api_key, retrieval_mode=args.retrieval_mode
+            )
         )
-    azure_credential = DefaultAzureCredential()
-    openai_client = AzureOpenAI(
-        azure_endpoint=openai_endpoint,
-        api_version="2024-10-21",
-        azure_ad_token_provider=get_bearer_token_provider(
-            azure_credential, "https://cognitiveservices.azure.com/.default"
-        ),
-    )
-    embeddings = embed_chunks(openai_client, chunks)
     documents_by_route: dict[str, list[dict[str, object]]] = {route: [] for route in INDEXES}
-    for chunk, embedding in zip(chunks, embeddings, strict=True):
-        documents_by_route[chunk.document.route].append(build_index_document(chunk, embedding))
+    if args.retrieval_mode == "vector":
+        azure_credential = DefaultAzureCredential()
+        openai_client = AzureOpenAI(
+            azure_endpoint=openai_endpoint,
+            api_version="2024-10-21",
+            azure_ad_token_provider=get_bearer_token_provider(
+                azure_credential, "https://cognitiveservices.azure.com/.default"
+            ),
+        )
+        embeddings = embed_chunks(openai_client, chunks)
+        for chunk, embedding in zip(chunks, embeddings, strict=True):
+            documents_by_route[chunk.document.route].append(build_index_document(chunk, embedding))
+    else:
+        for chunk in chunks:
+            documents_by_route[chunk.document.route].append(build_index_document(chunk))
     for route, index_name in INDEXES.items():
         replace_documents(
             SearchClient(endpoint=search_endpoint, index_name=index_name, credential=credential),
             documents_by_route[route],
+            replace_existing=args.replace_existing,
         )
         index_client.create_or_update_knowledge_source(build_knowledge_source(index_name))
     index_client.create_or_update_knowledge_base(
         build_knowledge_base(openai_endpoint, openai_api_key)
     )
 
-    container_name = os.getenv("FOUNDRY_IQ_BLOB_CONTAINER")
-    account_url = os.getenv("AZURE_STORAGE_ACCOUNT_URL")
-    if container_name or account_url:
-        if not container_name or not account_url:
-            raise RuntimeError(
-                "Set both FOUNDRY_IQ_BLOB_CONTAINER and AZURE_STORAGE_ACCOUNT_URL for archival."
-            )
+    if container_name and account_url:
         archive_corpus(documents, corpus_dir, container_name, account_url)
     print(f"Created or updated {len(INDEXES)} indexes and {KNOWLEDGE_BASE_NAME}.")
     return 0

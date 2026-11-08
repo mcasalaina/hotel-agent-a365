@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+import setup_foundry_iq
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from hotel_servicing_agent.config import Settings
 from hotel_servicing_agent.credentials import select_azure_credential
@@ -21,6 +22,9 @@ from setup_foundry_iq import (
     build_search_index,
     load_corpus,
     parse_frontmatter,
+    replace_documents,
+    verify_canonical_corpus,
+    verify_indexed_documents,
 )
 
 
@@ -90,6 +94,169 @@ def test_openai_key_fallback_is_explicit_and_never_required() -> None:
     )
     assert knowledge_base.as_dict()["models"][0]["azureOpenAIParameters"]["apiKey"] == "test-key"
     assert knowledge_base.as_dict()["retrievalReasoningEffort"]["kind"] == "low"
+
+
+def test_native_index_has_semantic_search_without_vectors() -> None:
+    native = build_search_index(
+        "hotel-test-index", "https://model.example.test", retrieval_mode="native"
+    ).as_dict()
+    indexed = build_index_document(build_chunks(load_corpus(Path("foundryiq-docs")))[0])
+
+    assert "vectorSearch" not in native
+    assert "content_vector" not in {field["name"] for field in native["fields"]}
+    assert "content_vector" not in indexed
+    assert native["semantic"]["defaultConfiguration"] == "hotel-semantic"
+    assert native["semantic"]["configurations"][0]["prioritizedFields"][
+        "prioritizedContentFields"
+    ] == [{"fieldName": "content"}]
+    with pytest.raises(ValueError, match="native or vector"):
+        build_search_index("hotel-test-index", "", retrieval_mode="invalid")
+
+
+def test_canonical_check_rejects_missing_extra_and_stale_sources(tmp_path: Path) -> None:
+    setup_foundry_iq.generate_documents(tmp_path)
+    verify_canonical_corpus(tmp_path)
+    source = tmp_path / "properties" / "HTL-001.profile.generated.md"
+    original = source.read_bytes()
+    source.write_bytes(original.replace(b"\n", b"\r\n"))
+    verify_canonical_corpus(tmp_path)
+    source.write_bytes(original + b"\nStale content.\n")
+    with pytest.raises(ValueError, match="HTL-001.profile.generated.md"):
+        verify_canonical_corpus(tmp_path)
+    source.unlink()
+    with pytest.raises(ValueError, match="HTL-001.profile.generated.md"):
+        verify_canonical_corpus(tmp_path)
+    source.write_bytes(original)
+    extra = tmp_path / "properties" / "extra.generated.md"
+    extra.write_bytes(original)
+    with pytest.raises(ValueError, match="extra.generated.md"):
+        verify_canonical_corpus(tmp_path)
+
+
+def test_corpus_source_path_must_match_actual_document(tmp_path: Path) -> None:
+    source = Path("foundryiq-docs/properties/HTL-001.profile.generated.md")
+    target = tmp_path / "properties" / source.name
+    target.parent.mkdir()
+    target.write_text(
+        source.read_text(encoding="utf-8").replace(
+            f"foundryiq-docs/properties/{source.name}", "../../outside.md"
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="source_path must match"):
+        load_corpus(tmp_path, expected_documents=1)
+
+
+@pytest.mark.parametrize("field", ["content", "source_path", "property_id", "valid_to"])
+def test_index_verification_checks_content_and_metadata(field: str) -> None:
+    chunks = build_chunks(load_corpus(Path("foundryiq-docs")))
+    documents = [build_index_document(chunk) for chunk in chunks]
+    client = SimpleNamespace(search=lambda *_, **__: documents)
+    verify_indexed_documents(client, chunks)
+    documents[0][field] = "incorrect"
+    with pytest.raises(RuntimeError, match="content, or source metadata"):
+        verify_indexed_documents(client, chunks)
+
+
+def test_index_verification_rejects_missing_extra_and_duplicate_records() -> None:
+    chunks = build_chunks(load_corpus(Path("foundryiq-docs")))
+    documents = [build_index_document(chunk) for chunk in chunks]
+    client = SimpleNamespace(search=lambda *_, **__: documents)
+    missing = documents.pop()
+    with pytest.raises(RuntimeError, match="document IDs"):
+        verify_indexed_documents(client, chunks)
+    documents.append(missing)
+    documents.append(dict(missing, id="unexpected"))
+    with pytest.raises(RuntimeError, match="unexpected"):
+        verify_indexed_documents(client, chunks)
+    documents[-1] = dict(missing)
+    with pytest.raises(RuntimeError, match="Duplicate"):
+        verify_indexed_documents(client, chunks)
+
+
+def test_populated_index_replacement_requires_explicit_permission() -> None:
+    captured: list[str] = []
+    client = SimpleNamespace(
+        search=lambda *_, **__: [{"id": "old"}],
+        delete_documents=lambda **_: captured.append("delete") or [],
+        merge_or_upload_documents=lambda **_: (
+            captured.append("upload") or [SimpleNamespace(succeeded=True)]
+        ),
+    )
+    with pytest.raises(RuntimeError, match="--replace-existing"):
+        replace_documents(client, [{"id": "new"}])
+    assert captured == []
+    replace_documents(client, [{"id": "new"}], replace_existing=True)
+    assert captured == ["delete", "upload"]
+
+
+def test_native_setup_never_constructs_an_embedding_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    indexes: list[dict[str, Any]] = []
+    uploads: dict[str, list[dict[str, object]]] = {}
+    sources: list[str] = []
+    bases: list[str] = []
+    index_client = SimpleNamespace(
+        list_index_names=lambda: [],
+        create_or_update_index=lambda index: indexes.append(index.as_dict()),
+        create_or_update_knowledge_source=lambda source: sources.append(source.name),
+        create_or_update_knowledge_base=lambda base: bases.append(base.name),
+    )
+
+    def search_factory(*, index_name: str, **_: object) -> object:
+        return SimpleNamespace(
+            search=lambda *_, **__: [],
+            merge_or_upload_documents=lambda *, documents: (
+                uploads.setdefault(index_name, documents)
+                and [SimpleNamespace(succeeded=True) for _ in documents]
+            ),
+        )
+
+    monkeypatch.setattr(
+        setup_foundry_iq,
+        "parse_args",
+        lambda: SimpleNamespace(
+            corpus_dir=Path("foundryiq-docs"),
+            expected_documents=95,
+            dry_run=False,
+            verify_only=False,
+            check_canonical=False,
+            retrieval_mode="native",
+            replace_existing=False,
+        ),
+    )
+    monkeypatch.setattr(setup_foundry_iq, "SearchIndexClient", lambda **_: index_client)
+    monkeypatch.setattr(setup_foundry_iq, "SearchClient", search_factory)
+    monkeypatch.setattr(setup_foundry_iq, "select_search_credential", lambda: object())
+    monkeypatch.setattr(
+        setup_foundry_iq,
+        "AzureOpenAI",
+        lambda **_: pytest.fail("Native mode must not construct an embedding client"),
+    )
+    monkeypatch.setenv("AZURE_SEARCH_ENDPOINT", "https://search.example.test")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://model.example.test")
+    monkeypatch.delenv("AZURE_OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("FOUNDRY_IQ_BLOB_CONTAINER", raising=False)
+    monkeypatch.delenv("AZURE_STORAGE_ACCOUNT_URL", raising=False)
+
+    assert setup_foundry_iq.main() == 0
+    assert len(indexes) == 4
+    assert all("vectorSearch" not in index for index in indexes)
+    assert {name: len(documents) for name, documents in uploads.items()} == {
+        "hotel-properties-index": 20,
+        "hotel-policies-index": 15,
+        "hotel-dining-local-index": 20,
+        "hotel-operations-index": 40,
+    }
+    assert all("content_vector" not in document for docs in uploads.values() for document in docs)
+    assert set(sources) == {
+        "hotel-properties-ks",
+        "hotel-policies-ks",
+        "hotel-dining-local-ks",
+        "hotel-operations-ks",
+    }
+    assert bases == ["hotel-foundryiq"]
 
 
 def test_live_setup_requires_explicit_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
