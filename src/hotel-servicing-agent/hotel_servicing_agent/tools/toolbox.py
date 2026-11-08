@@ -31,6 +31,26 @@ class FoundryToolboxTransport:
         self._approved_tool_names = frozenset(approved_tool_names)
         self._toolbox_factory = toolbox_factory
 
+    async def verify_tools(self) -> dict[str, dict[str, Any]]:
+        """Require every approved binding to exist before activating the hosted runtime."""
+        async with self._toolbox_factory(
+            self._credential,
+            url=self._endpoint,
+            name="hotel_foundry_toolbox",
+            timeout=300,
+        ) as toolbox:
+            schemas: dict[str, dict[str, Any]] = {}
+            for function in toolbox.functions:
+                if function.name not in self._approved_tool_names:
+                    continue
+                if function.name in schemas:
+                    raise RuntimeError(f"Duplicate published toolbox tool: {function.name}")
+                schemas[function.name] = function.parameters()
+            missing = self._approved_tool_names - schemas.keys()
+            if missing:
+                raise RuntimeError(f"Missing published toolbox tools: {sorted(missing)}")
+            return schemas
+
     async def call(self, tool_name: str, arguments: Mapping[str, Any]) -> CallToolResult:
         if tool_name not in self._approved_tool_names:
             raise ValueError(f"Toolbox tool is not approved for this operation: {tool_name}")

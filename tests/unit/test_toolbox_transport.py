@@ -198,3 +198,30 @@ def test_toolbox_transport_requires_an_explicit_unique_allowlist(approved: tuple
             credential=object(),  # type: ignore[arg-type]
             approved_tool_names=approved,
         )
+
+
+@pytest.mark.parametrize("published", [("approved-read",), (), ("approved-read", "approved-read")])
+def test_toolbox_preflight_requires_exact_published_bindings(published: tuple[str, ...]) -> None:
+    closed: list[bool] = []
+
+    def query(question: str) -> str:
+        return question
+
+    class Toolbox:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            self.functions = [FunctionTool(name=name, func=query) for name in published]
+
+        async def __aenter__(self) -> Toolbox:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            closed.append(True)
+
+    transport = _transport(Toolbox)
+    if len(published) == 1:
+        schemas = asyncio.run(transport.verify_tools())
+        assert schemas["approved-read"]["required"] == ["question"]
+    else:
+        with pytest.raises(RuntimeError, match="published toolbox tool"):
+            asyncio.run(transport.verify_tools())
+    assert closed == [True]

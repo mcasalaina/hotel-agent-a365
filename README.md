@@ -34,7 +34,8 @@ MCP major version. On Windows, use Python 3.13 and `.venv\Scripts\python.exe` fo
 
 The request-owned `FoundryToolboxTransport` supports the reviewed `hotel_foundry_toolbox`
 endpoint in the same Foundry project. It requires an explicit per-operation tool allowlist,
-validates discovered argument schemas, and preserves complete MCP evidence. Integrate it
+validates discovered argument schemas, and preserves complete MCP evidence. Its `verify_tools()`
+preflight rejects missing or duplicate published bindings before runtime activation. Integrate it
 beneath the governed hotel functions only after the published IQ contracts are verified;
 it does not register raw tools or enable a generic Work IQ action-capable `ask` by default.
 
