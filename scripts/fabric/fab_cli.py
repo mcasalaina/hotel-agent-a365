@@ -42,6 +42,18 @@ class FabCliTransport:
     ) -> HttpResponse:
         parsed = urlparse(url)
         if (
+            parsed.scheme == "https"
+            and parsed.hostname is not None
+            and parsed.hostname.startswith("wabi-")
+            and parsed.hostname.endswith(".analysis.windows.net")
+            and re.fullmatch(r"/v1/operations/[0-9a-fA-F-]{36}(?:/result)?", parsed.path)
+            and not parsed.query
+            and not parsed.fragment
+            and parsed.port is None
+        ):
+            # Fabric's regional LRO locations have equivalent public API routes.
+            parsed = urlparse(f"https://api.fabric.microsoft.com{parsed.path}")
+        if (
             parsed.scheme != "https"
             or parsed.netloc != "api.fabric.microsoft.com"
             or not parsed.path.startswith("/v1/")

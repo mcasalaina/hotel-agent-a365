@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 from uuid import UUID
+
+from azure.identity import AzureCliCredential
 
 ONELAKE = "https://onelake.dfs.fabric.microsoft.com"
 API_VERSION = "2021-06-08"
@@ -23,24 +24,8 @@ CHUNK_SIZE = 4 * 1024 * 1024
 
 
 def storage_token() -> str:
-    result = subprocess.run(
-        [
-            "az",
-            "account",
-            "get-access-token",
-            "--resource",
-            "https://storage.azure.com",
-            "--query",
-            "accessToken",
-            "--output",
-            "tsv",
-        ],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    token = result.stdout.strip()
-    if not token:
+    token = AzureCliCredential().get_token("https://storage.azure.com/.default").token
+    if not isinstance(token, str) or not token:
         raise RuntimeError("Azure CLI returned an empty OneLake access token")
     return token
 

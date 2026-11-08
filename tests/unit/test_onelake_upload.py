@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
-from upload_onelake_files import OneLakeUploader, main, parse_args
+from upload_onelake_files import OneLakeUploader, main, parse_args, storage_token
 
 WORKSPACE_ID = "11111111-1111-1111-1111-111111111111"
 LAKEHOUSE_ID = "22222222-2222-2222-2222-222222222222"
@@ -98,3 +98,10 @@ def test_cli_passes_id_mode_to_upload(monkeypatch: pytest.MonkeyPatch) -> None:
         LAKEHOUSE_ID,
         use_ids=True,
     )
+
+
+def test_storage_auth_uses_cross_platform_azure_cli_credential() -> None:
+    with patch("upload_onelake_files.AzureCliCredential") as credential:
+        credential.return_value.get_token.return_value.token = "test-token"
+        assert storage_token() == "test-token"
+    credential.return_value.get_token.assert_called_once_with("https://storage.azure.com/.default")

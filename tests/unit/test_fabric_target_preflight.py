@@ -163,3 +163,27 @@ def test_local_validation_ignores_remote_authentication_settings(
 
     monkeypatch.setattr("fabric.cli.FabCliTransport", unexpected_auth)
     assert main(["validate", "--config", str(config)]) == 0
+
+
+def test_fab_regional_lro_uses_canonical_fabric_route(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+
+    def run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        if command[1] == "auth":
+            return subprocess.CompletedProcess(command, 0, f"Tenant ID: {TENANT_ID}")
+        return subprocess.CompletedProcess(
+            command, 0, '{"status_code":200,"text":{"status":"Succeeded"}}'
+        )
+
+    monkeypatch.setattr("fabric.fab_cli.subprocess.run", run)
+    response = FabCliTransport(TENANT_ID).request(
+        "GET",
+        f"https://wabi-us-central-b-primary-redirect.analysis.windows.net/v1/operations/{CAPACITY_ID}",
+        {},
+        None,
+    )
+    assert response.json()["status"] == "Succeeded"
+    assert calls[1][2] == f"operations/{CAPACITY_ID}"
