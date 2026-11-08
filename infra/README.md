@@ -40,6 +40,8 @@ integrating final source branding/date changes; use `--verify-only` to compare
 indexed IDs, content and source metadata with the frozen corpus.
 `searchLocation` can override only Search's region if regional capacity is
 unavailable; the archive's `location` and existing Foundry resources stay unchanged.
+Set `deployArchive=false` when the archive already exists, including a retry after
+partial deployment, to preserve its network/security properties and existing grants.
 
 ## Voice web application
 

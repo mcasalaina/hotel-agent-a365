@@ -24,6 +24,9 @@ param searchServiceName string = 'hotel-iq-${uniqueString(resourceGroup().id)}'
 @description('Globally unique private document archive account name.')
 param storageAccountName string = 'sthoteliq${uniqueString(resourceGroup().id)}'
 
+@description('Create the archive on the first deployment; false preserves an existing archive.')
+param deployArchive bool = true
+
 @description('AAD project Search connection name.')
 param searchConnectionName string = 'hotel-search-connection'
 
@@ -69,7 +72,11 @@ resource searchService 'Microsoft.Search/searchServices@2025-05-01' = {
   }
 }
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
+resource existingArchive 'Microsoft.Storage/storageAccounts@2025-06-01' existing = {
+  name: storageAccountName
+}
+
+resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = if (deployArchive) {
   name: storageAccountName
   location: location
   tags: tags
@@ -88,7 +95,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
   }
 }
 
-resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2025-06-01' = {
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2025-06-01' = if (deployArchive) {
   parent: storageAccount
   name: 'default'
   properties: {
@@ -103,7 +110,7 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2025-06-01'
   }
 }
 
-resource documentContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = {
+resource documentContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = if (deployArchive) {
   parent: blobService
   name: 'hotel-docs'
   properties: {
@@ -139,9 +146,9 @@ resource deployerSearchDataContributor 'Microsoft.Authorization/roleAssignments@
   }
 }
 
-resource deployerArchiveContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(documentContainer.id, deploymentPrincipalId, storageBlobDataContributorRoleId)
-  scope: documentContainer
+resource deployerArchiveContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (deployArchive) {
+  name: guid(documentContainer!.id, deploymentPrincipalId, storageBlobDataContributorRoleId)
+  scope: documentContainer!
   properties: {
     principalId: deploymentPrincipalId
     roleDefinitionId: storageBlobDataContributorRoleId
@@ -173,7 +180,9 @@ module connection 'modules/foundry-connection.bicep' = {
 output searchServiceEndpoint string = 'https://${searchService.name}.search.windows.net'
 output searchServiceId string = searchService.id
 output searchServicePrincipalId string = searchService.identity.principalId
-output storageAccountName string = storageAccount.name
-output storageAccountUrl string = storageAccount.properties.primaryEndpoints.blob
-output documentContainerName string = documentContainer.name
+output storageAccountName string = storageAccountName
+output storageAccountUrl string = deployArchive
+  ? storageAccount!.properties.primaryEndpoints.blob
+  : existingArchive.properties.primaryEndpoints.blob
+output documentContainerName string = 'hotel-docs'
 output searchConnectionName string = connection.outputs.searchConnectionName

@@ -190,15 +190,42 @@ def test_populated_index_replacement_requires_explicit_permission() -> None:
     assert captured == ["delete", "upload"]
 
 
+def test_archival_reads_the_selected_corpus_directory(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    setup_foundry_iq.generate_documents(tmp_path)
+    documents = load_corpus(tmp_path)
+    uploads: dict[str, bytes] = {}
+    container = SimpleNamespace(
+        upload_blob=lambda *, name, data, **_: uploads.setdefault(name, data)
+    )
+    monkeypatch.setattr(
+        setup_foundry_iq,
+        "BlobServiceClient",
+        lambda **_: SimpleNamespace(get_container_client=lambda _: container),
+    )
+    setup_foundry_iq.archive_corpus(
+        documents, tmp_path, "hotel-docs", "https://archive.example.test"
+    )
+
+    assert len(uploads) == 95
+    assert (
+        uploads["foundryiq-docs/properties/HTL-001.profile.generated.md"]
+        == (tmp_path / "properties" / "HTL-001.profile.generated.md").read_bytes()
+    )
+
+
+@pytest.mark.parametrize("populated", [False, True])
 def test_native_setup_never_constructs_an_embedding_client(
     monkeypatch: pytest.MonkeyPatch,
+    populated: bool,
 ) -> None:
     indexes: list[dict[str, Any]] = []
     uploads: dict[str, list[dict[str, object]]] = {}
     sources: list[str] = []
     bases: list[str] = []
     index_client = SimpleNamespace(
-        list_index_names=lambda: [],
+        list_index_names=lambda: ["hotel-properties-index"] if populated else [],
         create_or_update_index=lambda index: indexes.append(index.as_dict()),
         create_or_update_knowledge_source=lambda source: sources.append(source.name),
         create_or_update_knowledge_base=lambda base: bases.append(base.name),
@@ -207,6 +234,7 @@ def test_native_setup_never_constructs_an_embedding_client(
     def search_factory(*, index_name: str, **_: object) -> object:
         return SimpleNamespace(
             search=lambda *_, **__: [],
+            get_document_count=lambda: 1,
             merge_or_upload_documents=lambda *, documents: (
                 uploads.setdefault(index_name, documents)
                 and [SimpleNamespace(succeeded=True) for _ in documents]
@@ -240,6 +268,14 @@ def test_native_setup_never_constructs_an_embedding_client(
     monkeypatch.delenv("FOUNDRY_IQ_BLOB_CONTAINER", raising=False)
     monkeypatch.delenv("AZURE_STORAGE_ACCOUNT_URL", raising=False)
 
+    if populated:
+        with pytest.raises(RuntimeError, match="--replace-existing"):
+            setup_foundry_iq.main()
+        assert indexes == []
+        assert uploads == {}
+        assert sources == []
+        assert bases == []
+        return
     assert setup_foundry_iq.main() == 0
     assert len(indexes) == 4
     assert all("vectorSearch" not in index for index in indexes)

@@ -429,7 +429,7 @@ def archive_corpus(
     service = BlobServiceClient(account_url=account_url, credential=DefaultAzureCredential())
     container = service.get_container_client(container_name)
     for document in documents:
-        source = corpus_dir.parent / document.source_path
+        source = corpus_dir / Path(document.source_path).relative_to("foundryiq-docs")
         container.upload_blob(
             name=document.source_path,
             data=source.read_bytes(),
