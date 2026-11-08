@@ -39,6 +39,12 @@ preflight rejects missing or duplicate published bindings before runtime activat
 beneath the governed hotel functions only after the published IQ contracts are verified;
 it does not register raw tools or enable a generic Work IQ action-capable `ask` by default.
 
+Property- and date-scoped hotel knowledge continues to use the native `FoundryIQTool`
+retrieval API with enforced `filterAddOn` values. The reviewed knowledge-base MCP tool
+accepts only `query_variants`, not explicit property or date filters. Its presence in a
+toolbox does not establish scoped isolation and must not silently replace the guarded
+native retrieval path.
+
 Copy `.env.template` to `.env` for local Hosted Agent execution. Never commit `.env`, azd environment state, generated Agent 365 configuration, tokens, or deployment packages.
 The hosted `.agentignore` also excludes sample environment files and all local `.foundry`,
 `.agent_configs`, `.azure`, and virtual-environment state from source deployment packages.
