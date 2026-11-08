@@ -17,3 +17,13 @@ Foundry as the bridge's managed identity.
 
 Run the targeted regression checks with
 `python -m pytest tests/unit/test_bridge_readiness.py`.
+
+When policy disables the vault's public network endpoint, use
+`infra/agent365-private-network.bicep` and run `bootstrap/vault_bootstrap.py`
+as a one-off job inside that VNet-integrated environment. The helper requires
+the expected private DNS subnet and successfully authenticated vault access
+before creating a credential. It transfers Graph's one-time secret directly to
+Key Vault and outputs only private addresses, credential key IDs and secret URIs.
+Use a dedicated bootstrap identity with temporary owned-blueprint management
+rights, vault-scoped Secrets Officer, registry pull and telemetry-component read
+access; remove its management grants after successful bootstrap.

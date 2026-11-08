@@ -101,6 +101,9 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: managedEnvironmentName
   location: location
   properties: {
+    appLogsConfiguration: {
+      destination: 'azure-monitor'
+    }
     vnetConfiguration: {
       infrastructureSubnetId: '${virtualNetwork.id}/subnets/container-apps'
       internal: false
