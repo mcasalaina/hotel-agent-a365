@@ -1,8 +1,19 @@
 {
-  "schema_version": 1,
+  "schema_version": 3,
+  "as_of_date": "2026-11-08",
+  "temporal_contract": {
+    "completed_departed_no_show_cancelled": "check_out < 2026-11-08",
+    "future_arriving": "check_in > 2026-11-08",
+    "future": "check_in > 2026-11-08",
+    "arriving": "check_in > 2026-11-08",
+    "in_house": "check_in < 2026-11-08 < check_out",
+    "stay_dates": "match the reservation lifecycle and dates, including planned future stays",
+    "linked_dates": "folio, dispute, service, maintenance and control dates shift together by 68 days",
+    "daily_occupancy": "modeled room nights reconcile to completed, in-house and planned future stays"
+  },
   "date_range": {
-    "start": "2026-03-01",
-    "end": "2027-03-31"
+    "start": "2026-05-08",
+    "end": "2027-06-07"
   },
   "required_tables": [
     "properties",
@@ -41,6 +52,7 @@
     ],
     "stay": [
       "completed",
+      "future",
       "in_house"
     ]
   },

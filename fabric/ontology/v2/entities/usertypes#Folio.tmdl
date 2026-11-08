@@ -1,0 +1,45 @@
+/// Stay financial account and outstanding balance in the folio currency. Preserve decimal precision and never combine different currencies into an unlabeled total.
+entity usertypes#Folio
+	lineageTag: cdef1062-6618-5308-90c2-1b1fab248d01
+	backingTable: folios
+	keyProperty: FolioId
+
+	/// FolioId from HotelGuestServices.dbo.folios.folio_id.
+	property FolioId
+		dataType: string
+		lineageTag: 64e956a4-a432-5cdb-8aab-1380b2350f82
+
+		backingConfiguration
+			valueColumn: folios.folio_id
+
+	/// StayId from HotelGuestServices.dbo.folios.stay_id.
+	property StayId
+		dataType: string
+		lineageTag: 470cb17c-f176-5052-b493-84554db71d51
+
+		backingConfiguration
+			valueColumn: folios.stay_id
+
+	/// PropertyId from HotelGuestServices.dbo.folios.property_id.
+	property PropertyId
+		dataType: string
+		lineageTag: c8747e5d-3fae-5968-9ea7-644419c2dc49
+
+		backingConfiguration
+			valueColumn: folios.property_id
+
+	/// Currency from HotelGuestServices.dbo.folios.currency.
+	property Currency
+		dataType: string
+		lineageTag: ed43ae50-fb9b-5a3c-8db9-badf575f92e5
+
+		backingConfiguration
+			valueColumn: folios.currency
+
+	/// Balance from HotelGuestServices.dbo.folios.balance.
+	property Balance
+		dataType: decimal
+		lineageTag: 24d57542-4a86-541f-ad3b-2b040b4ab95a
+
+		backingConfiguration
+			valueColumn: folios.balance

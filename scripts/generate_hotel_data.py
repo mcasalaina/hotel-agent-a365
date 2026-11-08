@@ -13,16 +13,38 @@ import json
 import random
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from itertools import chain
 from pathlib import Path
 
-from realistic_hotel_data import build_realistic_tables, profile_manifest
+from realistic_hotel_data import MARIA_GARCIA_EMAIL, build_realistic_tables, profile_manifest
 
-DATE_START = date(2026, 3, 1)
-DATE_END = date(2027, 3, 31)
+BASELINE_DATE_START = date(2026, 3, 1)
+BASELINE_DATE_END = date(2027, 3, 31)
+BASELINE_TEMPORAL_BOUNDARY = date(2026, 9, 1)
+TEMPORAL_BOUNDARY = date(2026, 11, 8)
+DATE_SHIFT = TEMPORAL_BOUNDARY - BASELINE_TEMPORAL_BOUNDARY
+DATE_START = BASELINE_DATE_START + DATE_SHIFT
+DATE_END = BASELINE_DATE_END + DATE_SHIFT
 DEFAULT_SEED = 20260301
-FIXTURES_PATH = Path(__file__).resolve().parents[1] / "data" / "fixtures" / "demo_scenarios.json"
+FIXTURES_PATH = (
+    Path(__file__).resolve().parents[1] / "data" / "fixtures" / "business_scenarios.json"
+)
+DATED_COLUMNS = {
+    "check_in",
+    "check_out",
+    "actual_check_in",
+    "actual_check_out",
+    "service_date",
+    "reservation_at",
+    "requested_at",
+    "reported_at",
+    "opened_at",
+    "posted_at",
+    "confirmed_at",
+    "created_at",
+    "occurred_at",
+}
 REQUIRED_TABLES = (
     "properties",
     "room_types",
@@ -426,7 +448,7 @@ def read_fixtures() -> list[dict[str, str]]:
     fixture_data = json.loads(FIXTURES_PATH.read_text(encoding="utf-8"))
     scenarios = fixture_data["scenarios"]
     if not isinstance(scenarios, list):
-        raise ValueError("demo_scenarios.json must contain a scenarios list")
+        raise ValueError("business_scenarios.json must contain a scenarios list")
     return [dict(item) for item in scenarios]
 
 
@@ -504,7 +526,7 @@ def build_reference(
 
 def build_guests(count: int) -> list[dict[str, str]]:
     named_guests = {
-        1: ("Maria", "Garcia", "mariagarcia@cam3652609.onmicrosoft.com"),
+        1: ("Maria", "Garcia", MARIA_GARCIA_EMAIL),
         2: ("Marco", "Casalaina", "mcasalaina.local@cam3652609.onmicrosoft.com"),
     }
     rows: list[dict[str, str]] = []
@@ -560,57 +582,57 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
     profiles_by_id = {profile.property_id: profile for profile in profiles()}
     fixture_specs = {
         "family_accessibility": (
-            "RES-DEMO-FAMILY",
+            "RES-FAMILY-2026",
             "GST-000001",
-            date(2026, 8, 14),
+            date(2026, 9, 10) + DATE_SHIFT,
             "future",
             "flexible",
-            3,
+            2,
             2,
         ),
         "rate_change": (
-            "RES-DEMO-RATE-CHANGE",
+            "RES-RATE-CHANGE",
             "GST-000002",
-            date(2026, 4, 11),
+            date(2026, 9, 15) + DATE_SHIFT,
             "future",
             "flexible",
             2,
             1,
         ),
         "cancellable": (
-            "RES-DEMO-CANCEL-FLEX",
+            "RES-CANCEL-FLEX",
             "GST-000003",
-            date(2026, 4, 5),
+            date(2026, 4, 5) + DATE_SHIFT,
             "cancelled",
             "flexible",
             2,
             1,
         ),
         "nonrefundable": (
-            "RES-DEMO-CANCEL-NRF",
+            "RES-CANCEL-NRF-2026",
             "GST-000004",
-            date(2026, 4, 8),
+            date(2026, 4, 8) + DATE_SHIFT,
             "cancelled",
             "nonrefundable",
             2,
             1,
         ),
         "folio_dispute": (
-            "RES-DEMO-FOLIO",
+            "RES-FOLIO-2026",
             "GST-000005",
-            date(2026, 3, 3),
+            date(2026, 3, 3) + DATE_SHIFT,
             "completed",
             "flexible",
             2,
             1,
         ),
         "maintenance": (
-            "RES-DEMO-INSTAY",
+            "RES-INSTAY",
             "GST-000006",
-            date(2026, 7, 9),
+            date(2026, 8, 30) + DATE_SHIFT,
             "in_house",
             "flexible",
-            2,
+            4,
             1,
         ),
     }
@@ -631,15 +653,26 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
     property_count = len(ROSTER)
     for number in range(len(rows) + 1, count + 1):
         profile = profiles()[(number - 1) % property_count]
+        nights = (number % 4) + 1
         if number <= generated_stay_limit:
             status = "completed"
-            check_in = DATE_START + timedelta(days=(number * 3) % 275)
+            historical_days = (TEMPORAL_BOUNDARY - DATE_START).days - nights - 1
+            check_in = DATE_START + timedelta(days=(number * 3) % historical_days)
         else:
             property_cycle = (number - 1) // property_count
             status = NON_COMPLETED_RESERVATION_STATUSES[
                 property_cycle % len(NON_COMPLETED_RESERVATION_STATUSES)
             ]
-            check_in = DATE_START + timedelta(days=number % 392)
+            if status in {"future", "arriving"}:
+                check_in = TEMPORAL_BOUNDARY + timedelta(
+                    days=1 + (property_cycle + int(profile.property_id[-3:])) % 7
+                )
+            elif status == "in_house":
+                check_in = TEMPORAL_BOUNDARY - timedelta(days=1 + number % 3)
+                nights = max(nights, (TEMPORAL_BOUNDARY - check_in).days + 2)
+            else:
+                historical_days = (TEMPORAL_BOUNDARY - DATE_START).days - nights - 1
+                check_in = DATE_START + timedelta(days=number % historical_days)
         policy = "nonrefundable" if number % 7 == 0 else "flexible"
         rows.append(
             reservation_row(
@@ -648,7 +681,7 @@ def build_reservations(scale: str, fixtures: list[dict[str, str]]) -> list[dict[
                 profile,
                 ((number - 1) % 4) + 1,
                 check_in,
-                (number % 4) + 1,
+                nights,
                 status,
                 policy,
             )
@@ -939,26 +972,26 @@ def build_control_records() -> tuple[
     return (
         [
             {
-                "confirmation_id": "CNF-DEMO-001",
+                "confirmation_id": "CNF-001",
                 "action_type": "restaurant_change",
-                "target_id": "RR-DEMO-DINING",
+                "target_id": "RR-DINING",
                 "status": "confirmed",
                 "confirmed_at": "2026-08-10T10:00:00",
             }
         ],
         [
             {
-                "idempotency_key": "idem-demo-restaurant-change",
+                "idempotency_key": "idem-restaurant-change",
                 "action_type": "restaurant_change",
-                "result_id": "RR-DEMO-DINING",
+                "result_id": "RR-DINING",
                 "created_at": "2026-08-10T10:00:00",
             }
         ],
         [
             {
-                "audit_event_id": "AUD-DEMO-001",
+                "audit_event_id": "AUD-001",
                 "entity_type": "restaurant_reservation",
-                "entity_id": "RR-DEMO-DINING",
+                "entity_id": "RR-DINING",
                 "action": "changed",
                 "occurred_at": "2026-08-10T10:00:01",
                 "actor_type": "synthetic_guest_services",
@@ -1047,8 +1080,15 @@ Allergen preparation is coordinated in advance and is never guaranteed without a
 confirmed special request.""",
         )
         docs.append(path)
-        notice_start = date(2026, 4, 1) + timedelta(days=(int(profile.property_id[-3:]) - 1) * 9)
+        notice_start = (
+            date(2026, 4, 1) + DATE_SHIFT + timedelta(days=(int(profile.property_id[-3:]) - 1) * 9)
+        )
         notice_end = notice_start + timedelta(days=20)
+        if notice_start == TEMPORAL_BOUNDARY:
+            notice_start += timedelta(days=1)
+            notice_end = notice_start + timedelta(days=20)
+        elif notice_start < TEMPORAL_BOUNDARY <= notice_end:
+            notice_end = TEMPORAL_BOUNDARY - timedelta(days=1)
         logical_path = f"foundryiq-docs/operations/{profile.property_id}.notice.generated.md"
         path = docs_output / "operations" / f"{profile.property_id}.notice.generated.md"
         write_document(
@@ -1138,6 +1178,23 @@ to the property duty leader.""",
     }
 
 
+def shift_dated_rows(rows: Iterable[dict[str, str]]) -> Iterator[dict[str, str]]:
+    """Move the reviewed fixed-date model as a unit, without changing relative chronology."""
+    for row in rows:
+        shifted = dict(row)
+        for column in DATED_COLUMNS & row.keys():
+            value = row[column]
+            if not value:
+                continue
+            if len(value) == 10:
+                shifted[column] = (date.fromisoformat(value) + DATE_SHIFT).isoformat()
+            else:
+                shifted[column] = (datetime.fromisoformat(value) + DATE_SHIFT).isoformat(
+                    timespec="seconds"
+                )
+        yield shifted
+
+
 def generate(
     scale: str, output: Path, docs_output: Path, seed: int = DEFAULT_SEED
 ) -> dict[str, object]:
@@ -1151,8 +1208,9 @@ def generate(
         scale=scale,
         property_rows=property_rows,
         fixture_rows=fixture_rows,
-        start=DATE_START,
-        end=DATE_END,
+        start=BASELINE_DATE_START,
+        end=BASELINE_DATE_END,
+        temporal_boundary=BASELINE_TEMPORAL_BOUNDARY,
         seed=seed,
         amenities=AMENITIES,
     )
@@ -1168,25 +1226,22 @@ def generate(
     hashes: dict[str, str] = {}
     for table_name in REQUIRED_TABLES:
         table_path = output / f"{table_name}.csv"
-        rows = table_rows[table_name]
-        if isinstance(rows, list) and not rows:
-            raise ValueError(f"{table_name} has no rows")
-        if isinstance(rows, list):
-            first_row = rows[0]
-        else:
-            iterator = iter(rows)
-            first_row = next(iterator, None)
-            rows = chain((first_row,), iterator) if first_row is not None else ()
+        iterator = shift_dated_rows(table_rows[table_name])
+        first_row = next(iterator, None)
+        rows = chain((first_row,), iterator) if first_row is not None else ()
         if first_row is None:
             raise ValueError(f"{table_name} has no rows")
         counts[table_name] = csv_write(table_path, list(first_row), rows)
         hashes[table_name] = stable_hash(table_path)
     docs_summary = generate_documents(docs_output)
     manifest: dict[str, object] = {
-        "generator_version": 2,
+        "generator_version": 3,
         "seed": seed,
         "scale": scale,
         "date_range": {"start": DATE_START.isoformat(), "end": DATE_END.isoformat()},
+        "temporal_boundary": TEMPORAL_BOUNDARY.isoformat(),
+        "baseline_temporal_boundary": BASELINE_TEMPORAL_BOUNDARY.isoformat(),
+        "date_shift_days": DATE_SHIFT.days,
         "operating_profiles": profile_manifest(),
         "counts": counts,
         "hashes": hashes,

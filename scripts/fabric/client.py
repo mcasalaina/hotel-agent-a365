@@ -78,31 +78,53 @@ class FabricOperationFailed(RuntimeError):
 class FabricRestClient:
     def __init__(
         self,
-        credential: TokenCredential,
+        credential: TokenCredential | None = None,
         transport: HttpTransport | None = None,
         base_url: str = FABRIC_API_BASE_URL,
         scope: str = FABRIC_API_SCOPE,
         sleeper: Callable[[float], None] | None = None,
+        skill_name: str = "e2e-medallion-architecture",
     ) -> None:
+        if credential is None and transport is None:
+            raise ValueError("A credential or an authenticated transport is required.")
         self._credential = credential
         self._transport = transport or UrllibTransport()
         self._base_url = base_url.rstrip("/")
         self._scope = scope
         self._sleeper = sleeper or time.sleep
+        self._skill_name = skill_name
 
     def list_workspaces(self) -> list[dict[str, Any]]:
-        response = self.request_json("GET", "/workspaces", expected_statuses={200})
-        payload = response.json()
-        return _value_list(payload)
+        return self._list_collection("/workspaces")
+
+    def list_capacities(self) -> list[dict[str, Any]]:
+        return self._list_collection("/capacities")
 
     def list_items(self, workspace_id: str) -> list[dict[str, Any]]:
-        response = self.request_json(
-            "GET",
-            f"/workspaces/{workspace_id}/items",
-            expected_statuses={200},
-        )
-        payload = response.json()
-        return _value_list(payload)
+        return self._list_collection(f"/workspaces/{workspace_id}/items")
+
+    def _list_collection(self, path: str) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        visited: set[str] = set()
+        while path:
+            if path in visited:
+                raise FabricOperationFailed("Fabric collection repeated a continuation URL.")
+            visited.add(path)
+            response = self.request_json("GET", path, expected_statuses={200})
+            payload = response.json()
+            if not isinstance(payload, dict) or not isinstance(payload.get("value"), list):
+                raise FabricOperationFailed("Fabric collection returned no value array.")
+            items.extend(_value_list(payload))
+            continuation = payload.get("continuationUri")
+            if continuation:
+                parsed = urllib.parse.urlparse(str(continuation))
+                if (
+                    parsed.scheme != "https"
+                    or parsed.netloc != urllib.parse.urlparse(self._base_url).netloc
+                ):
+                    raise FabricOperationFailed("Fabric continuation URL has an unexpected host.")
+            path = str(continuation or "")
+        return items
 
     def create_workspace(self, body: dict[str, Any]) -> dict[str, Any]:
         response = self.request_json("POST", "/workspaces", body, expected_statuses={201})
@@ -129,14 +151,38 @@ class FabricRestClient:
         )
         return self._resolve_lro_result("POST", response)
 
-    def create_ontology(self, workspace_id: str, body: dict[str, Any]) -> dict[str, Any]:
+    def create_or_update_shortcut(
+        self, workspace_id: str, item_id: str, body: dict[str, Any]
+    ) -> dict[str, Any]:
+        request_body = {
+            "name": body["name"],
+            "path": body["path"],
+            "target": {"oneLake": body["target"]["oneLake"]},
+        }
         response = self.request_json(
             "POST",
-            f"/workspaces/{workspace_id}/ontologies",
-            body,
-            expected_statuses={201, 202},
+            f"/workspaces/{workspace_id}/items/{item_id}/shortcuts"
+            "?shortcutConflictPolicy=CreateOrOverwrite",
+            request_body,
+            expected_statuses={200, 201},
         )
-        return self._resolve_lro_result("POST", response)
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise FabricOperationFailed("Shortcut write returned no JSON body.")
+        return payload
+
+    def create_ontology(self, workspace_id: str, body: dict[str, Any]) -> dict[str, Any]:
+        client = self._ontology_client()
+        ontology_body = {key: value for key, value in body.items() if key != "type"}
+        if "definition" in ontology_body:
+            ontology_body["definition"] = {"parts": ontology_body["definition"]["parts"]}
+        response = client.request_json(
+            "POST",
+            f"/workspaces/{workspace_id}/ontologies",
+            ontology_body,
+            expected_statuses={200, 201, 202},
+        )
+        return client._resolve_lro_result("POST", response)
 
     def create_data_agent(self, workspace_id: str, body: dict[str, Any]) -> dict[str, Any]:
         response = self.request_json(
@@ -167,13 +213,24 @@ class FabricRestClient:
         ontology_id: str,
         definition: dict[str, Any],
     ) -> dict[str, Any]:
-        response = self.request_json(
+        client = self._ontology_client()
+        response = client.request_json(
             "POST",
             f"/workspaces/{workspace_id}/ontologies/{ontology_id}/updateDefinition?updateMetadata=true",
-            {"definition": definition},
+            {"definition": {"parts": definition["parts"]}},
             expected_statuses={200, 202},
         )
-        return self._resolve_lro_result("POST", response)
+        return client._resolve_lro_result("POST", response)
+
+    def _ontology_client(self) -> FabricRestClient:
+        return FabricRestClient(
+            credential=self._credential,
+            transport=self._transport,
+            base_url=self._base_url,
+            scope=self._scope,
+            sleeper=self._sleeper,
+            skill_name="fabriciq-ontology-cli",
+        )
 
     def update_data_agent_definition(
         self,
@@ -198,7 +255,8 @@ class FabricRestClient:
         extra_headers: dict[str, str] | None = None,
     ) -> HttpResponse:
         url = self._qualify_url(path_or_url)
-        headers = {"Authorization": f"Bearer {self._token()}"}
+        headers = {"Authorization": f"Bearer {self._token()}"} if self._credential else {}
+        headers["x-ms-fabric-skill"] = self._skill_name
         if body is not None:
             headers["Content-Type"] = "application/json"
         if extra_headers:
@@ -257,6 +315,8 @@ class FabricRestClient:
         return f"{self._base_url}{path_or_url}"
 
     def _token(self) -> str:
+        if self._credential is None:
+            raise FabricOperationFailed("The authenticated transport does not export tokens.")
         return self._credential.get_token(self._scope).token
 
 

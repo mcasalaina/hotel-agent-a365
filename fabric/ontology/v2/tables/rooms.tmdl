@@ -1,0 +1,35 @@
+/// Authoritative HotelOperations.dbo.rooms.
+table rooms
+	lineageTag: 32f61ac8-63ca-5548-b76e-40b7def251fb
+
+	column room_id
+		dataType: string
+		sourceColumn: room_id
+		lineageTag: 0cbf9734-6f7e-549e-a6ad-b71fe6ca1bfe
+
+	column property_id
+		dataType: string
+		sourceColumn: property_id
+		lineageTag: c3956658-c826-5b49-95a8-60b7e2823127
+
+	column room_type_id
+		dataType: string
+		sourceColumn: room_type_id
+		lineageTag: 8154b0ae-7901-51d0-bbd7-8cef3483ae6f
+
+	column room_number
+		dataType: string
+		sourceColumn: room_number
+		lineageTag: 9d84507c-f801-573f-a959-2b832e099f2d
+
+	column room_status
+		dataType: string
+		sourceColumn: room_status
+		lineageTag: 2dd7671b-b424-5bda-85c4-f31e4f67378b
+
+	partition rooms = entity
+		mode: directLake
+		source
+			entityName: rooms
+			schemaName: dbo
+			expressionSource: HotelOperationsQuery

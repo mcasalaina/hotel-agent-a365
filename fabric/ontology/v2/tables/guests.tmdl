@@ -1,0 +1,30 @@
+/// Authoritative HotelGuestServices.dbo.guests.
+table guests
+	lineageTag: 30b42c0d-1a7a-51bf-b26e-96692889bde1
+
+	column guest_id
+		dataType: string
+		sourceColumn: guest_id
+		lineageTag: acbd8e33-40f6-5c9a-8715-1026c0c673a4
+
+	column first_name
+		dataType: string
+		sourceColumn: first_name
+		lineageTag: 32ef4ed5-ea14-5995-94e1-b4a115f90239
+
+	column last_name
+		dataType: string
+		sourceColumn: last_name
+		lineageTag: 9ba142b9-867f-54d7-ba92-d6aaf5d88f82
+
+	column country
+		dataType: string
+		sourceColumn: country
+		lineageTag: 0bee56c7-248e-547a-8c5f-12fb202738d9
+
+	partition guests = entity
+		mode: directLake
+		source
+			entityName: guests
+			schemaName: dbo
+			expressionSource: HotelGuestServicesQuery

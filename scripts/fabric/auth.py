@@ -10,10 +10,12 @@ from azure.identity import (
     DeviceCodeCredential,
 )
 
-AuthMode = Literal["default", "azure-cli", "device-code", "chained"]
+AuthMode = Literal["default", "azure-cli", "device-code", "chained", "fab"]
 
 
 def build_credential(mode: AuthMode) -> TokenCredential:
+    if mode == "fab":
+        raise ValueError("fab authentication uses FabCliTransport, not a token credential.")
     if mode == "default":
         return DefaultAzureCredential(exclude_interactive_browser_credential=True)
     if mode == "azure-cli":

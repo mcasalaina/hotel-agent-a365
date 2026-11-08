@@ -1,0 +1,45 @@
+/// Actual or planned stay execution, joining the reservation, assigned room, and property.
+entity usertypes#Stay
+	lineageTag: 4a2d2a4a-35e3-559a-acde-5cda8b15714d
+	backingTable: stays
+	keyProperty: StayId
+
+	/// StayId from HotelGuestServices.dbo.stays.stay_id.
+	property StayId
+		dataType: string
+		lineageTag: 9348933e-178d-5a51-933d-c665a581631e
+
+		backingConfiguration
+			valueColumn: stays.stay_id
+
+	/// ReservationId from HotelGuestServices.dbo.stays.reservation_id.
+	property ReservationId
+		dataType: string
+		lineageTag: 951cd6e2-ce3f-5a70-88d6-bd503abc7e37
+
+		backingConfiguration
+			valueColumn: stays.reservation_id
+
+	/// PropertyId from HotelGuestServices.dbo.stays.property_id.
+	property PropertyId
+		dataType: string
+		lineageTag: d72dead8-adf2-528f-b587-dfcc271acd02
+
+		backingConfiguration
+			valueColumn: stays.property_id
+
+	/// RoomId from HotelGuestServices.dbo.stays.room_id.
+	property RoomId
+		dataType: string
+		lineageTag: d10ebc57-4e50-56c2-bc6b-3d79f1d59c19
+
+		backingConfiguration
+			valueColumn: stays.room_id
+
+	/// Status from HotelGuestServices.dbo.stays.status.
+	property Status
+		dataType: string
+		lineageTag: 76f7cf16-d26b-5a4e-b9bc-b94199d2bc7a
+
+		backingConfiguration
+			valueColumn: stays.status

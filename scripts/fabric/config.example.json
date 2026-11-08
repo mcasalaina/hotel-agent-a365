@@ -1,5 +1,7 @@
 {
-  "authMode": "azure-cli",
+  "authMode": "fab",
+  "tenantId": "",
+  "capacityId": "",
   "discoverRemote": true,
   "sourceRoot": "data/generated",
   "state": "scripts/fabric/deployment-state/fabric-state.json",

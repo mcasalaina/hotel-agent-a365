@@ -1,0 +1,30 @@
+/// Authoritative HotelGuestServices.dbo.special_requests.
+table special_requests
+	lineageTag: 1f2105e9-9845-5b0c-ad61-4ac6802e4401
+
+	column special_request_id
+		dataType: string
+		sourceColumn: special_request_id
+		lineageTag: 3b2d6a63-c402-5e5d-957d-ddca2a3b84af
+
+	column reservation_id
+		dataType: string
+		sourceColumn: reservation_id
+		lineageTag: 3496ecbe-6f1c-5902-8600-2ee13e7e1be5
+
+	column request_type
+		dataType: string
+		sourceColumn: request_type
+		lineageTag: e7f6e7b5-274e-53c9-86da-afc524d5224c
+
+	column status
+		dataType: string
+		sourceColumn: status
+		lineageTag: 59ffad75-df83-5f27-acd9-0b96f967eaaf
+
+	partition special_requests = entity
+		mode: directLake
+		source
+			entityName: special_requests
+			schemaName: dbo
+			expressionSource: HotelGuestServicesQuery

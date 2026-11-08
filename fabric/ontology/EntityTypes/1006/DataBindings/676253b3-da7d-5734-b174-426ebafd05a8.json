@@ -24,8 +24,7 @@
       "sourceType": "LakehouseTable",
       "workspaceId": "{{WORKSPACE_ID}}",
       "itemId": "{{HOTEL_OPERATIONS_LAKEHOUSE_ID}}",
-      "sourceTableName": "outlets",
-      "sourceSchema": "dbo"
+      "sourceTableName": "outlets"
     }
   }
 }

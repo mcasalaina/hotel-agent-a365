@@ -1,13 +1,19 @@
 {
   "displayName": "HotelOperationsOntology",
-  "description": "Deployable ontology spanning both authoritative lakehouses with valid entity keys, lakehouse bindings, and relationship contextualizations.",
+  "description": "Hotel operations and guest-service entity context across both authoritative lakehouses.",
   "itemType": "Ontology",
-  "definitionFormat": "JSON",
-  "definitionRoot": "fabric/ontology",
+  "definitionFormat": "TMDL",
+  "definitionRoot": "fabric/ontology/v2",
   "includePaths": [
-    "definition.json",
-    "EntityTypes/**",
-    "RelationshipTypes/**"
+    ".platform",
+    "database.tmdl",
+    "model.tmdl",
+    "namespaces/**",
+    "expressions.tmdl",
+    "relationships.tmdl",
+    "entityRelationships.tmdl",
+    "tables/**",
+    "entities/**"
   ],
   "deployable": true,
   "dependencies": [

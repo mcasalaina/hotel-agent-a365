@@ -1,0 +1,35 @@
+/// Authoritative HotelGuestServices.dbo.stays.
+table stays
+	lineageTag: 138d616d-276e-594b-949f-a8fb9df7bf6c
+
+	column stay_id
+		dataType: string
+		sourceColumn: stay_id
+		lineageTag: 9d502252-2600-51f9-9077-fdc811bd10d7
+
+	column reservation_id
+		dataType: string
+		sourceColumn: reservation_id
+		lineageTag: 1a031fd5-1021-53d3-a314-5be542392a74
+
+	column property_id
+		dataType: string
+		sourceColumn: property_id
+		lineageTag: b54aa02e-e2b6-5a7d-b2c0-62c216acfa92
+
+	column room_id
+		dataType: string
+		sourceColumn: room_id
+		lineageTag: 99f11090-9af6-57c1-bbc0-b97baa820764
+
+	column status
+		dataType: string
+		sourceColumn: status
+		lineageTag: 938d6403-cdd4-5d28-ab81-0dbbe8dec196
+
+	partition stays = entity
+		mode: directLake
+		source
+			entityName: stays
+			schemaName: dbo
+			expressionSource: HotelGuestServicesQuery

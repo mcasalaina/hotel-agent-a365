@@ -66,7 +66,7 @@ def test_state_round_trip(tmp_path: Path) -> None:
     record_workspace(
         state,
         {
-            "displayName": "HotelAgent.Workspace",
+            "displayName": "Hotel",
             "id": "workspace-id",
             "capacityId": "capacity-id",
             "capacityRegion": "East US 2",

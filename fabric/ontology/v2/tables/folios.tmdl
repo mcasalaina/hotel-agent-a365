@@ -1,0 +1,35 @@
+/// Authoritative HotelGuestServices.dbo.folios.
+table folios
+	lineageTag: a92b29f9-c2a0-543e-b0c1-2ebaad5b1ebe
+
+	column folio_id
+		dataType: string
+		sourceColumn: folio_id
+		lineageTag: 7b575f03-3681-56c9-9737-6a3ec967aaa3
+
+	column stay_id
+		dataType: string
+		sourceColumn: stay_id
+		lineageTag: 6739e8e6-7eca-5fc8-aada-a3314ab5841f
+
+	column property_id
+		dataType: string
+		sourceColumn: property_id
+		lineageTag: d7291314-4878-551e-b3e0-43f049a28e54
+
+	column currency
+		dataType: string
+		sourceColumn: currency
+		lineageTag: fafdfb6d-5c7f-50a6-bf3b-3b4482e0aae1
+
+	column balance
+		dataType: decimal
+		sourceColumn: balance
+		lineageTag: d342e129-e430-532d-b481-61be5847bd71
+
+	partition folios = entity
+		mode: directLake
+		source
+			entityName: folios
+			schemaName: dbo
+			expressionSource: HotelGuestServicesQuery

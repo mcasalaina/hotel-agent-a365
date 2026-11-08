@@ -9,7 +9,7 @@
       },
       {
         "name": "source_root",
-        "description": "Repository-relative, absolute, or OneLake path containing generated CSV inputs and manifest.json.",
+        "description": "Repository-relative, absolute, or OneLake path containing authoritative source inputs and manifest.json.",
         "required": true,
         "type": "Text"
       },
@@ -55,7 +55,7 @@
       }
     ]
   },
-  "HotelDeterministicReset": {
+  "HotelAuthoritativeReset": {
     "parameters": [
       {
         "name": "correlation_id",
@@ -65,7 +65,7 @@
       },
       {
         "name": "source_root",
-        "description": "Repository-relative, absolute, or OneLake path containing generated CSV inputs and manifest.json.",
+        "description": "Repository-relative, absolute, or OneLake path containing authoritative source inputs and manifest.json.",
         "required": true,
         "type": "Text"
       },
@@ -122,7 +122,7 @@
       },
       {
         "name": "source_root",
-        "description": "Repository-relative, absolute, or OneLake path containing generated CSV inputs and manifest.json.",
+        "description": "Repository-relative, absolute, or OneLake path containing authoritative source inputs and manifest.json.",
         "required": true,
         "type": "Text"
       },

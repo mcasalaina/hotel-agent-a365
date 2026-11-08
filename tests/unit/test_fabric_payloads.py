@@ -219,7 +219,17 @@ def test_build_notebook_job_request_validates_types() -> None:
         },
     )
 
-    assert payload["parameters"][1]["value"] == "2026-07-11T18:00:00Z"
+    assert payload == {
+        "executionData": {
+            "parameters": {
+                "confirmation_id": {
+                    "type": "string",
+                    "value": "00000000-0000-0000-0000-000000000001",
+                },
+                "request_timestamp_utc": {"type": "string", "value": "2026-07-11T18:00:00Z"},
+            }
+        }
+    }
 
 
 def test_validate_item_display_name_rejects_ontology_spaces() -> None:

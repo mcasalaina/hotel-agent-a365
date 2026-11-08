@@ -3,17 +3,18 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
-if __package__ in {None, ""}:
+if __package__ in {None, "", "scripts.fabric"}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fabric.artifacts import FabricTopology, load_notebook_contracts
 from fabric.auth import AuthMode, build_credential
 from fabric.client import FabricRestClient
 from fabric.deployer import FabricDeployer
+from fabric.fab_cli import FabCliTransport
 from fabric.validation import validate_topology
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -30,6 +31,9 @@ class CliOptions:
     auth_mode: AuthMode
     discover_remote: bool
     workspace_id: str | None
+    capacity_id: str | None
+    tenant_id: str | None
+    foundation_only: bool
     dry_run: bool
 
 
@@ -37,16 +41,31 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     options = _load_options(args)
     topology = FabricTopology.from_file(options.topology_path, REPOSITORY_ROOT)
+    if options.capacity_id is not None:
+        topology = replace(
+            topology, workspace=replace(topology.workspace, capacity_id=options.capacity_id)
+        )
     contracts = load_notebook_contracts(topology.contract_file)
     problems = validate_topology(topology, contracts)
     if problems:
         for problem in problems:
             print(f"ERROR: {problem}", file=sys.stderr)
         return 1
+    if options.foundation_only:
+        topology = replace(
+            topology,
+            lakehouses=tuple(replace(item, shortcuts=()) for item in topology.lakehouses),
+            blueprints={},
+        )
 
     client = None
     if options.command == "apply" or options.discover_remote:
-        client = FabricRestClient(build_credential(options.auth_mode))
+        if options.auth_mode == "fab":
+            if options.tenant_id is None:
+                raise ValueError("--tenant-id is required for fab live operations.")
+            client = FabricRestClient(transport=FabCliTransport(options.tenant_id))
+        else:
+            client = FabricRestClient(build_credential(options.auth_mode))
 
     deployer = FabricDeployer(
         topology=topology,
@@ -93,11 +112,18 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--source-root", type=Path)
     parser.add_argument(
         "--auth-mode",
-        choices=("default", "azure-cli", "device-code", "chained"),
+        choices=("default", "azure-cli", "device-code", "chained", "fab"),
         default="azure-cli",
     )
     parser.add_argument("--discover-remote", action="store_true")
     parser.add_argument("--workspace-id")
+    parser.add_argument("--capacity-id", help="Approved capacity discovered in the target tenant.")
+    parser.add_argument("--tenant-id", help="Required target tenant for fab authentication.")
+    parser.add_argument(
+        "--foundation-only",
+        action="store_true",
+        help="Deploy lakehouses/notebooks; defer shortcuts and downstream items until data loads.",
+    )
     parser.add_argument(
         "--execute",
         action="store_true",
@@ -139,6 +165,9 @@ def _load_options(args: argparse.Namespace) -> CliOptions:
         auth_mode=auth_mode,
         discover_remote=discover_remote,
         workspace_id=workspace_id,
+        capacity_id=args.capacity_id or _string_or_none(values.get("capacityId")),
+        tenant_id=args.tenant_id or _string_or_none(values.get("tenantId")),
+        foundation_only=args.foundation_only,
         dry_run=not args.execute,
     )
 

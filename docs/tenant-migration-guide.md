@@ -290,14 +290,17 @@ Keep stable business identifiers. The reference acceptance fixture is:
 | Reservation | `RES-FAMILY-2026` |
 | Property | `HTL-004`, Scottsdale |
 | Room type | `HTL-004-RT-03` |
-| Stay | September 10-12, 2026, two rooms |
-| Business reference date | September 1, 2026 |
+| Stay | November 17-19, 2026, two rooms |
+| Business reference date | November 8, 2026 |
 | Scottsdale knowledge | Valet USD 25/night, pool 07:00-21:00 |
 
 Map demo mailbox addresses to real provisioned target demo accounts, preserving
 guest identity relationships. Never infer the guest from the administrator's UPN.
 Preserve strict `check_in` past/future semantics against the configured business
-reference date, not the machine's current date.
+reference date, not the machine's current date. The refreshed canonical source
+uses fixed `2026-11-08` and preserves relative chronology by shifting the previous
+`2026-09-01` baseline by 68 days, including linked stays, folios, service records,
+inventory, audit timestamps and expected answers.
 
 ### Deploy the workspace and data
 
@@ -305,13 +308,17 @@ reference date, not the machine's current date.
    API access policies. Assign an approved Fabric capacity to the workspace.
    The reference used F16, which is an observed configuration, not a universal
    minimum sizing recommendation.
-2. Create or adopt `HotelAgent.Workspace`. Discover existing items before creating
+2. Create or adopt `Hotel`. Discover existing items before creating
    new ones. There must be exactly two intended lakehouses: `HotelOperations` and
    `HotelGuestServices`.
 3. Review [`fabric/topology.json`](../fabric/topology.json) and a private copy of
    [`scripts/fabric/config.example.json`](../scripts/fabric/config.example.json).
    Set the target workspace, canonical source root, authentication mode, and
-   private deployment-state path.
+   private deployment-state path. The committed topology intentionally has no
+   capacity ID. Use `authMode: "fab"` with the exact `tenantId`, and supply a
+   discovered approved `capacityId` for new-workspace creation. Never reuse the
+   previous tenant's capacity ID. Live apply verifies Active state and East US 2
+   region before any writes.
 4. Validate and inspect the plan before execution:
 
    ```bash
@@ -340,12 +347,16 @@ reference date, not the machine's current date.
    .venv/bin/python scripts/upload_onelake_files.py \
      --source "$CANONICAL_SOURCE_ROOT" \
      --fixtures "$CANONICAL_FIXTURES_FILE" \
-     --workspace-name HotelAgent.Workspace \
+     --workspace-name Hotel \
      --lakehouse-name HotelOperations
    ```
 
    Review the topology/notebook contract for any additional upload target. A
    successful file upload does not create Delta tables.
+   Use `apply --foundation-only` for initial lakehouse/notebook creation before
+   uploading and loading. Pass the actual Operations source ABFSS path to the
+   load notebook. After the tables and aggregates exist, deploy the governed
+   shortcuts and downstream items with their actual target bindings.
 6. Bind the load/reset/validation notebooks to the new workspace and lakehouses.
    Run the load notebook, wait for the real job result, and validate row counts,
    primary/foreign keys, duplicate boundaries, fixture identities, and target

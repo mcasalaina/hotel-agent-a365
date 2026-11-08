@@ -1,5 +1,6 @@
 {
-  "fixture_version": 1,
+  "fixture_version": 3,
+  "as_of_date": "2026-11-08",
   "scenarios": [
     {
       "key": "property_discovery",
@@ -9,49 +10,68 @@
     {
       "key": "family_accessibility",
       "property_id": "HTL-004",
-      "reservation_id": "RES-DEMO-FAMILY",
+      "reservation_id": "RES-FAMILY-2026",
+      "guest_id": "GST-000001",
+      "check_in": "2026-11-17",
+      "check_out": "2026-11-19",
+      "room_count": 2,
+      "status": "future",
       "description": "Multi-room family booking with accessibility needs."
     },
     {
       "key": "rate_change",
       "property_id": "HTL-001",
-      "reservation_id": "RES-DEMO-RATE-CHANGE",
+      "reservation_id": "RES-RATE-CHANGE",
+      "check_in": "2026-11-22",
+      "check_out": "2026-11-24",
       "description": "Date and rate change with a changed cancellation policy."
     },
     {
       "key": "cancellable",
       "property_id": "HTL-002",
-      "reservation_id": "RES-DEMO-CANCEL-FLEX",
+      "reservation_id": "RES-CANCEL-FLEX",
+      "check_in": "2026-06-12",
+      "check_out": "2026-06-14",
       "description": "Cancellable flexible reservation."
     },
     {
       "key": "nonrefundable",
       "property_id": "HTL-003",
-      "reservation_id": "RES-DEMO-CANCEL-NRF",
+      "reservation_id": "RES-CANCEL-NRF-2026",
+      "check_in": "2026-06-15",
+      "check_out": "2026-06-17",
       "description": "Nonrefundable reservation."
     },
     {
       "key": "folio_dispute",
       "property_id": "HTL-005",
-      "reservation_id": "RES-DEMO-FOLIO",
+      "reservation_id": "RES-FOLIO-2026",
+      "check_in": "2026-05-10",
+      "check_out": "2026-05-12",
       "description": "Completed stay with a reproducible minibar or parking dispute."
     },
     {
       "key": "prearrival_request",
       "property_id": "HTL-004",
-      "request_id": "SR-DEMO-PREARRIVAL",
+      "request_id": "SR-PREARRIVAL",
+      "requested_at": "2026-11-14T10:00:00",
       "description": "Pre-arrival allergy, crib, and late-arrival request."
     },
     {
       "key": "maintenance",
       "property_id": "HTL-004",
-      "request_id": "MR-DEMO-HVAC",
+      "reservation_id": "RES-INSTAY",
+      "check_in": "2026-11-06",
+      "check_out": "2026-11-10",
+      "request_id": "MR-HVAC",
+      "reported_at": "2026-11-07T21:00:00",
       "description": "In-stay HVAC maintenance request."
     },
     {
       "key": "restaurant",
       "property_id": "HTL-004",
-      "reservation_id": "RR-DEMO-DINING",
+      "reservation_id": "RR-DINING",
+      "reservation_at": "2026-11-18T19:30:00",
       "description": "Restaurant reservation that can be created and changed."
     }
   ]

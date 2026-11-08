@@ -1,0 +1,26 @@
+model Model
+
+ref table properties
+ref table rooms
+ref table guests
+ref table reservations
+ref table stays
+ref table outlets
+ref table folios
+ref table special_requests
+ref table maintenance_requests
+ref table work_orders
+
+ref entity usertypes#Property
+ref entity usertypes#Room
+ref entity usertypes#Guest
+ref entity usertypes#Reservation
+ref entity usertypes#Stay
+ref entity usertypes#Outlet
+ref entity usertypes#Folio
+ref entity usertypes#SpecialRequest
+ref entity usertypes#MaintenanceRequest
+ref entity usertypes#WorkOrder
+
+ref namespace default
+ref namespace usertypes

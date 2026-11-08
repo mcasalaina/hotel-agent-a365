@@ -12,7 +12,7 @@ SUPPORTED_PARAMETER_TYPES = frozenset({"Text", "Boolean", "Number", "Integer", "
 class WorkspaceSpec:
     display_name: str
     description: str
-    capacity_id: str
+    capacity_id: str | None
     capacity_region: str
 
 
@@ -124,7 +124,7 @@ class FabricTopology:
         workspace = WorkspaceSpec(
             display_name=_string(workspace_raw, "displayName"),
             description=_string(workspace_raw, "description"),
-            capacity_id=_string(workspace_raw, "capacityId"),
+            capacity_id=_optional_string(workspace_raw.get("capacityId")),
             capacity_region=_string(workspace_raw, "capacityRegion"),
         )
         lakehouses = tuple(

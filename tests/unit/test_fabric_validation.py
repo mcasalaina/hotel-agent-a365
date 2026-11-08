@@ -205,7 +205,7 @@ def test_report_validation_requires_exactly_two_distinct_pages(
     assert "Report must define exactly two distinct pages." in problems
 
 
-def test_data_agent_publish_resynchronizes_lakehouse_schemas() -> None:
+def test_data_agent_publish_preserves_native_lakehouse_configuration() -> None:
     notebook_path = REPOSITORY_ROOT / "fabric" / "notebooks" / "data_agent_runtime_publish.ipynb"
     notebook = json.loads(notebook_path.read_text(encoding="utf-8"))
     source = "\n".join(
@@ -215,8 +215,8 @@ def test_data_agent_publish_resynchronizes_lakehouse_schemas() -> None:
     )
 
     assert "FabricDataAgentManagement" in source
-    assert "management.delete_staging_datasource" in source
-    assert "management.add_staging_datasource" in source
+    assert "management.delete_staging_datasource" not in source
+    assert "management.add_staging_datasource" not in source
     assert "management.publish_staging" in source
     assert "all 20 properties, including zero-count properties" in source
     assert "status IN ('future', 'arriving')" in source
@@ -429,7 +429,7 @@ def test_validation_rejects_non_ops_shortcuts(tmp_path: Path) -> None:
         json.dumps(
             {
                 "workspace": {
-                    "displayName": "HotelAgent.Workspace",
+                    "displayName": "Hotel",
                     "description": "ok",
                     "capacityId": "24f6590d-413b-4d9f-9c2b-601d753eda94",
                     "capacityRegion": "East US 2",

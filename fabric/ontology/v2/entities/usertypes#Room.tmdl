@@ -1,0 +1,45 @@
+/// Physical room inventory and room status, joined to its official property and room type.
+entity usertypes#Room
+	lineageTag: 3b63bcf4-21fd-55d9-aa57-6d225a92d470
+	backingTable: rooms
+	keyProperty: RoomId
+
+	/// RoomId from HotelOperations.dbo.rooms.room_id.
+	property RoomId
+		dataType: string
+		lineageTag: 2d7df6b9-767c-57bd-9ff7-71e0239915b9
+
+		backingConfiguration
+			valueColumn: rooms.room_id
+
+	/// PropertyId from HotelOperations.dbo.rooms.property_id.
+	property PropertyId
+		dataType: string
+		lineageTag: 2a2e48fd-d398-5995-a2c9-3e65cefd5fd2
+
+		backingConfiguration
+			valueColumn: rooms.property_id
+
+	/// RoomTypeId from HotelOperations.dbo.rooms.room_type_id.
+	property RoomTypeId
+		dataType: string
+		lineageTag: bb70bb2c-13db-5323-ae5f-8c226e3989ce
+
+		backingConfiguration
+			valueColumn: rooms.room_type_id
+
+	/// RoomNumber from HotelOperations.dbo.rooms.room_number.
+	property RoomNumber
+		dataType: string
+		lineageTag: 3491b1ac-b058-53e8-a020-9a7c255301f9
+
+		backingConfiguration
+			valueColumn: rooms.room_number
+
+	/// RoomStatus from HotelOperations.dbo.rooms.room_status.
+	property RoomStatus
+		dataType: string
+		lineageTag: 2d86ca09-d8d9-5e6d-9c49-f0d3bb14aacc
+
+		backingConfiguration
+			valueColumn: rooms.room_status
