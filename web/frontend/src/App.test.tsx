@@ -43,6 +43,7 @@ describe("App", () => {
 
     render(<App />);
 
+    expect(screen.getByRole("heading", { name: "Hotel Contact Center" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /sign in with microsoft entra/i })).toBeInTheDocument();
     expect(document.querySelector("[data-brand-mark]")).toBeInTheDocument();
     expect(document.querySelector("img")).not.toBeInTheDocument();
@@ -79,6 +80,7 @@ describe("App", () => {
 
     render(<App />);
 
+    expect(screen.getByText("Hotel")).toBeInTheDocument();
     expect(screen.getByText("Jamie Rivera")).toBeInTheDocument();
     expect(document.querySelector("[data-brand-mark]")).toBeInTheDocument();
     expect(document.querySelector("img")).not.toBeInTheDocument();

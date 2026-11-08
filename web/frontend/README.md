@@ -1,7 +1,7 @@
-# Lyrenza Hotels Contact Center — Web Frontend
+# Hotel Contact Center — Web Frontend
 
 A React 19 + TypeScript + Vite single-page app that simulates a live hotel contact-center agent
-desk for the fictional **Lyrenza Hotels** brand. Every guest, reservation, and folio detail shown
+desk for the fictional **Hotel** chain. Every guest, reservation, and folio detail shown
 in this app is **synthetic** demo data; it is not connected to a real hotel chain or real customer
 records.
 

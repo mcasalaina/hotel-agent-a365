@@ -8,7 +8,15 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from generate_hotel_data import DATE_END, DATE_START, FIXTURES_PATH, build_reservations, generate
+from generate_hotel_data import (
+    DATE_END,
+    DATE_START,
+    FIXTURES_PATH,
+    ROSTER,
+    build_reservations,
+    generate,
+)
+from hotel_servicing_agent.property_catalog import PROPERTY_NAMES, official_property_name
 from validate_hotel_data import (
     REAL_BRANDS,
     RESERVATION_STATUSES,
@@ -54,6 +62,13 @@ def test_property_completeness_and_named_fixtures(generated_manifest: dict[str, 
     assert [row["property_id"] for row in property_rows] == [
         f"HTL-{number:03d}" for number in range(1, 21)
     ]
+    expected_names = {
+        f"HTL-{number:03d}": f"Hotel {entry[0]}" for number, entry in enumerate(ROSTER, start=1)
+    }
+    assert expected_names == PROPERTY_NAMES
+    assert {row["property_id"]: row["name"] for row in property_rows} == expected_names
+    assert official_property_name("HTL-004") == "Hotel Scottsdale Sonoran Resort"
+    assert official_property_name("HTL-010") == "Hotel Paris Left Bank"
     assert {
         scenario["reservation_id"]
         for scenario in scenario_data["scenarios"]
@@ -165,3 +180,26 @@ def test_foundry_iq_documents_have_temporal_metadata_and_no_real_brands(
     assert all(item["source_path"].startswith("foundryiq-docs/") for item in metadata)
     corpus = "\n".join(path.read_text(encoding="utf-8").lower() for path in document_paths)
     assert not any(brand in corpus for brand in REAL_BRANDS)
+    property_names = {row["property_id"]: row["name"] for row in rows(OUTPUT / "properties.csv")}
+    for path, item in zip(document_paths, metadata, strict=True):
+        if item["property_id"] == "chain-wide":
+            continue
+        name = property_names[item["property_id"]]
+        assert item["title"].startswith(name)
+        assert name in path.read_text(encoding="utf-8")
+
+
+def test_checked_in_foundry_iq_documents_match_generator(
+    generated_manifest: dict[str, object],
+) -> None:
+    expected = {
+        path.relative_to(DOCS): path.read_text(encoding="utf-8")
+        for path in DOCS.glob("*/*.generated.md")
+    }
+    checked_in_docs = ROOT / "foundryiq-docs"
+    actual = {
+        path.relative_to(checked_in_docs): path.read_text(encoding="utf-8")
+        for path in checked_in_docs.glob("*/*.generated.md")
+    }
+
+    assert actual == expected

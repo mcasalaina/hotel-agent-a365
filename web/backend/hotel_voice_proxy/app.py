@@ -72,7 +72,7 @@ async def _get_config(request: web.Request) -> web.Response:
     return web.json_response(
         {
             "environment": settings.environment,
-            "hotelBrandName": "Lyrenza Hotels",
+            "hotelBrandName": "Hotel",
             "syntheticDataNotice": (
                 "All guests, reservations, and folio details in this demo are synthetic."
             ),

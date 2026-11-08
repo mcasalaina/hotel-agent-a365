@@ -37,8 +37,8 @@ RELATIVE_DATE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 CHAIN_WIDE_PATTERN = re.compile(
-    r"\b(chain[- ]wide|all (?:lyrenza )?(?:hotels|properties)|"
-    r"every (?:lyrenza )?(?:hotel|property)|each (?:lyrenza )?(?:hotel|property))\b",
+    r"\b(chain[- ]wide|all (?:hotel )?(?:hotels|properties)|"
+    r"every (?:hotel )?(?:hotel|property)|each (?:hotel )?(?:hotel|property))\b",
     re.IGNORECASE,
 )
 FabricQueryRunner = Callable[[str, dict[str, str], str], Awaitable[str]]
@@ -85,7 +85,7 @@ class FabricDataAgentTool:
                 f"{_authoritative_date_directive(question)}"
             )
             roster_question = (
-                "Use HotelOperations properties only. Return the complete Lyrenza roster as "
+                "Use HotelOperations properties only. Return the complete Hotel roster as "
                 "exactly 20 property_id and official property name pairs. Do not query "
                 "reservations."
             )

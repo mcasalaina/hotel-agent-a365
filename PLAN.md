@@ -2,7 +2,7 @@
 
 ## 1. Goal and confirmed decisions
 
-Build a new hospitality demo, structurally parallel to `../bank-agent-a365`, for the fictional Lyrenza Hotels chain. The solution will use:
+Build a new hospitality demo, structurally parallel to `../bank-agent-a365`, for the fictional Hotel chain. The solution will use:
 
 - One Microsoft Foundry Hosted Agent in the existing project:
   `https://4iq-foundry-project-resource.services.ai.azure.com/api/projects/4iq-foundry-project`
@@ -21,8 +21,8 @@ Confirmed architecture decisions:
 3. Reservation, restaurant, billing-dispute, special-request, and maintenance mutations persist to Delta tables in their authoritative lakehouse.
 4. The agent can execute every supported synthetic/demo action after showing the exact change and receiving explicit user confirmation.
 5. Phase 3 extends the same Hosted Agent with `responses` and `invocations_ws`; it does not create a second voice agent.
-6. No actual hotel brand may be mentioned. The only brand in content is the fictional Lyrenza Hotels.
-7. `Lyrenza` may appear in synthetic business data, property documents, prompts, report labels, and customer-facing text. It must not appear in Azure resource names, Foundry technical object names, Fabric workspace/item names, Agent 365 identity/blueprint technical names, URLs, environment names, or code package names.
+6. No actual hotel brand may be mentioned. Use `Hotel` for the fictional chain and `Hotel <existing property suffix>` for each sample property.
+7. Use generic hotel names in synthetic business data, property documents, prompts, report labels, and customer-facing text. Azure resource names, Foundry technical object names, Fabric workspace/item names, Agent 365 identity/blueprint technical names, URLs, environment names, and code package names remain generic and unchanged.
 8. All customer, employee, payment, reservation, and communication data is synthetic. Store no full payment-card data; use masked values and synthetic payment tokens only.
 
 ## 2. Naming policy
@@ -49,7 +49,7 @@ Use generic technical names, with a short uniqueness suffix only where Azure req
 | Agent 365 identity/blueprint | `hotel-agent Identity` / `hotel-agent Blueprint` |
 | Agent user | Generic hotel guest-services display name and UPN |
 
-Before every deployment, run a naming-policy check over IaC, manifests, azd environment values, and Fabric definitions. It must fail if `Lyrenza` occurs in a technical resource-name field.
+Before every deployment, run a naming-policy check over IaC, manifests, azd environment values, and Fabric definitions. It must reject customer hotel brands in technical resource-name fields while allowing generic `hotel` names.
 
 ## 3. Fictional property roster
 
@@ -57,26 +57,26 @@ Create 20 properties with stable IDs (`HTL-001` through `HTL-020`). Each profile
 
 | ID | Customer-facing property | Region | Signature facilities |
 |---|---|---|---|
-| HTL-001 | Lyrenza Seattle Waterfront | North America | Indoor pool, harbor-view gym, seafood restaurant, ferry access |
-| HTL-002 | Lyrenza Vancouver Coal Harbour | North America | Saltwater pool, spa, bicycle program, mountain-view lounge |
-| HTL-003 | Lyrenza San Francisco Embarcadero | North America | Rooftop terrace, fitness studio, market restaurant, no pool |
-| HTL-004 | Lyrenza Scottsdale Sonoran Resort | North America | Three pools, spa, desert garden, golf shuttle, kids club |
-| HTL-005 | Lyrenza Chicago River North | North America | Indoor lap pool, rooftop bar, meeting floor, river access |
-| HTL-006 | Lyrenza New York Midtown | North America | 24-hour fitness, executive lounge, brasserie, no pool |
-| HTL-007 | Lyrenza Miami South Beach | North America | Oceanfront pool, beach service, cabanas, Latin coastal dining |
-| HTL-008 | Lyrenza Mexico City Polanco | North America | Rooftop pool, spa, contemporary Mexican restaurant, club lounge |
-| HTL-009 | Lyrenza London Mayfair | Europe | Afternoon-tea lounge, wellness suite, butler floor, no pool |
-| HTL-010 | Lyrenza Paris Left Bank | Europe | Courtyard restaurant, compact spa, family suites, no pool |
-| HTL-011 | Lyrenza Amsterdam Canal Quarter | Europe | Canal terrace, bicycle concierge, sauna, no pool |
-| HTL-012 | Lyrenza Lisbon Baixa | Europe | Rooftop plunge pool, tile courtyard, Portuguese restaurant |
-| HTL-013 | Lyrenza Barcelona Eixample | Europe | Rooftop pool, tapas restaurant, fitness studio, family rooms |
-| HTL-014 | Lyrenza Rome Via Veneto | Europe | Garden restaurant, wellness rooms, rooftop aperitivo, no pool |
-| HTL-015 | Lyrenza Vienna Ring | Europe | Indoor pool, concert concierge, cafe, ballroom |
-| HTL-016 | Lyrenza Buenos Aires Puerto Madero | South America | Indoor pool, tango lounge, steak restaurant, river views |
-| HTL-017 | Lyrenza Rio Copacabana | South America | Rooftop infinity pool, beach service, Brazilian grill |
-| HTL-018 | Lyrenza Sao Paulo Jardins | South America | Indoor pool, business lounge, spa, chef-led restaurant |
-| HTL-019 | Lyrenza Lima Miraflores | South America | Ocean-view pool, ceviche restaurant, airport transfers |
-| HTL-020 | Lyrenza Cartagena Walled City | South America | Courtyard pool, rooftop bar, colonial-style suites |
+| HTL-001 | Hotel Seattle Waterfront | North America | Indoor pool, harbor-view gym, seafood restaurant, ferry access |
+| HTL-002 | Hotel Vancouver Coal Harbour | North America | Saltwater pool, spa, bicycle program, mountain-view lounge |
+| HTL-003 | Hotel San Francisco Embarcadero | North America | Rooftop terrace, fitness studio, market restaurant, no pool |
+| HTL-004 | Hotel Scottsdale Sonoran Resort | North America | Three pools, spa, desert garden, golf shuttle, kids club |
+| HTL-005 | Hotel Chicago River North | North America | Indoor lap pool, rooftop bar, meeting floor, river access |
+| HTL-006 | Hotel New York Midtown | North America | 24-hour fitness, executive lounge, brasserie, no pool |
+| HTL-007 | Hotel Miami South Beach | North America | Oceanfront pool, beach service, cabanas, Latin coastal dining |
+| HTL-008 | Hotel Mexico City Polanco | North America | Rooftop pool, spa, contemporary Mexican restaurant, club lounge |
+| HTL-009 | Hotel London Mayfair | Europe | Afternoon-tea lounge, wellness suite, butler floor, no pool |
+| HTL-010 | Hotel Paris Left Bank | Europe | Courtyard restaurant, compact spa, family suites, no pool |
+| HTL-011 | Hotel Amsterdam Canal Quarter | Europe | Canal terrace, bicycle concierge, sauna, no pool |
+| HTL-012 | Hotel Lisbon Baixa | Europe | Rooftop plunge pool, tile courtyard, Portuguese restaurant |
+| HTL-013 | Hotel Barcelona Eixample | Europe | Rooftop pool, tapas restaurant, fitness studio, family rooms |
+| HTL-014 | Hotel Rome Via Veneto | Europe | Garden restaurant, wellness rooms, rooftop aperitivo, no pool |
+| HTL-015 | Hotel Vienna Ring | Europe | Indoor pool, concert concierge, cafe, ballroom |
+| HTL-016 | Hotel Buenos Aires Puerto Madero | South America | Indoor pool, tango lounge, steak restaurant, river views |
+| HTL-017 | Hotel Rio Copacabana | South America | Rooftop infinity pool, beach service, Brazilian grill |
+| HTL-018 | Hotel Sao Paulo Jardins | South America | Indoor pool, business lounge, spa, chef-led restaurant |
+| HTL-019 | Hotel Lima Miraflores | South America | Ocean-view pool, ceviche restaurant, airport transfers |
+| HTL-020 | Hotel Cartagena Walled City | South America | Courtyard pool, rooftop bar, colonial-style suites |
 
 Property documents must clearly distinguish permanent facts from dated operational notices. Retrieval tests will include past, current, and future construction windows so the agent does not present stale notices as current.
 
@@ -168,7 +168,7 @@ Live implementation status on 2026-07-14:
   tools. A live 16-prompt acceptance run identified four deterministic response defects; the current
   implementation fixes them with a typed 20-property catalog, official-name enrichment, full-history exact-ID
   lookups, a content-free Work IQ access preflight, and a deterministic Fabric-to-Foundry-IQ
-  property-key guard. The corrected cross-source scenario preserves `HTL-004`, identifies Lyrenza
+  property-key guard. The corrected cross-source scenario preserves `HTL-004`, identifies Hotel
   Scottsdale Sonoran Resort, and returns the approved pool and transportation facts with citations.
 - The chain-wide next-week reservation regression returns the authoritative 2026-07-12 through
   2026-07-18 window, total 214, and all 20 named properties in a Markdown table.
@@ -332,7 +332,7 @@ Data-source descriptions must state authority and boundaries precisely. Each lak
 
 Data-agent instructions define chain and industry terminology, including:
 
-- Chain terms: LGR (Lyrenza Guest Record), LSR (Lyrenza Service Request), LCR (Lyrenza Care Recovery), SIR (Stay Incident Record), GPF (Guest Preference Flag).
+- Chain terms: HGR (Hotel Guest Record), HSR (Hotel Service Request), HCR (Hotel Care Recovery), SIR (Stay Incident Record), GPF (Guest Preference Flag).
 - HoReCa and hotel terms: HoReCa/HORECA, PMS, CRS, RMS, POS, F&B, MICE, OTA, GDS, BAR, FIT, OCC, ADR, RevPAR, TRevPAR, GOPPAR, NRevPAR, LOS, ALOS, CPOR, OOO, OOS, DND, ETA, ETD, VIP, comp, folio, room block, pickup, wash, stayover, due-in, and due-out.
 - Date, status, currency, tax, privacy, and source-routing rules.
 

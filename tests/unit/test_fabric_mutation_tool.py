@@ -41,7 +41,7 @@ def test_reservation_mutation_runs_notebook_and_rereads_persisted_record() -> No
             return "No data was found for reservation RES-TEST."
         confirmation_id = _confirmation_id_from_question(question)
         return (
-            "Reservation RES-TEST is for Maria Garcia at Lyrenza Buenos Aires. "
+            "Reservation RES-TEST is for Maria Garcia at Hotel Buenos Aires. "
             f"Last confirmation ID: {confirmation_id}."
         )
 
@@ -88,7 +88,7 @@ def test_reservation_mutation_runs_notebook_and_rereads_persisted_record() -> No
     assert "Find reservation RES-TEST" in captured["verification_question"]
     assert result["status"] == "committed"
     assert result["reservation_id"] == "RES-TEST"
-    assert "Lyrenza Buenos Aires" in result["persisted_record"]
+    assert "Hotel Buenos Aires" in result["persisted_record"]
     assert tool.as_function_tool().name == "manage_reservation"
 
 

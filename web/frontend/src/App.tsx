@@ -14,7 +14,7 @@ import { useCallSession } from "./hooks/useCallSession";
 import { useElapsedTime } from "./hooks/useElapsedTime";
 import styles from "./App.module.css";
 
-const DEFAULT_HOTEL_BRAND_NAME = "Lyrenza Hotels";
+const DEFAULT_HOTEL_BRAND_NAME = "Hotel";
 const DEFAULT_SYNTHETIC_NOTICE =
   "All guests, reservations, and folio details in this demo are synthetic.";
 

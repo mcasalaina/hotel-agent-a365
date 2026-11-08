@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "hotel-voice-proxy"
 version = "0.1.0"
-description = "Authenticated browser proxy for the Lyrenza Hotels Voice Live frontend"
+description = "Authenticated browser proxy for the Hotel Voice Live frontend"
 requires-python = ">=3.13"
 dependencies = [
   "aiohttp==3.13.3",

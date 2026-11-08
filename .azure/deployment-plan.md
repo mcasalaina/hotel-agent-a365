@@ -50,7 +50,7 @@ Deploy the workspace on the existing active East US 2 F16 capacity `cap3iqs5ea83
 - Managed identity and least-privilege RBAC.
 - No secrets in source control.
 - No full payment-card data.
-- `Lyrenza` prohibited in technical resource/item/identity names.
+- Use generic `hotel` technical resource/item/identity names; customer hotel brands are prohibited.
 - Explicit confirmation before every synthetic business mutation.
 - Idempotency, record-version checks, immutable audit events, and cross-lakehouse reconciliation.
 - Agent 365 blueprint ownership, Agent ID roles, OBO grants, current V2 Work IQ MCP scopes, Fabric workspace access, and tenant mutation policy verified before Teams sign-off.

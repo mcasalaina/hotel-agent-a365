@@ -1,5 +1,5 @@
 /**
- * Client wire protocol for the Lyrenza Hotels simulated contact-center backend proxy.
+ * Client wire protocol for the Hotel simulated contact-center backend proxy.
  *
  * This module documents every request/response shape exchanged between the browser and the
  * *private backend proxy* (never the Foundry service directly). All data in this demo represents
@@ -15,7 +15,7 @@
 export interface BackendConfigResponse {
   /** Deployment environment label, shown only in developer-facing surfaces. */
   environment: "development" | "staging" | "production";
-  /** Display name of the fictional hotel brand, e.g. "Lyrenza Hotels". */
+  /** Display name of the fictional hotel chain, e.g. "Hotel". */
   hotelBrandName: string;
   /** Notice string the UI must render verbatim near any synthetic data. */
   syntheticDataNotice: string;

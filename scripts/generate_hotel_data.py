@@ -370,7 +370,7 @@ def profiles() -> tuple[PropertyProfile, ...]:
     return tuple(
         PropertyProfile(
             property_id=f"HTL-{index:03d}",
-            name=f"Lyrenza {entry[0]}",
+            name=f"Hotel {entry[0]}",
             region=entry[1],
             city=entry[2],
             country=entry[3],

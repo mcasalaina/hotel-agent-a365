@@ -174,7 +174,7 @@ def test_tool_serializes_answer_and_references_without_network() -> None:
     assert result["references"][0]["valid_to"] == "2026-12-31"
     assert result["property"] == {
         "property_id": "HTL-001",
-        "official_name": "Lyrenza Seattle Waterfront",
+        "official_name": "Hotel Seattle Waterfront",
     }
     factory = captured["factory"]
     assert factory["endpoint"] == "https://search.example.test"

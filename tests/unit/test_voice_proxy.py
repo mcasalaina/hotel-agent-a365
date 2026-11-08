@@ -8,11 +8,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp import WSMsgType, web
-from aiohttp.test_utils import TestClient, TestServer
+from aiohttp.test_utils import TestClient, TestServer, make_mocked_request
 from azure.core.credentials import AccessToken
 from azure.identity.aio import DefaultAzureCredential
 from hotel_voice_proxy.app import (
     CREDENTIAL_KEY,
+    SETTINGS_KEY,
+    _get_config,
     _parse_auth_frame,
     _serve_frontend_if_present,
     _verify_foundry_access,
@@ -21,6 +23,25 @@ from hotel_voice_proxy.auth import AuthenticatedUser
 from hotel_voice_proxy.config import ProxySettings
 from hotel_voice_proxy.foundry import FOUNDRY_SCOPE
 from hotel_voice_proxy.sessions import BrowserSessionStore, SessionError
+
+
+def test_browser_config_uses_generic_hotel_name() -> None:
+    app = web.Application()
+    app[SETTINGS_KEY] = ProxySettings(
+        entra_tenant_id="tenant",
+        entra_audience="audience",
+        entra_required_scope="HotelAgent.Access",
+        foundry_project_endpoint="https://example.services.ai.azure.com/api/projects/hotels",
+        foundry_agent_name="hotel-servicing-agent",
+    )
+    request = make_mocked_request("GET", "/api/config", app=app)
+
+    response = asyncio.run(_get_config(request))
+    assert response.text is not None
+    payload = json.loads(response.text)
+
+    assert payload["hotelBrandName"] == "Hotel"
+    assert "synthetic" in payload["syntheticDataNotice"]
 
 
 def test_call_auth_frame_supports_prerecorded_mode() -> None:

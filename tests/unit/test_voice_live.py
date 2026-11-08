@@ -101,6 +101,17 @@ def test_agent_instructions_require_stable_language_selection() -> None:
     assert "historical or cancelled reservations" in normalized
 
 
+def test_agent_instruction_copies_use_generic_hotel_chain() -> None:
+    root = Path(__file__).parents[2]
+    instructions = (root / "agent-instructions.md").read_text(encoding="utf-8")
+    hosted_instructions = (
+        root / "src" / "hotel-servicing-agent" / "agent-instructions.md"
+    ).read_text(encoding="utf-8")
+
+    assert instructions == hosted_instructions
+    assert "fictional Hotel chain" in instructions
+
+
 def test_prerecorded_session_disables_automatic_vad_response(tmp_path: Path) -> None:
     bridge = VoiceLiveBridge(_settings(tmp_path), _UnusedCredential())  # type: ignore[arg-type]
     session = bridge.build_session_config(mode="prerecorded", session_id="session-1")

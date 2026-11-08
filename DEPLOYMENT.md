@@ -20,13 +20,28 @@ Do not run `azd init -t` in this non-empty repository. The Hosted Agent service 
 direct-code deployment (`python_3_13`, remote dependency resolution); it does not require a local
 Docker daemon.
 
+### Optional new Foundry project
+
+Opt in to `infra/foundry-project.bicep` only when creating a new Foundry foundation. It does not
+replace the existing `infra/main.bicep` support-only flow or recreate an existing project. The
+group-scoped template accepts `location`, `accountName`, `projectName`, and `modelCapacity`, creates
+an AIServices S0 account and project with system-assigned identities and local authentication
+disabled, and deploys `gpt-5.4-mini` version `2026-03-17` using `GlobalStandard`. The project identity
+receives account-scoped **Cognitive Services User** access. Model deployment follows project
+creation to avoid concurrent provider operation locks.
+
+Before creation, check model/region availability and sufficient GlobalStandard quota for the
+requested capacity in the approved subscription. Run group deployment validation and what-if with
+the exact proposed parameters, review resource and RBAC changes, and obtain deployment approval
+before running create. Keep target credentials and deployment state outside source control.
+
 ## Predeployment checks
 
 ```bash
 make check
 ```
 
-The naming check is mandatory before every deployment. It scans technical configuration fields and fails when the fictional customer brand is used in Azure, Foundry, Fabric, Agent 365, package, environment, identity, URL, or item names. Customer-facing Markdown and generated business data are intentionally outside that technical scan.
+The naming check is mandatory before every deployment. It scans technical configuration fields and rejects real hotel brands in Azure, Foundry, Fabric, Agent 365, package, environment, identity, URL, or item names while allowing generic `hotel` names. Customer-facing Markdown and generated business data are intentionally outside that technical scan; sample properties use `Hotel` followed by their existing name suffix.
 
 ## Foundry evaluation rubric
 

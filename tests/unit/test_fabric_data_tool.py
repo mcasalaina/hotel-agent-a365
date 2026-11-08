@@ -5,12 +5,42 @@ from datetime import date
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
 from hotel_servicing_agent.tools.fabric_data import (
+    CHAIN_WIDE_PATTERN,
     FABRIC_TOKEN_SCOPE,
     PROPERTY_CONTEXT_DIRECTIVE,
     FabricDataAgentTool,
     _governed_question,
 )
+
+
+@pytest.mark.parametrize(
+    "question",
+    (
+        "Show reservations at all hotels",
+        "Show reservations at all properties",
+        "Show reservations at all Hotel properties",
+        "Show reservations at every hotel",
+        "Show reservations at every Hotel property",
+        "Show reservations at each hotel",
+        "Show reservations at each Hotel property",
+        "Show reservations chain-wide",
+    ),
+)
+def test_generic_hotel_chain_wide_queries_are_recognized(question: str) -> None:
+    assert CHAIN_WIDE_PATTERN.search(question)
+
+
+@pytest.mark.parametrize(
+    "question",
+    (
+        "Show every reservation at Hotel Scottsdale Sonoran Resort",
+        "Show all reservations at Hotel Paris Left Bank",
+    ),
+)
+def test_named_hotel_queries_are_not_treated_as_chain_wide(question: str) -> None:
+    assert CHAIN_WIDE_PATTERN.search(question) is None
 
 
 def test_fabric_data_tool_queries_published_mcp_endpoint() -> None:
@@ -83,7 +113,7 @@ def test_chain_wide_query_fans_out_facts_and_roster() -> None:
         captured_questions.append(question)
         if "reservation facts only" in question:
             return "HTL-001: 10"
-        return "HTL-001: Lyrenza Seattle Waterfront"
+        return "HTL-001: Hotel Seattle Waterfront"
 
     adapter = FabricDataAgentTool(
         "https://example.test/mcp",
@@ -91,14 +121,16 @@ def test_chain_wide_query_fans_out_facts_and_roster() -> None:
         query_runner=fake_query_runner,
     )
 
-    answer = asyncio.run(adapter.query("Show active reservations at every Lyrenza hotel next week"))
+    answer = asyncio.run(
+        adapter.query("Show active reservations at every Hotel property next week")
+    )
 
     assert len(captured_questions) == 2
     assert any("HotelGuestServices reservation facts only" in item for item in captured_questions)
     assert any("HotelOperations properties only" in item for item in captured_questions)
     assert any("Today's authoritative UTC date" in item for item in captured_questions)
     assert "HTL-001: 10" in answer
-    assert "Lyrenza Seattle Waterfront" in answer
+    assert "Hotel Seattle Waterfront" in answer
     assert "do not show IDs" in answer
 
 

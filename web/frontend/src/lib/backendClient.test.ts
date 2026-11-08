@@ -31,7 +31,7 @@ describe("backendClient", () => {
     stubRequiredEnv();
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ hotelBrandName: "Lyrenza Hotels" }),
+      json: async () => ({ hotelBrandName: "Hotel" }),
     });
     vi.stubGlobal("fetch", fetchMock);
 

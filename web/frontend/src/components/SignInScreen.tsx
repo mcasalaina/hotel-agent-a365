@@ -17,11 +17,11 @@ export function SignInScreen() {
           <BrandMark className={styles.brandMark} />
         </div>
         <h1 className={styles.title} id="sign-in-title">
-          Lyrenza Hotels Contact Center
+          Hotel Contact Center
         </h1>
         <p className={styles.subtitle}>Simulated agent demo &mdash; sign-in required</p>
         <p className={styles.notice}>
-          This is a demonstration environment. The Lyrenza Hotels brand, guests, reservations, and
+          This is a demonstration environment. The Hotel chain, guests, reservations, and
           folio details shown here are entirely <strong>synthetic</strong> and do not represent a
           real hotel chain or real customer data.
         </p>

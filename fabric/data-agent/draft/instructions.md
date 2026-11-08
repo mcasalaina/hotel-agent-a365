@@ -40,7 +40,8 @@
 
 ## Terminology
 
-- Chain terms: `LGR`, `LSR`, `LCR`, `SIR`, `GPF`.
+- Chain terms: `HGR` (Hotel Guest Record), `HSR` (Hotel Service Request), `HCR` (Hotel Care Recovery),
+  `SIR` (Stay Incident Record), `GPF` (Guest Preference Flag).
 - Hotel and HoReCa terms: `PMS`, `CRS`, `RMS`, `POS`, `F&B`, `MICE`, `OTA`, `GDS`, `BAR`, `FIT`,
   `OCC`, `ADR`, `RevPAR`, `TRevPAR`, `GOPPAR`, `NRevPAR`, `LOS`, `ALOS`, `CPOR`, `OOO`, `OOS`,
   `DND`, `ETA`, `ETD`, `VIP`, `comp`, `folio`, `room block`, `pickup`, `wash`, `stayover`,

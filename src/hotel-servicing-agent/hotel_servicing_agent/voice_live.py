@@ -345,9 +345,7 @@ class VoiceLiveBridge:
                             pre_generated_assistant_message=AssistantMessageItem(
                                 content=[
                                     OutputTextContentPart(
-                                        text=(
-                                            "Welcome to Lyrenza Hotels. How can I help you today?"
-                                        )
+                                        text="Welcome to Hotel. How can I help you today?"
                                     )
                                 ]
                             )

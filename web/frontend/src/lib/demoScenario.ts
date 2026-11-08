@@ -6,7 +6,7 @@
  * running backend, per the Phase 3 headless/prerecorded test-mode requirement.
  *
  * All guest, reservation, and folio details below are synthetic and belong to the fictional
- * "Lyrenza Hotels" chain used throughout this demo.
+ * "Hotel" chain used throughout this demo.
  */
 import type { ServerCallMessage } from "../types/protocol";
 
@@ -35,7 +35,7 @@ export function buildDemoScenario(): ScriptedStep[] {
       message: {
         type: "transcript",
         speaker: "user",
-        text: "Hi, I'd like to check my upcoming reservation at the Lyrenza Bay Meridian.",
+        text: "Hi, I'd like to check my upcoming reservation at the Hotel Bay Meridian.",
         isFinal: true,
         timestamp: iso(),
       },
@@ -54,7 +54,7 @@ export function buildDemoScenario(): ScriptedStep[] {
       message: {
         type: "timeline_event",
         category: "data_source",
-        message: "Checked the synthetic Lyrenza reservations lakehouse table.",
+        message: "Checked the synthetic Hotel reservations lakehouse table.",
         timestamp: iso(),
       },
     },
@@ -65,7 +65,7 @@ export function buildDemoScenario(): ScriptedStep[] {
         speaker: "agent",
         text:
           "I found a synthetic reservation for Jordan Ellery, checking in Friday for two nights in a " +
-          "King Harbor View room at the Lyrenza Bay Meridian.",
+          "King Harbor View room at the Hotel Bay Meridian.",
         isFinal: true,
         timestamp: iso(),
       },
@@ -97,7 +97,7 @@ export function buildDemoScenario(): ScriptedStep[] {
         summary: "Change room type to Deluxe Suite for this synthetic reservation?",
         details: {
           Guest: "Jordan Ellery (synthetic)",
-          Property: "Lyrenza Bay Meridian",
+          Property: "Hotel Bay Meridian",
           "Check-in": "Friday",
           Nights: "2",
           "Current room": "King Harbor View",
@@ -124,8 +124,8 @@ export function buildDemoScenario(): ScriptedStep[] {
         title: "Reservation updated (synthetic data)",
         fields: {
           Guest: "Jordan Ellery",
-          Property: "Lyrenza Bay Meridian",
-          "Confirmation number": "LYR-DEMO-48213",
+          Property: "Hotel Bay Meridian",
+          "Confirmation number": "RES-DEMO-48213",
           Room: "Deluxe Suite",
           "Check-in": "Friday",
           "Check-out": "Sunday",

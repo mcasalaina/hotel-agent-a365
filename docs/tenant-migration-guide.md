@@ -845,7 +845,7 @@ upload wizard do not prove the final published catalog entry is correct.
 After the complete grant/inheritance matrix is verified, use Add instance. Choose
 the approved display name, alias `hotelguestservices`, human owner/reports-to user,
 and licensing. The reference instance display name is
-`Lyrenza Hotel Guest Services`, while the reusable template remains generic.
+`Hotel Guest Services`, while the reusable template remains generic.
 
 Record the actual instance identity and agent-user object IDs. Verify the enabled
 instance, manager, mailbox/UPN, license, and Teams availability. If an instance

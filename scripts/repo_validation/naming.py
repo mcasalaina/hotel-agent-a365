@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from validate_hotel_data import REAL_BRANDS
 
-FORBIDDEN_NAME = re.compile(r"lyrenza", re.IGNORECASE)
+FORBIDDEN_NAME = re.compile("|".join(re.escape(brand) for brand in REAL_BRANDS), re.IGNORECASE)
 STRUCTURED_SUFFIXES = {".json", ".toml", ".yaml", ".yml"}
 TEXT_TECHNICAL_SUFFIXES = {".bicep", ".env"}
 TECHNICAL_DIRECTORIES = {
