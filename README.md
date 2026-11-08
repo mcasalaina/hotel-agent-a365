@@ -27,6 +27,11 @@ make setup
 make check
 ```
 
+The hosted package pins its Agent Framework core, OpenAI adapter, Projects SDK, and MCP
+dependencies as well as the hosting SDK. Keep `src/hotel-servicing-agent/pyproject.toml`
+and `requirements.txt` synchronized: newer transitive SDKs can require an incompatible
+MCP major version. On Windows, use Python 3.13 and `.venv\Scripts\python.exe` for checks.
+
 Copy `.env.template` to `.env` for local Hosted Agent execution. Never commit `.env`, azd environment state, generated Agent 365 configuration, tokens, or deployment packages.
 
 Run the agent after installing dependencies:

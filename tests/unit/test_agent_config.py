@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+import asyncio
+import json
 from datetime import date
 from pathlib import Path
+from typing import Any
 
+import httpx
 import pytest
+from agent_framework.foundry import FoundryChatClient
+from hotel_servicing_agent import runtime
 from hotel_servicing_agent.config import Settings
 from hotel_servicing_agent.runtime import _instructions_with_current_utc_date
+from openai import AsyncOpenAI
 
 
-def test_settings_load_required_values(
+@pytest.fixture
+def settings(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
-) -> None:
+) -> Settings:
     instructions = tmp_path / "instructions.md"
     instructions.write_text("Test instructions", encoding="utf-8")
     monkeypatch.setenv(
@@ -44,8 +52,10 @@ def test_settings_load_required_values(
         monkeypatch.setenv(f"WORK_IQ_{prefix}_MCP_AUDIENCE", f"{prefix.lower()}-audience")
     monkeypatch.setenv("AGENT_INSTRUCTIONS_PATH", str(instructions))
 
-    settings = Settings.from_environment()
+    return Settings.from_environment()
 
+
+def test_settings_load_required_values(settings: Settings) -> None:
     assert settings.project_endpoint == "https://example.test/api/projects/hotel"
     assert settings.model_deployment == "gpt-5.4-mini"
     assert settings.voice_live_endpoint == "https://example.test"
@@ -66,6 +76,68 @@ def test_settings_load_required_values(
         "mail-audience",
     )
     assert settings.instructions == "Test instructions"
+
+
+def test_runtime_sends_sequential_stateless_responses_request(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    requests: list[dict[str, Any]] = []
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "id": "resp_test",
+                "object": "response",
+                "created_at": 0,
+                "status": "completed",
+                "model": settings.model_deployment,
+                "output": [
+                    {
+                        "id": "msg_test",
+                        "type": "message",
+                        "role": "assistant",
+                        "status": "completed",
+                        "content": [
+                            {"type": "output_text", "text": "Test answer", "annotations": []}
+                        ],
+                    }
+                ],
+            },
+        )
+
+    async def invoke() -> None:
+        async with (
+            httpx.AsyncClient(transport=httpx.MockTransport(respond)) as http_client,
+            AsyncOpenAI(
+                api_key="offline-test", base_url="https://example.test", http_client=http_client
+            ) as openai_client,
+        ):
+
+            class TestProject:
+                def get_openai_client(self, **kwargs: Any) -> AsyncOpenAI:
+                    return openai_client
+
+            client = FoundryChatClient(
+                project_client=TestProject(),  # type: ignore[arg-type]
+                model=settings.model_deployment,
+            )
+            monkeypatch.setattr(runtime, "FoundryChatClient", lambda **kwargs: client)
+            monkeypatch.setattr(runtime, "select_azure_credential", object)
+            agent = runtime.create_agent(settings)
+            response = await agent.run("Hello")
+            assert response.text == "Test answer"
+
+    asyncio.run(invoke())
+
+    assert len(requests) == 1
+    assert requests[0]["store"] is False
+    assert requests[0]["parallel_tool_calls"] is False
+    names = [tool["name"] for tool in requests[0]["tools"]]
+    assert len(names) == len(set(names))
+    assert "search_hotel_knowledge" in names
+    assert "query_hotel_operations_data" in names
 
 
 def test_settings_fail_when_required_value_is_missing(

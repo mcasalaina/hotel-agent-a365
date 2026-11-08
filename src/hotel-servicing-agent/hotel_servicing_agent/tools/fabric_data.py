@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
+import json
 import re
 from collections.abc import Awaitable, Callable
 from datetime import UTC, date, datetime, timedelta
@@ -144,9 +147,50 @@ async def _query_data_agent(
             {question_argument: question},
             read_timeout_seconds=timedelta(seconds=300),
         )
-        text = "\n".join(block.text for block in result.content if block.type == "text").strip()
-        if result.isError:
-            raise RuntimeError(f"Fabric Data Agent query failed: {text}")
-        if not text:
-            raise RuntimeError("Fabric Data Agent returned no text response")
+        return await _serialize_fabric_result(result, session)
+
+
+async def _serialize_fabric_result(result: Any, session: Any) -> str:
+    text = "\n".join(block.text for block in result.content if block.type == "text").strip()
+    if result.isError:
+        raise RuntimeError(f"Fabric Data Agent query failed: {text}")
+    resources: list[dict[str, str]] = []
+    for block in result.content:
+        if block.type == "resource":
+            resources.append(_resource_evidence(block.resource))
+        elif block.type == "resource_link":
+            # MCP resource URIs are resolved by the authenticated server, never as local files.
+            linked = await session.read_resource(block.uri)
+            if not linked.contents:
+                raise RuntimeError(f"Fabric resource returned no content: {block.uri}")
+            resources.extend(_resource_evidence(resource) for resource in linked.contents)
+        elif block.type != "text":
+            raise RuntimeError(f"Unsupported Fabric evidence content type: {block.type}")
+    structured = result.structuredContent
+    if not text and not resources and not structured:
+        raise RuntimeError("Fabric Data Agent returned no evidence")
+    if not resources and not structured:
         return text
+    return json.dumps(
+        {"answer": text, "resources": resources, "structured_content": structured},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
+def _resource_evidence(resource: Any) -> dict[str, str]:
+    mime_type = resource.mimeType or ""
+    if mime_type and not (
+        mime_type.startswith("text/") or mime_type.split(";", maxsplit=1)[0] == "application/json"
+    ):
+        raise RuntimeError(f"Unsupported Fabric resource MIME type: {mime_type}")
+    if hasattr(resource, "text"):
+        text = str(resource.text)
+    else:
+        try:
+            text = base64.b64decode(resource.blob, validate=True).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError) as exc:
+            raise RuntimeError(f"Unreadable Fabric resource: {resource.uri}") from exc
+    if not text.strip():
+        raise RuntimeError(f"Fabric resource returned empty evidence: {resource.uri}")
+    return {"uri": str(resource.uri), "mime_type": mime_type, "text": text}

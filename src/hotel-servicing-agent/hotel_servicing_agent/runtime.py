@@ -74,7 +74,7 @@ def create_agent(settings: Settings) -> Agent:
         name="hotel-servicing-agent",
         description="Guest-services orchestration for a fictional hotel chain.",
         instructions=_instructions_with_current_utc_date(settings.instructions),
-        default_options={"store": False},
+        default_options={"store": False, "allow_multiple_tool_calls": False},
         tools=[
             knowledge_tool.as_function_tool(),
             fabric_tool.as_function_tool(),
