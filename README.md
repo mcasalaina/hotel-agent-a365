@@ -32,6 +32,12 @@ dependencies as well as the hosting SDK. Keep `src/hotel-servicing-agent/pyproje
 and `requirements.txt` synchronized: newer transitive SDKs can require an incompatible
 MCP major version. On Windows, use Python 3.13 and `.venv\Scripts\python.exe` for checks.
 
+The request-owned `FoundryToolboxTransport` supports the reviewed `hotel_foundry_toolbox`
+endpoint in the same Foundry project. It requires an explicit per-operation tool allowlist,
+validates discovered argument schemas, and preserves complete MCP evidence. Integrate it
+beneath the governed hotel functions only after the published IQ contracts are verified;
+it does not register raw tools or enable a generic Work IQ action-capable `ask` by default.
+
 Copy `.env.template` to `.env` for local Hosted Agent execution. Never commit `.env`, azd environment state, generated Agent 365 configuration, tokens, or deployment packages.
 
 Run the agent after installing dependencies:
