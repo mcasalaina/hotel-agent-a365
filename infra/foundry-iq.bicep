@@ -32,6 +32,12 @@ param searchConnectionName string = 'hotel-search-connection'
 
 param tags object = {}
 
+@description('Archive-specific tags; include existing tags when redeploying the account.')
+param archiveTags object = {}
+
+@description('Explicit demo-only storage governance opt-in, never applied to other resources.')
+param demoArchivePolicyException bool = false
+
 var searchServiceContributorRoleId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions', '7ca78c08-252a-4471-8644-bb5ff32d4ba0'
 )
@@ -79,7 +85,7 @@ resource existingArchive 'Microsoft.Storage/storageAccounts@2025-06-01' existing
 resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = if (deployArchive) {
   name: storageAccountName
   location: location
-  tags: tags
+  tags: union(tags, archiveTags, demoArchivePolicyException ? { SecurityControl: 'Ignore' } : {})
   kind: 'StorageV2'
   sku: {
     name: 'Standard_LRS'

@@ -43,6 +43,22 @@ unavailable; the archive's `location` and existing Foundry resources stay unchan
 Set `deployArchive=false` when the archive already exists, including a retry after
 partial deployment, to preserve its network/security properties and existing grants.
 
+An enforced tenant governance policy can force storage public network access off,
+preventing archive uploads when no private access path exists. Prefer a compliant
+private path. For a demo with an explicitly authorized, verified policy exception,
+`demoArchivePolicyException=true` opts **only the archive account** into
+`SecurityControl=Ignore`. The default is false; do not apply the tag to a resource
+group, root policy, Search, Key Vault, or unrelated resources.
+
+Before opting in, read the actual enforced policy and initiative to confirm the
+exception tag/value. Merge the tag into an existing account with `az tag update
+--operation Merge`, never replace its tags. Retain the account's existing tags in
+`archiveTags` for any account redeployment. Authenticated public network access
+does not enable anonymous blobs or shared keys: those remain disabled, the
+`hotel-docs` container stays private, and uploads use Entra/RBAC. Read back the
+effective tag/network/authentication state after policy processing and verify
+actual archive content rather than assuming the exception succeeded.
+
 ## Voice web application
 
 `voice-web.bicep` is the active deployment template for the browser frontend and authenticated proxy.
