@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "resources": [
+    {
+      "type": "Microsoft.WebIQ/accounts",
+      "apiVersion": "2026-06-01-preview",
+      "name": "mcasalaina_webiq_contoso",
+      "location": "global",
+      "kind": "WebIQ.Grounding",
+      "sku": {
+        "name": "G3"
+      },
+      "properties": {
+        "statisticsEnabled": false
+      }
+    }
+  ],
+  "outputs": {
+    "webIqResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.WebIQ/accounts', 'mcasalaina_webiq_contoso')]"
+    }
+  }
+}
