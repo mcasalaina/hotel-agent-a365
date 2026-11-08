@@ -13,7 +13,6 @@ from fabric.artifacts import (
 )
 from fabric.payloads import validate_item_display_name
 
-EXPECTED_REGION = "East US 2"
 EXPECTED_WORKSPACE_NAME = "Hotel"
 EXPECTED_LAKEHOUSE_NAMES = {"HotelOperations", "HotelGuestServices"}
 EXPECTED_BLUEPRINT_KEYS = {"semanticModel", "report", "ontology", "dataAgent"}
@@ -41,11 +40,6 @@ def validate_topology(
             UUID(topology.workspace.capacity_id)
         except ValueError:
             problems.append("Capacity ID must be a UUID when supplied.")
-    if topology.workspace.capacity_region != EXPECTED_REGION:
-        problems.append(
-            f"Capacity region must be {EXPECTED_REGION}, "
-            f"found {topology.workspace.capacity_region}."
-        )
     problems.extend(
         _validate_presentation_text(
             topology.workspace.description,

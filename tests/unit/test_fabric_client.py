@@ -350,7 +350,7 @@ def test_apply_retains_new_protected_item_creation(
         "capacityId": "capacity-id",
     }
     client.list_capacities.return_value = [
-        {"id": "capacity-id", "state": "Active", "region": "East US 2"}
+        {"id": "capacity-id", "state": "Active", "region": topology.workspace.capacity_region}
     ]
     client.list_workspaces.return_value = [] if new_workspace else [workspace]
     client.create_workspace.return_value = workspace
@@ -395,7 +395,7 @@ def test_apply_retains_non_native_updates_with_protected_blueprints_disabled(
         }
     ]
     client.list_capacities.return_value = [
-        {"id": "capacity-id", "state": "Active", "region": "East US 2"}
+        {"id": "capacity-id", "state": "Active", "region": topology.workspace.capacity_region}
     ]
     client.list_items.return_value = [
         {"id": key, "type": artifact.item_type, "displayName": artifact.display_name}

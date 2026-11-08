@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     client = None
-    if options.command == "apply" or options.discover_remote:
+    if options.command != "validate" and (options.command == "apply" or options.discover_remote):
         if options.auth_mode == "fab":
             if options.tenant_id is None:
                 raise ValueError("--tenant-id is required for fab live operations.")

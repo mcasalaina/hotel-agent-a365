@@ -53,7 +53,7 @@
     },
     {
       "id": "2a17370e-e35d-54b1-b76f-03222ddf5574",
-      "question": "What parking, valet price, transportation, and pool hours apply at Lyrenza Scottsdale Sonoran Resort?",
+      "question": "What parking, valet price, transportation, and pool hours apply at Hotel Scottsdale Sonoran Resort?",
       "query": "SELECT property_id, name, parking, transport, pool_hours FROM properties WHERE property_id = 'HTL-004';"
     }
   ]

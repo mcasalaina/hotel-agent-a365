@@ -9,10 +9,10 @@
     "F&B": "Food and Beverage",
     "GDS": "Global Distribution System",
     "GPF": "Guest Preference Flag",
-    "LCR": "Lyrenza Care Recovery",
-    "LGR": "Lyrenza Guest Record",
+    "HCR": "Hotel Care Recovery",
+    "HGR": "Hotel Guest Record",
     "LOS": "Length of Stay",
-    "LSR": "Lyrenza Service Request",
+    "HSR": "Hotel Service Request",
     "MICE": "Meetings Incentives Conferences and Exhibitions",
     "OCC": "Occupancy Rate",
     "OTA": "Online Travel Agency",
@@ -34,12 +34,12 @@
       "name": "official-property-name-routing",
       "source": "HotelOperations",
       "question": "What is the official property name for the hotel identified as HTL-004?",
-      "expectedTerms": ["Lyrenza Scottsdale Sonoran Resort"]
+      "expectedTerms": ["Hotel Scottsdale Sonoran Resort"]
     },
     {
       "name": "scottsdale-parking-transport-hours",
       "source": "HotelOperations",
-      "question": "What parking, valet price, transportation, and pool hours apply at Lyrenza Scottsdale Sonoran Resort?",
+      "question": "What parking, valet price, transportation, and pool hours apply at Hotel Scottsdale Sonoran Resort?",
       "expectedTerms": ["25", "valet", "shuttle", "07:00", "21:00"]
     },
     {
@@ -52,7 +52,7 @@
       "name": "future-maria-reservation-strict-boundary",
       "source": "HotelGuestServices",
       "question": "Using the November 8, 2026 temporal boundary, identify Maria Garcia's nearest upcoming reservation. Include its reservation identifier, official property name, internal property identifier, check-in date, check-out date, and status.",
-      "expectedTerms": ["RES-FAMILY-2026", "Lyrenza Scottsdale Sonoran Resort", "HTL-004", "2026-11-17", "2026-11-19", "future"]
+      "expectedTerms": ["RES-FAMILY-2026", "Hotel Scottsdale Sonoran Resort", "HTL-004", "2026-11-17", "2026-11-19", "future"]
     },
     {
       "name": "semantic-model-completed-stays",
@@ -80,13 +80,13 @@
       "mode": "published-agent-direct",
       "source": "HotelOperations",
       "question": "What is the official property name for the hotel identified as HTL-004?",
-      "expectedTerms": ["Lyrenza Scottsdale Sonoran Resort"]
+      "expectedTerms": ["Hotel Scottsdale Sonoran Resort"]
     },
     {
       "name": "scottsdale-parking-transport-hours",
       "mode": "published-agent-direct",
       "source": "HotelOperations",
-      "question": "What parking, valet price, transportation, and pool hours apply at Lyrenza Scottsdale Sonoran Resort?",
+      "question": "What parking, valet price, transportation, and pool hours apply at Hotel Scottsdale Sonoran Resort?",
       "expectedTerms": ["25", "valet", "shuttle", "07:00", "21:00"]
     },
     {
@@ -101,7 +101,7 @@
       "mode": "published-agent-direct",
       "source": "HotelGuestServices",
       "question": "Using the November 8, 2026 temporal boundary, identify Maria Garcia's nearest upcoming reservation. Include its reservation identifier, official property name, internal property identifier, check-in date, check-out date, and status.",
-      "expectedTerms": ["RES-FAMILY-2026", "Lyrenza Scottsdale Sonoran Resort", "HTL-004", "2026-11-17", "2026-11-19", "future"]
+      "expectedTerms": ["RES-FAMILY-2026", "Hotel Scottsdale Sonoran Resort", "HTL-004", "2026-11-17", "2026-11-19", "future"]
     },
     {
       "name": "semantic-model-completed-stays",

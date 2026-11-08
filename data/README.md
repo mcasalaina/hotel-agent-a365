@@ -27,9 +27,10 @@ mailbox addresses.
 For private preparation, pass `--output <bundle>\data\generated` and
 `--docs-output <bundle>\foundryiq-docs`; preserve the sibling
 `<bundle>\data\fixtures\business_scenarios.json` and `hotel_data_schema.json`.
-The OneLake staging layout is `HotelGuestServices/Files/data/generated/` for all
-23 CSV files plus `manifest.json`, and `HotelGuestServices/Files/data/fixtures/`
-for the fixture JSON. `HotelInitialLoad` routes operations-owned tables into
-`HotelOperations`; `ops_*` entries in guest services are shortcuts, not duplicate
+The OneLake staging layout is `HotelOperations/Files/data/generated/` for all
+23 CSV files plus `manifest.json`, and `HotelOperations/Files/data/fixtures/`
+for the fixture JSON. `HotelInitialLoad` binds `HotelGuestServices` as its default
+lakehouse, reads the Operations ABFSS `source_root`, and writes each table to its
+authoritative lakehouse; `ops_*` entries in guest services are shortcuts, not duplicate
 CSV uploads. The current uploader requires 25 files; the schema JSON is an
 additional recommended metadata file.

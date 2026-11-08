@@ -8,6 +8,7 @@ from unittest.mock import create_autospec
 
 import pytest
 from fabric.artifacts import FabricTopology
+from fabric.cli import main
 from fabric.client import FabricApiError, FabricOperationFailed, FabricRestClient, HttpResponse
 from fabric.deployer import FabricDeployer
 from fabric.fab_cli import FabCliTransport
@@ -80,7 +81,7 @@ def test_fab_wrong_tenant_refuses_api(monkeypatch: pytest.MonkeyPatch, output: s
     [
         None,
         {"id": CAPACITY_ID, "state": "Paused", "region": "East US 2"},
-        {"id": CAPACITY_ID, "state": "Active", "region": "Central US"},
+        {"id": CAPACITY_ID, "state": "Active", "region": "West US 3"},
         {"id": TENANT_ID, "state": "Active", "region": "East US 2"},
     ],
 )
@@ -146,3 +147,19 @@ def test_shortcuts_use_native_route_and_creatable_target() -> None:
     assert args[1].endswith("/shortcuts?shortcutConflictPolicy=CreateOrOverwrite")
     assert args[2]["target"] == {"oneLake": body["target"]["oneLake"]}
     assert body["target"]["type"] == "OneLake"
+
+
+def test_local_validation_ignores_remote_authentication_settings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = tmp_path / "config.json"
+    config.write_text(
+        json.dumps({"authMode": "fab", "discoverRemote": True, "tenantId": ""}),
+        encoding="utf-8",
+    )
+
+    def unexpected_auth(_tenant_id: str) -> None:
+        raise AssertionError("Local validation must not authenticate.")
+
+    monkeypatch.setattr("fabric.cli.FabCliTransport", unexpected_auth)
+    assert main(["validate", "--config", str(config)]) == 0

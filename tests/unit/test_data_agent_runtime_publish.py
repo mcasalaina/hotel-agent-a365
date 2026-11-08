@@ -577,4 +577,4 @@ def test_isolation_contract_matches_notebook_and_requests_asserted_identifiers()
     assert "reservation identifier" in future["question"]
     assert "official property name" in future["question"]
     assert "internal property identifier" in future["question"]
-    assert "Lyrenza Scottsdale Sonoran Resort" in future["expectedTerms"]
+    assert "Hotel Scottsdale Sonoran Resort" in future["expectedTerms"]

@@ -1,7 +1,7 @@
 {
   "workspace": {
     "capacityId": null,
-    "capacityRegion": "East US 2",
+    "capacityRegion": "Central US",
     "description": "Fabric workspace for authoritative hotel operations and guest services.",
     "displayName": "Hotel"
   },

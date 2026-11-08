@@ -3,7 +3,7 @@ document_id: DOC-POLICY-PARKING
 title: Chain-wide Parking procedure
 property_id: chain-wide
 category: guest_policy
-valid_from: 2026-03-01
+valid_from: 2026-05-08
 valid_to: 2099-12-31
 locale: en-US
 source_path: foundryiq-docs/policies/parking.generated.md

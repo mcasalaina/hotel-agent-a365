@@ -18,8 +18,12 @@ The deployment toolchain in this folder plans and applies the Phase 1 Fabric sli
 The committed topology has no capacity ID. A new workspace requires an explicitly
 selected target capacity via `--capacity-id` (or `capacityId` in private config).
 An existing workspace must already be assigned. Live apply verifies that the
-capacity is accessible, Active, and in East US 2 before its first write.
+capacity is accessible, Active, and in the topology's declared region before its first write.
 No command creates or resumes a capacity automatically.
+
+The target demo uses **Central US** for Fabric because its approved subscription
+has available CU quota there. Foundry remains in East US 2. Region selection is
+per capacity/topology, not an Azure CLI or azd global default.
 
 Use the user's requested native Fabric CLI authentication:
 

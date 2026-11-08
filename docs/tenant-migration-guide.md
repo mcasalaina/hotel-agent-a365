@@ -317,8 +317,9 @@ inventory, audit timestamps and expected answers.
    private deployment-state path. The committed topology intentionally has no
    capacity ID. Use `authMode: "fab"` with the exact `tenantId`, and supply a
    discovered approved `capacityId` for new-workspace creation. Never reuse the
-   previous tenant's capacity ID. Live apply verifies Active state and East US 2
-   region before any writes.
+   previous tenant's capacity ID. Live apply verifies Active state and the
+   topology's declared capacity region before any writes. This target uses
+   Central US for Fabric's available paid CU quota; Foundry remains East US 2.
 4. Validate and inspect the plan before execution:
 
    ```bash
