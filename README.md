@@ -39,6 +39,8 @@ beneath the governed hotel functions only after the published IQ contracts are v
 it does not register raw tools or enable a generic Work IQ action-capable `ask` by default.
 
 Copy `.env.template` to `.env` for local Hosted Agent execution. Never commit `.env`, azd environment state, generated Agent 365 configuration, tokens, or deployment packages.
+The hosted `.agentignore` also excludes sample environment files and all local `.foundry`,
+`.agent_configs`, `.azure`, and virtual-environment state from source deployment packages.
 
 Run the agent after installing dependencies:
 
