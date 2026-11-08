@@ -28,3 +28,23 @@ Run `--verify-only --check-canonical` after indexing completes to check all four
 knowledge sources/base and the exact indexed IDs, content, paths, property, and
 validity metadata, rather than treating index existence as acceptance. Complete
 grounded property/date-specific retrieval separately under the runtime identity.
+
+The knowledge base also exposes a native MCP endpoint:
+
+```text
+<verified-search-endpoint>/knowledgebases/hotel-foundryiq/mcp?api-version=2026-08-01-preview
+```
+
+Its `knowledge_base_retrieve` tool accepts
+`{"query_variants": ["one complete natural-language question"]}`. The native MCP
+schema does not expose `filterAddOn`; natural-language property/date constraints
+are not a substitute for enforced filters. Keep the hosted `FoundryIQTool` direct
+retrieval path for property/date boundaries confirmed from Fabric. An MCP response
+can include uncited candidate references from other properties even when its answer
+cites the correct source.
+
+Acceptance must verify every cited reference against an actual canonical source,
+its property and validity window, and the exact expected facts. Do not require every
+retrieved candidate to be cited. Check Scottsdale and non-Scottsdale answers, an
+in-window historical notice, and exclusion of that expired notice from current
+retrieval. Verify archived blob bytes/hashes and source metadata for all 95 files.
