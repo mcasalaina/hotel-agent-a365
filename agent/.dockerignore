@@ -1,0 +1,6 @@
+.env
+.env.*
+a365*.json
+__pycache__
+*.pyc
+logs
