@@ -329,6 +329,95 @@ scopes before any grant expansion; don't use `Ask` as a substitute for
 missing `Read` or `Act` authorization. No scope expansion was needed for
 the successful `/me` probe.
 
+### Guarded mail actions: separate follow-up
+
+Version 1 deliberately contains only the five curated Work IQ reader
+tools. It cannot satisfy the Hotel `send_email` and `reply_to_email`
+functions. Keep immutable version 1 unchanged; publish a new action
+version only after the provider contract, effective tenant policy,
+caller authorization, and dedicated runtime guards are established.
+
+Native target discovery returned `do_action` with required
+`actionUrl: string` and **required, untyped `jsonBody`**, plus optional
+nullable `agentId`; annotations are empty. The body is required by
+the actual schema even though its description calls it optional.
+The [official tool reference](https://learn.microsoft.com/microsoft-365/copilot/extensibility/work-iq/mcp/tool-reference#entity-tools)
+requires `jsonBody` to be a JSON-encoded **string**. Do not pass a
+model-supplied generic object directly to the native action.
+
+The supported, narrowly guarded mail contract is:
+
+| Public wrapper | Sole allowed action | JSON string body |
+| --- | --- | --- |
+| `send_email(recipient_emails, subject, body)` | `POST /me/sendMail` | `message.subject`, plain-`Text` `message.body`, validated `message.toRecipients` only |
+| `reply_to_email(message_id, body)` | `POST /me/messages/{id}/reply` | `comment` containing the exact body only |
+
+The hosted owner enforces trusted-current-request eligibility,
+recipient/address/header validation, exact body preservation, strict
+opaque message IDs encoded as one path segment, and rejection before
+network access. No model-selected action URL, CC/BCC/from override,
+replyAll, MIME, draft alternative, or raw write tool is exposed to the
+Hotel model. `call_function` is not a reader tool.
+
+The underlying [Graph sendMail](https://learn.microsoft.com/graph/api/user-sendmail?view=graph-rest-1.0)
+and [Graph reply](https://learn.microsoft.com/graph/api/message-reply?view=graph-rest-1.0)
+contracts both return `202 Accepted` with no response body. This
+confirms submission, **not delivery**. Graph reply honors the original
+message's `replyTo` when present, rather than always using `from`.
+Work IQ documents successful action status in
+`structuredContent.statusCode`, with optional `data`. The adapter
+must fail closed on MCP errors, application errors, missing or
+conflicting status, or anything other than exact 202.
+
+The current native operation-schema lookups are **denied**, not
+successful action evidence:
+
+- `/me/sendMail`: request `17d81ec0-1250-4e46-bf44-a718b803bd36`.
+- `/me/messages/{id}/reply`: request
+  `a1742330-b59c-40fb-b066-ecca1f19dc82`.
+
+Both returned an application-level `Access denied for path` despite
+`mcp_call` reporting `completed` with no transport error. No message
+was read or sent. Never interpret transport completion as accepted
+mail submission.
+
+An unauthenticated request to the genuine MCP endpoint advertised
+protected-resource metadata at
+`https://workiq.svc.cloud.microsoft/.well-known/oauth-protected-resource/mcp`.
+Its actual `scopes_supported` contains only
+`fdcc1f02-fc51-4226-8753-f668596af7f7/WorkIQAgent.Ask`.
+Do not infer a required `WorkIQ.Act` or Graph `Mail.Send` app grant
+from tool names or the underlying Graph contract; the native
+connection's actual permissions and route policy must be verified.
+
+The [Work IQ MCP governance guide](https://learn.microsoft.com/microsoft-365/copilot/extensibility/work-iq/mcp/policy-governance-mcp)
+states that mutation operations are denied by default. Its initial
+admin surface is a **tenant-wide** policy toggle under Microsoft 365
+admin center **Agents > Tools > Work IQ MCP > Policy**, not per-app,
+per-agent, or scenario-specific templates. Changes can take up to
+24 hours. Actual target editable/effective controls still require
+read-only inspection with the authenticated tenant administrator.
+Do not disable broad tenant guardrails under a narrow mail approval.
+No policy, credential, grant, scope, callback, or toolbox-default
+change has been made for this follow-up.
+
+The identity owner subsequently inspected the **actual target UI**
+read-only. Tenant Default has own-data/mailbox path access enabled,
+while all five editable mutation controls (write, create, partial
+update, replace, delete) are disabled. A separate Trusted Platform
+policy enables those five mutations uniformly for trusted Microsoft
+platforms, including Copilot Studio. No user/app/agent/path-specific
+mail exception or custom trust binding was exposed. Do not assume
+the owned OAuth client or Foundry is a trusted platform.
+
+This independently establishes a tenant mutation-policy prerequisite,
+but does not prove that missing `WorkIQ.Act` is the sole cause of
+operation-schema denial. The exact effective scope matrix for
+`get_schema` was not documented. Version 2 remains gated on an
+approved, supported action-policy path; no broad toggle or
+speculative permission expansion is authorized by the narrow
+send/reply requirement.
+
 The [Fabric IQ guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/fabric-iq)
 requires published Fabric items. A Foundry Fabric data-agent connection
 uses user context or an OAuth session; do not assume direct-endpoint
