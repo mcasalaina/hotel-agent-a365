@@ -7,6 +7,13 @@ Python Hosted Agent, Agent 365 bot/publication artifacts, a read-only Work IQ in
 authenticated Voice Live web frontend.
 Cloud-changing commands remain operator-invoked; local setup and validation never deploy implicitly.
 
+The native `WorkIQMailActions` adapter exposes only the dedicated `send_email` and
+`reply_to_email` functions. It fixes the provider paths to `/me/sendMail` and an encoded
+message-ID `/reply`, validates recipients and exact plain-text payloads, and requires
+trusted current-request authorization before network access. Only a consistent native
+`202 Accepted` confirms submission; it does not prove delivery. Runtime activation still
+requires the actual approved action namespace/version and tenant mutation policy.
+
 For the complete cross-tenant setup, deployment order, permission matrix, channel
 acceptance, and rollback procedure, see the
 [tenant migration guide](docs/tenant-migration-guide.md). It distinguishes verified
