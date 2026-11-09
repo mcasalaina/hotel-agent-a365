@@ -44,6 +44,23 @@ blocker, not an empty estate; activate the operator's entitlement through the
 supported Fabric experience before proceeding. Fill `tenantId` and `capacityId`
 in a private copy of the example config, never with a source-tenant binding.
 
+For unattended or built-in-browser-only work, use the existing target Azure CLI
+session with `--auth-mode azure-cli` (the deployment CLI's default):
+
+```powershell
+az account show --query tenantId -o tsv
+.\.venv\Scripts\python.exe -m scripts.fabric.cli plan --auth-mode azure-cli `
+  --discover-remote --capacity-id "<approved-capacity-id>" `
+  --source-root "<canonical-source-root>" --state "<private-state-path>"
+```
+
+First verify that the displayed tenant is the requested target. Native `fab api`
+can start MSAL's interactive system-browser flow when silent token renewal fails,
+even if `fab auth status` reports an authenticated account; `--auth-mode fab` is
+not a noninteractive guarantee. Do not run login commands or switch shared
+account defaults automatically. If cached noninteractive authentication fails,
+report the error and use the approved built-in browser for required user sign-in.
+
 Validate the local definitions:
 
 ```bash

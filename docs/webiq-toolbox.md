@@ -395,8 +395,9 @@ states that mutation operations are denied by default. Its initial
 admin surface is a **tenant-wide** policy toggle under Microsoft 365
 admin center **Agents > Tools > Work IQ MCP > Policy**, not per-app,
 per-agent, or scenario-specific templates. Changes can take up to
-24 hours. Actual target editable/effective controls still require
-read-only inspection with the authenticated tenant administrator.
+24 hours. The authenticated tenant administrator's actual read-only
+inspection is recorded below; its richer controls supersede assumptions
+based solely on the initial documentation.
 Do not disable broad tenant guardrails under a narrow mail approval.
 No policy, credential, grant, scope, callback, or toolbox-default
 change has been made for this follow-up.
