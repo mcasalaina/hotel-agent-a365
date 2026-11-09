@@ -38,9 +38,9 @@ def test_data_agent_allows_three_query_sources_without_optional_ontology(
         ignore=shutil.ignore_patterns("graph-HotelOperationsOntology"),
     )
 
-    assert validate_artifact_spec(
-        "dataAgent", replace(agent, definition_root=definition_root)
-    ) == []
+    assert (
+        validate_artifact_spec("dataAgent", replace(agent, definition_root=definition_root)) == []
+    )
 
 
 def test_repository_notebook_code_cells_compile() -> None:

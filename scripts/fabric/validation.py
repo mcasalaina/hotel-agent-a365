@@ -419,9 +419,7 @@ def _validate_data_agent(artifact: ArtifactSpec) -> list[str]:
         if fewshots.is_file():
             problems.extend(_validate_fewshots(fewshots))
     problems.extend(
-        _validate_data_agent_quality_gates(
-            artifact, config_root, source_names, query_source_names
-        )
+        _validate_data_agent_quality_gates(artifact, config_root, source_names, query_source_names)
     )
     return problems
 

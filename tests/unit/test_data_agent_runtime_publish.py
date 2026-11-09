@@ -337,9 +337,12 @@ def test_working_data_agent_does_not_require_optional_ontology_or_model_prep() -
     del sources["HotelOperationsOntology"]
     for topic in evidence["sqlTopics"].values():
         topic["verificationMethod"] = "native-sdk-readback"
-    assert runtime_helpers().require_native_readiness(
-        json.dumps(evidence), definition, "workspace", "agent", sources
-    ) == evidence
+    assert (
+        runtime_helpers().require_native_readiness(
+            json.dumps(evidence), definition, "workspace", "agent", sources
+        )
+        == evidence
+    )
 
 
 def test_optional_ontology_receipt_still_requires_an_actual_artifact_binding() -> None:
