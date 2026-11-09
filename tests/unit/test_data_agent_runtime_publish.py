@@ -42,6 +42,45 @@ def runtime_helpers() -> SimpleNamespace:
     return SimpleNamespace(**namespace)
 
 
+def source_examples(source_name: str) -> dict[str, str]:
+    notebook = json.loads(NOTEBOOK.read_text())
+    code = "\n".join(
+        "".join(cell["source"]) for cell in notebook["cells"] if cell["cell_type"] == "code"
+    )
+    assignment = next(
+        node
+        for node in ast.parse(code).body
+        if isinstance(node, ast.Assign)
+        and any(
+            isinstance(target, ast.Name) and target.id == "source_configs"
+            for target in node.targets
+        )
+    )
+    return ast.literal_eval(assignment.value)[source_name]["fewshots"]
+
+
+def test_native_examples_use_fixed_business_clock_and_strict_past_checkout() -> None:
+    operations = source_examples("HotelOperations")
+    today = operations["Which properties have the highest room revenue today?"]
+    assert "DATE '2026-11-08'" in today
+    assert "CURRENT_DATE" not in today and "GETDATE" not in today
+    guest = source_examples("HotelGuestServices")
+    past = guest[
+        "Show the completed past reservation RES-FOLIO-2026 strictly before November 8, 2026."
+    ]
+    assert "check_out < DATE '2026-11-08'" in past
+    assert "check_in <" not in past
+
+
+def test_native_billing_example_resolves_currency_from_folio() -> None:
+    query = source_examples("HotelGuestServices")[
+        "Which open billing disputes have the highest amounts?"
+    ]
+    assert "JOIN folios f ON f.folio_id = d.folio_id" in query
+    assert "f.currency" in query
+    assert "d.currency" not in query
+
+
 class Source:
     def __init__(self, pages: dict[tuple[str | None, str | None], dict[str, object]]) -> None:
         self.pages = pages

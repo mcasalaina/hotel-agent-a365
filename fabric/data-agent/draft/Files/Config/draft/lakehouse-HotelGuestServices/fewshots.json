@@ -14,7 +14,7 @@
     {
       "id": "0acb8ca6-a7e5-5b5f-9a79-b3d8654c08fd",
       "question": "Show the completed past reservation for guest GST-000005 strictly before November 8, 2026.",
-      "query": "SELECT reservation_id, property_id, check_in, status, channel FROM reservations WHERE reservation_id = 'RES-FOLIO-2026' AND check_in < CAST('2026-11-08' AS date) AND status = 'completed';"
+      "query": "SELECT reservation_id, property_id, check_in, status, channel FROM reservations WHERE reservation_id = 'RES-FOLIO-2026' AND check_out < CAST('2026-11-08' AS date) AND status = 'completed';"
     },
     {
       "id": "66445752-e97b-52b9-9087-71a01ba1fa69",

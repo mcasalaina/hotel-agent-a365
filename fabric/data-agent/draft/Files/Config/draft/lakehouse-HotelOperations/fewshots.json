@@ -29,7 +29,7 @@
     {
       "id": "dd09c6a8-f60d-55ca-a238-fc3d944b9874",
       "question": "Which properties have the highest room revenue today?",
-      "query": "SELECT property_id, room_revenue FROM property_daily_metrics WHERE service_date = CAST(GETDATE() AS date) ORDER BY room_revenue DESC;"
+      "query": "SELECT property_id, room_revenue FROM property_daily_metrics WHERE service_date = CAST('2026-11-08' AS date) ORDER BY room_revenue DESC;"
     },
     {
       "id": "e0440f52-2e6e-55cc-9331-af2aaef61fc2",

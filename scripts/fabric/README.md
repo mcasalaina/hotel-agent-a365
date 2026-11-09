@@ -111,6 +111,28 @@ publication readiness. Mount ontology context through the documented Sources
 experience and retain its actual context export; do not register it as a fourth
 SQL/DAX execution source.
 
+Use `--exclude-blueprint dataAgent` when deploying the downstream model, report
+and ontology while creating/configuring the Data Agent through supported native
+APIs. Repeating `--exclude-blueprint` explicitly leaves those artifacts unchanged;
+it does not bypass the existing-native replacement guard for requested updates.
+All source quality gates still run before exclusions are applied.
+Use `--artifacts-only` for that downstream phase to leave the already loaded
+lakehouses and bound notebooks unchanged.
+
+After creating the semantic model, submit its initial refresh/framing with
+`fab api groups/{workspaceId}/datasets/{modelId}/refreshes -A powerbi -X post -i '{"notifyOption":"NoNotification"}'`.
+Read that same endpoint with `-X get` and require a completed refresh before
+checking DAX metadata or report queries. A newly created Direct Lake definition
+can export every table while its query schema remains unframed; do not replace
+the definition to repair this initial state. This model has 9 tables, 63 authored
+columns and 21 measures; `INFO.VIEW.COLUMNS()` also includes 9 engine-generated
+`RowNumber` columns, for 72 total.
+
+Serialize native Data Agent draft writes, including schema elements, instructions,
+examples, global settings and Topics. Concurrent writes can conflict on the
+underlying OneLake lease (`LeaseAlreadyPresent`); retry only that specific conflict
+with a bounded delay and preserve completed updates and accepted example IDs.
+
 The demo business clock is fixed at **2026-11-08**, not the wall clock. Source
 dates and linked fixtures were shifted coherently by 68 days from the previous
 2026-09-01 baseline. The family stay is 2026-11-17 through 2026-11-19; strict
