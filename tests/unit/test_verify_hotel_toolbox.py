@@ -45,12 +45,20 @@ class VerifyHotelToolboxTests(unittest.TestCase):
 
     def test_inventory_requires_each_actual_iq_namespace(self) -> None:
         tools = [
-            {"name": f"{prefix}.read", "inputSchema": {"properties": {}}}
+            {"name": f"{prefix}___read", "inputSchema": {"properties": {}}}
             for prefix in ("foundry", "fabric", "work", "web")
         ]
         self.assertEqual(len(validate_tools(tools, ("foundry", "fabric", "work", "web"))), 4)
         with self.assertRaisesRegex(ValueError, "no discovered tools for web"):
             validate_tools(tools[:3], ("foundry", "fabric", "work", "web"))
+
+    def test_inventory_does_not_accept_a_similar_namespace_name(self) -> None:
+        tools = [
+            {"name": f"{prefix}___read", "inputSchema": {"properties": {}}}
+            for prefix in ("foundry", "fabric", "work", "website")
+        ]
+        with self.assertRaisesRegex(ValueError, "no discovered tools for web"):
+            validate_tools(tools, ("foundry", "fabric", "work", "web"))
 
     def test_web_results_accept_adjacent_pretty_printed_json(self) -> None:
         text = json.dumps({"webResults": [{"content": "not retained"}]}, indent=2)
@@ -104,7 +112,7 @@ class VerifyHotelToolboxTests(unittest.TestCase):
     def test_live_probe_is_weather_only_and_does_not_print_content_or_token(self) -> None:
         prefixes = ("foundry", "fabric", "work", "web")
         tools = [
-            {"name": f"{prefix}.web", "inputSchema": {"properties": {}}} for prefix in prefixes
+            {"name": f"{prefix}___web", "inputSchema": {"properties": {}}} for prefix in prefixes
         ]
         tools[-1]["inputSchema"] = web_schema()
         args = [
@@ -114,7 +122,7 @@ class VerifyHotelToolboxTests(unittest.TestCase):
             "--subscription",
             "test-subscription",
             "--web-tool",
-            "web.web",
+            "web___web",
         ]
         for prefix in prefixes:
             args.extend(("--expect-prefix", prefix))

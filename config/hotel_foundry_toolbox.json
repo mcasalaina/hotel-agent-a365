@@ -1,0 +1,61 @@
+{
+  "name": "hotel_foundry_toolbox",
+  "description": "Hotel Foundry IQ, Fabric IQ, Work IQ, and weather-only Web IQ. Hosted consumers must expose governed wrappers, not raw Web IQ or unconstrained hotel-data tools.",
+  "tools": [
+    {
+      "type": "mcp",
+      "server_label": "hotel-foundry-iq",
+      "server_url": "https://hotel-iq-gr7dc2vlnukmq.search.windows.net/knowledgebases/hotel-foundryiq/mcp?api-version=2026-08-01-preview",
+      "project_connection_id": "/subscriptions/d0aad12c-e3db-4b57-a951-d1b179e2516b/resourceGroups/rg-mcasalainas-4iqs-zmansoor/providers/Microsoft.CognitiveServices/accounts/mcasalainas-4iqs-zmansoor-resource/projects/mcasalainas-4iqs-zmansoor/connections/hotel-foundry-iq",
+      "allowed_tools": ["knowledge_base_retrieve"],
+      "require_approval": "always",
+      "tool_configs": {
+        "*": {"pin": true}
+      }
+    },
+    {
+      "type": "fabric_iq_preview",
+      "server_label": "hotel-fabric-iq",
+      "server_url": "https://api.fabric.microsoft.com/v1/mcp/workspaces/f60e994a-5997-48c2-8a94-3e349ffcba5c/dataagents/502a5d3a-4d1b-4f5d-b2d5-e6f3178d99db/agent",
+      "project_connection_id": "/subscriptions/d0aad12c-e3db-4b57-a951-d1b179e2516b/resourceGroups/rg-mcasalainas-4iqs-zmansoor/providers/Microsoft.CognitiveServices/accounts/mcasalainas-4iqs-zmansoor-resource/projects/mcasalainas-4iqs-zmansoor/connections/hotel-fabric-iq",
+      "require_approval": {
+        "never": {"tool_names": ["DataAgent_HotelOperationsAgent"]}
+      },
+      "tool_configs": {
+        "*": {"pin": true}
+      }
+    },
+    {
+      "type": "mcp",
+      "server_label": "hotel-work-iq",
+      "server_url": "https://workiq.svc.cloud.microsoft/mcp",
+      "project_connection_id": "/subscriptions/d0aad12c-e3db-4b57-a951-d1b179e2516b/resourceGroups/rg-mcasalainas-4iqs-zmansoor/providers/Microsoft.CognitiveServices/accounts/mcasalainas-4iqs-zmansoor-resource/projects/mcasalainas-4iqs-zmansoor/connections/hotel-work-iq",
+      "allowed_tools": ["fetch", "fetch_blob", "get_schema", "search_paths", "list_agents"],
+      "require_approval": "always",
+      "tool_configs": {
+        "*": {"pin": true}
+      }
+    },
+    {
+      "type": "mcp",
+      "description": "Public weather queries only, invoked exclusively by the governed weather adapter. Never use for hotel records, policies, amenities, generic search, news, or another IQ's fallback.",
+      "server_label": "hotel-web-iq",
+      "server_url": "https://api.microsoft.ai/v3/mcp",
+      "project_connection_id": "/subscriptions/d0aad12c-e3db-4b57-a951-d1b179e2516b/resourceGroups/rg-mcasalainas-4iqs-zmansoor/providers/Microsoft.CognitiveServices/accounts/mcasalainas-4iqs-zmansoor-resource/projects/mcasalainas-4iqs-zmansoor/connections/hotel-web-iq",
+      "allowed_tools": ["web"],
+      "require_approval": "never",
+      "tool_configs": {
+        "web": {
+          "pin": true,
+          "additional_search_text": "Governed public weather forecast only; raw tool must remain hidden from the Hotel model."
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "owner": "hotel-agent-a365",
+    "webiq_policy": "weather-only; governed adapter only",
+    "workiq_policy": "curated read tools; governed entity paths and caller context",
+    "hotel_data_policy": "direct scoped Foundry IQ filters remain required"
+  }
+}

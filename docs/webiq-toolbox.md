@@ -378,6 +378,21 @@ does not prove a callable service or native Foundry delegation.
 Publication, the actual tool schema, and genuine query validation
 remain separate acceptance gates.
 
+Those Fabric gates subsequently passed. The owner confirmed an
+accepted native publication and matched published settings. Native
+Foundry discovery returned `DataAgent_HotelOperationsAgent` with required
+`userQuestion: string`. A real read-only query through the
+`UserEntraToken` connection returned **20 properties** and one
+document/citation, matching both the owner's canonical CSV and SQL
+`COUNT_BIG` verification. Response
+`resp_0a8376eebf6f0f5c016af12004418c8190b9231d9cc3363772`
+and call
+`mcp_0a8376eebf6f0f5c016af12004e43c8190a1ea43a84f836543`
+completed without transport or application errors. The actual output
+envelope has `response` and `documents`, not MCP `content` blocks.
+Only count/schema/operational evidence was retained. This remains
+target-operator proof, not project-MI or Agent 365 channel-user proof.
+
 The [toolbox guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)
 and `azd ai toolbox create --help` document JSON/YAML definitions with
 `connections` and raw `tools`. Existing project connections are a
@@ -410,6 +425,72 @@ names and result counts, never credentials or returned web content.
 Unit regressions cover the weather-only probe and token/content
 non-disclosure. This operator-level transport check does not replace the
 Hotel model's non-weather zero-WebIQ or Agent 365 channel-user tests.
+
+## Published toolbox and live discovery
+
+`config\hotel_foundry_toolbox.json` is the actual four-IQ definition.
+It was created through the CLI without automatic extra role assignments:
+
+```powershell
+$env:AZD_AGENT_SKIP_ROLE_ASSIGNMENTS = "true"
+azd ai toolbox create hotel_foundry_toolbox --from-file config\hotel_foundry_toolbox.json -e contoso-webiq-toolbox --project-endpoint https://mcasalainas-4iqs-zmansoor-resource.services.ai.azure.com/api/projects/mcasalainas-4iqs-zmansoor -o json --no-prompt
+```
+
+The exact requested underscore name was accepted unchanged. Service
+readback returned toolbox ID
+`toolbox_66f676194a6f14a5071d7e7f6bab361b6f705f85`, version ID
+`toolbox_66f676194a6f14a5071d7e7f6bab361b6f705f85:1`,
+version `1`, and default version `1`. All four stored tool entries
+reference the actual target project connections.
+
+The returned, independently initialized MCP endpoint is:
+
+```text
+https://mcasalainas-4iqs-zmansoor-resource.services.ai.azure.com/api/projects/mcasalainas-4iqs-zmansoor/toolboxes/hotel_foundry_toolbox/versions/1/mcp?api-version=v1
+```
+
+Live `tools/list` returned exactly eight curated tools with no next
+cursor. The observed namespace separator is **three underscores**,
+not a dot:
+
+| IQ | Exact published tool names |
+| --- | --- |
+| Foundry IQ | `hotel-foundry-iq___knowledge_base_retrieve` |
+| Fabric IQ | `hotel-fabric-iq___DataAgent_HotelOperationsAgent` |
+| Web IQ | `hotel-web-iq___web` |
+| Work IQ | `hotel-work-iq___fetch`, `hotel-work-iq___fetch_blob`, `hotel-work-iq___get_schema`, `hotel-work-iq___list_agents`, `hotel-work-iq___search_paths` |
+
+Work IQ `ask`, `retrieve`, `call_function`, and mutation tools are not
+included. `Ask` consent still does not make those read-only. Raw hotel
+data tools require the hosted policy wrappers, and scoped Foundry IQ
+reads retain the direct `filterAddOn` path.
+
+The published Web IQ schema requires `query: string` with maximum
+length 1000. Its optional fields are `maxResults: integer` (1-50,
+default 10), `maxLength: integer` (1-500000),
+`contentFormat: string` (`passage`, `text`, `html`, `markdown`),
+`safeSearch: string` (`off`, `strict`, default `strict`),
+`language` and `region` (two-character strings, defaults `en`/`US`),
+and `location: string`. Preserve these actual advertised constraints
+rather than inferring them from a Pydantic input model.
+
+The repeatable verifier passed against this actual endpoint: all four
+observed namespaces, eight curated tools, exact Web IQ primitive,
+and a public Seattle weather query returning one web result. No web
+content or credential was printed or persisted:
+
+```powershell
+python scripts\verify_hotel_toolbox.py --endpoint "https://mcasalainas-4iqs-zmansoor-resource.services.ai.azure.com/api/projects/mcasalainas-4iqs-zmansoor/toolboxes/hotel_foundry_toolbox/versions/1/mcp?api-version=v1" --subscription d0aad12c-e3db-4b57-a951-d1b179e2516b --expect-prefix hotel-foundry-iq --expect-prefix hotel-fabric-iq --expect-prefix hotel-work-iq --expect-prefix hotel-web-iq --web-tool hotel-web-iq___web
+```
+
+`pin: true` exposes the curated primitives to MCP discovery so policy
+adapters can load their exact schemas. It is **not** authorization or
+a weather-policy gate. Hosted consumers must keep raw Web IQ hidden
+from the Hotel model and expose only the governed weather function.
+The weather/hosted owners verify the live non-weather zero-WebIQ
+release control. The identity owner separately grants the actual
+agent-instance Web IQ resource permission/service binding; do not
+repoint the valid project-MI connection to an unbound identity.
 
 ## Web content handling
 

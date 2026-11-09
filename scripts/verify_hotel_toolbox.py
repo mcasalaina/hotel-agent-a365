@@ -67,7 +67,7 @@ def validate_tools(tools: object, required_prefixes: Sequence[str]) -> list[dict
         schema = object_value(tool.get("inputSchema"), f"{name} input schema")
         object_value(schema.get("properties"), f"{name} input properties")
     for prefix in required_prefixes:
-        if not any(name.startswith(f"{prefix}.") for name in names):
+        if not any(name.startswith(f"{prefix}___") for name in names):
             raise ValueError(f"Toolbox has no discovered tools for {prefix}")
     return validated
 
