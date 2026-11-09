@@ -9,6 +9,21 @@ Foundry objects must be created with `az`, `azd`, or supported CLI-driven
 REST APIs. The Foundry portal is for verification only. Do not create,
 connect, finish, or save Foundry objects through the portal.
 
+## Weather-only Hotel policy
+
+Web IQ is restricted to weather questions. Only the governed weather
+adapter may invoke the actual `web` primitive; raw Web IQ tools must not
+be exposed directly to the Hotel model. Do not use Web IQ for news,
+generic search, hotel policies, amenities, reservation records, or
+fallbacks for other IQ services. Authentication/schema discovery is
+distinct from content retrieval.
+
+All live content probes going forward must be weather-only. The earlier
+official-document lookup evidence below predates this restriction and
+must not be reused as a release smoke query. Release verification must
+also include a non-weather Hotel request with **zero Web IQ calls**,
+which the weather/hosted owners enforce and verify.
+
 ## Deployment prerequisites
 
 - Target tenant: `b59f9d73-de1c-42c5-829a-e19034e2bcb3`.
@@ -319,6 +334,27 @@ requires published Fabric items. A Foundry Fabric data-agent connection
 uses user context or an OAuth session; do not assume direct-endpoint
 service-principal support makes app-only Foundry authentication valid.
 
+The documented native user-context contract is `RemoteTool` with
+`authType: UserEntraToken`, audience
+`https://analysis.windows.net/powerbi/api`, and delegated scope
+`https://analysis.windows.net/powerbi/api/DataAgent.Execute.All`. The
+[user-delegation guide](https://learn.microsoft.com/azure/foundry/agents/how-to/configure-user-delegation#use-supported-scopes)
+allows explicit scopes or its mapped default for this recognized target.
+This audience differs from the direct Fabric MCP client's
+`https://api.fabric.microsoft.com/.default`.
+
+Target Graph readback verified Power BI Service application
+`00000009-0000-0000-c000-000000000000`, service principal
+`5e67384c-0715-498a-ae30-c20e0ae76ae5`, and enabled delegated permission
+`DataAgent.Execute.All`, ID `c6756612-6853-4145-a661-90c1d045b2dc`.
+No grant was changed during this discovery. Agent blueprint declaration,
+inheritance, and any required consent belong to the identity owner.
+Use real signed-in-user/call-ID context for the Foundry path; the
+project MI's Viewer grant or a successful direct operator query does
+not prove this connection can execute. If user context cannot be used,
+the documented alternative is separate native OAuth, not app-only
+substitution or reuse of the Work IQ connection's credentials.
+
 The [toolbox guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)
 and `azd ai toolbox create --help` document JSON/YAML definitions with
 `connections` and raw `tools`. Existing project connections are a
@@ -330,7 +366,7 @@ After creation, inspect the toolbox's stored version and project connection
 listing. Initialize its MCP endpoint using a Foundry token
 (`https://ai.azure.com/.default`), enumerate `tools/list`, preserve exact
 names and input schemas, and invoke Web IQ with a public, non-sensitive
-grounding query. Check actual success and citations without persisting the
+weather query. Check actual success and citations without persisting the
 response content. A toolbox can list a manifest despite missing runtime
 permission; discovery alone is insufficient.
 
@@ -339,6 +375,18 @@ staged validation. The unversioned endpoint follows the toolbox's published
 default. Do not promote an unverified version. Approval configuration must
 be enforced by the consuming hosted-agent runtime: the MCP endpoint itself
 does not enforce `require_approval`.
+
+`scripts\verify_hotel_toolbox.py` provides repeatable, content-free live
+verification after the real toolbox exists. Supply the actual returned
+MCP endpoint, target subscription, four observed IQ namespace prefixes
+with `--expect-prefix`, and the exact discovered Web IQ primitive name
+with `--web-tool`. It negotiates MCP, sends the initialized notification,
+validates JSON/SSE response IDs and input-schema properties, requires all
+four namespaces, and invokes only a public weather query. It prints tool
+names and result counts, never credentials or returned web content.
+Unit regressions cover the weather-only probe and token/content
+non-disclosure. This operator-level transport check does not replace the
+Hotel model's non-weather zero-WebIQ or Agent 365 channel-user tests.
 
 ## Web content handling
 
