@@ -355,6 +355,29 @@ not prove this connection can execute. If user context cannot be used,
 the documented alternative is separate native OAuth, not app-only
 substitution or reuse of the Work IQ connection's credentials.
 
+The actual `hotel-fabric-iq` connection was created through `azd` and
+read back from ARM with that `UserEntraToken` audience and the exact
+`DataAgent.Execute.All` scope. Its target is:
+
+```text
+https://api.fabric.microsoft.com/v1/mcp/workspaces/f60e994a-5997-48c2-8a94-3e349ffcba5c/dataagents/502a5d3a-4d1b-4f5d-b2d5-e6f3178d99db/agent
+```
+
+The CLI accepts `--scopes` only for OAuth2; omit it for this documented
+native path. The service mapped and persisted the exact scope above,
+verified independently through ARM rather than inferred from CLI
+success. No password, new OAuth app, permission grant, or consent was
+created. `useWorkspaceManagedIdentity` remains `false`.
+
+The endpoint recognized the actual `HotelOperationsAgent` item during
+read-only operator discovery and negotiated MCP `2025-06-18`, but
+`tools/list` initially failed with `Failed to get publish info`
+(`-32601`, `UnknownError`, request ID
+`c74b2399-6cbf-47f3-a9a3-df2e14d0a803`). This pre-publication evidence
+does not prove a callable service or native Foundry delegation.
+Publication, the actual tool schema, and genuine query validation
+remain separate acceptance gates.
+
 The [toolbox guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)
 and `azd ai toolbox create --help` document JSON/YAML definitions with
 `connections` and raw `tools`. Existing project connections are a
