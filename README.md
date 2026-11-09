@@ -38,6 +38,8 @@ validates discovered argument schemas, and preserves complete MCP evidence. Its 
 preflight rejects missing or duplicate published bindings before runtime activation. Integrate it
 beneath the governed hotel functions only after the published IQ contracts are verified;
 it does not register raw tools or enable a generic Work IQ action-capable `ask` by default.
+Raw MCP arguments are validated as JSON Schema: SDK-backed functions need not have a
+Pydantic input model. Validation errors identify the constraint without exposing argument values.
 
 Property- and date-scoped hotel knowledge continues to use the native `FoundryIQTool`
 retrieval API with enforced `filterAddOn` values. The reviewed knowledge-base MCP tool

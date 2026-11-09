@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from agent_framework_foundry_hosting import FoundryToolbox
 from azure.core.credentials import TokenCredential
+from jsonschema import ValidationError, validate
 from mcp.types import CallToolResult, ContentBlock, EmbeddedResource
 
 
@@ -68,9 +69,14 @@ class FoundryToolboxTransport:
             function = functions[0]
             schema = function.parameters()
             unknown = set(arguments) - set(schema.get("properties", {}))
-            if unknown and schema.get("additionalProperties") is not True:
+            if unknown:
                 raise ValueError(f"Unexpected toolbox arguments for {tool_name}: {sorted(unknown)}")
-            function.input_model.model_validate(arguments)
+            try:
+                validate(dict(arguments), schema)
+            except ValidationError as exc:
+                raise ValueError(
+                    f"Invalid toolbox arguments for {tool_name}: {exc.validator}"
+                ) from None
             toolbox.parse_tool_results = lambda result: result.model_dump_json(by_alias=True)
             raw = await toolbox.call_tool(tool_name, **arguments)
             if not isinstance(raw, str):

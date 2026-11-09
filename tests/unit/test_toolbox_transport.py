@@ -163,7 +163,8 @@ def test_toolbox_transport_resolves_remote_resources_before_closing() -> None:
     ("arguments", "message"),
     [
         ({"question": "Find reservation", "wrong": 1}, "Unexpected toolbox arguments"),
-        ({}, "Field required"),
+        ({}, "required"),
+        ({"question": 10}, "type"),
     ],
 )
 def test_toolbox_transport_validates_arguments_before_invocation(
@@ -225,3 +226,59 @@ def test_toolbox_preflight_requires_exact_published_bindings(published: tuple[st
         with pytest.raises(RuntimeError, match="published toolbox tool"):
             asyncio.run(transport.verify_tools())
     assert closed == [True]
+
+
+def test_toolbox_transport_validates_real_raw_web_schema_without_a_pydantic_model() -> None:
+    schema = {
+        "type": "object",
+        "required": ["query"],
+        "properties": {
+            name: {"type": kind, "properties": {}, "required": []}
+            for name, kind in (
+                ("query", "string"),
+                ("contentFormat", "string"),
+                ("language", "string"),
+                ("location", "string"),
+                ("region", "string"),
+                ("safeSearch", "string"),
+                ("maxLength", "integer"),
+                ("maxResults", "integer"),
+            )
+        },
+    }
+    calls: list[dict[str, Any]] = []
+    web_text = '{\n  "webResults": [], "traceId": "test"\n}\n{\n  "structuredResponse": {}\n}'
+
+    class Toolbox:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            self.functions = [
+                FunctionTool(name="approved-read", input_model=schema, func=lambda **kwargs: kwargs)
+            ]
+            assert self.functions[0].input_model is None
+            self.parse_tool_results: Any = None
+
+        async def __aenter__(self) -> Toolbox:
+            return self
+
+        async def __aexit__(self, *args: object) -> None:
+            pass
+
+        async def call_tool(self, name: str, **arguments: Any) -> str:
+            calls.append(arguments)
+            return str(
+                self.parse_tool_results(
+                    CallToolResult(content=[TextContent(type="text", text=web_text)])
+                )
+            )
+
+    transport = _transport(Toolbox)
+    arguments = {"query": "Microsoft Foundry documentation", "maxResults": 1}
+    result = asyncio.run(transport.call("approved-read", arguments))
+    assert result.content[0].type == "text"
+    assert result.content[0].text == web_text
+    assert calls == [arguments]
+    with pytest.raises(ValueError, match="type"):
+        asyncio.run(
+            transport.call("approved-read", {"query": "Microsoft Foundry", "maxResults": "1"})
+        )
+    assert calls == [arguments]
