@@ -329,6 +329,50 @@ scopes before any grant expansion; don't use `Ask` as a substitute for
 missing `Read` or `Act` authorization. No scope expansion was needed for
 the successful `/me` probe.
 
+The published version-1 reader metadata is more specific than the
+earlier native Responses discovery. All five Work IQ readers advertise
+`readOnlyHint: true` and `destructiveHint: false`; `openWorldHint` is
+true for `fetch`/`fetch_blob` and false for the other three. Each
+reader's `_meta.tool_configuration.require_approval` is **`always`**.
+The MCP endpoint does not enforce approval. The hosted runtime must
+enforce the exact call's approval or fail closed; neither the hint nor
+OAuth authentication removes that requirement.
+
+All reader input schemas are draft 2020-12 objects:
+
+| Published suffix | Required fields | Optional fields |
+| --- | --- | --- |
+| `fetch` | `entityUrls: string[]` | nullable `agentId`, default null |
+| `fetch_blob` | `path: string` | nullable `format`/`agentId`, default null |
+| `get_schema` | none advertised | nullable `path`/`operationType`/`format`/`agentId`, default null |
+| `list_agents` | none advertised | none |
+| `search_paths` | `query: string` | none |
+
+Use the actual `search_paths.query` schema, not the older reference
+example's `filter`/`backend` parameters. Pass an explicit permitted
+operation type and format to `get_schema` despite its optional wire
+fields. Exact descriptions and raw schemas remain in the metadata
+discovery receipt.
+
+A fresh, identity-values-redacted `/me` shape probe returned the
+actual native Responses output envelope
+`structuredResponse.results[].{data,statusCode}`. `data` contained
+`@odata.context`, `id`, and `userPrincipalName`; the status was 200.
+Response `resp_068694f54d7cea75016af1362fc7ac81948e48bea8297dfb52`
+and call `mcp_068694f54d7cea75016af1363213dc819495e8149d5be5b98e`
+retained only shape/status/operational evidence. This is an operator
+identity probe, not Hotel mailbox or channel acceptance.
+
+The supported hosted delegation path is the Foundry hosting SDK's
+`FoundryToolbox` (or .NET `AddFoundryToolboxes`): the agent's identity
+authenticates to the toolbox, native connection OAuth resolves the
+downstream caller, and the SDK forwards the current request's
+`x-agent-foundry-call-id`. Do not recreate per-user FIC/token caches,
+hard-code or reuse call IDs, or turn a partition key into an Entra OID.
+Real deployed two-user/channel isolation and effective platform policy
+remain acceptance gates. A successful operator probe alone does not
+prove them.
+
 ### Guarded mail actions: separate follow-up
 
 Version 1 deliberately contains only the five curated Work IQ reader
@@ -414,10 +458,11 @@ the owned OAuth client or Foundry is a trusted platform.
 This independently establishes a tenant mutation-policy prerequisite,
 but does not prove that missing `WorkIQ.Act` is the sole cause of
 operation-schema denial. The exact effective scope matrix for
-`get_schema` was not documented. Version 2 remains gated on an
-approved, supported action-policy path; no broad toggle or
+`get_schema` was not documented. Any future action version remains
+gated on an approved, supported action-policy path; no broad toggle or
 speculative permission expansion is authorized by the narrow
-send/reply requirement.
+send/reply requirement. The separate reader-only version 2 below
+does not include mail actions or remove these prerequisites.
 
 The [Fabric IQ guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/fabric-iq)
 requires published Fabric items. A Foundry Fabric data-agent connection
@@ -581,6 +626,78 @@ The weather/hosted owners verify the live non-weather zero-WebIQ
 release control. The identity owner separately grants the actual
 agent-instance Web IQ resource permission/service binding; do not
 repoint the valid project-MI connection to an unbound identity.
+
+### Nondefault read-only candidate version 2
+
+`config\hotel_foundry_toolbox_read_candidate.json` records the separately
+authorized immutable reader candidate. It is an exact clone of version
+1 except for Work IQ's approval selector:
+
+```json
+{
+  "never": {
+    "tool_names": ["fetch", "fetch_blob", "get_schema", "search_paths", "list_agents"]
+  }
+}
+```
+
+Creation used the supported project REST
+`POST /toolboxes/hotel_foundry_toolbox/versions?api-version=v1`, cloning
+the actual live version-1 description, tools, metadata, skills, and
+policies. Independent GET readback confirmed version 2 matched the
+approved definition, version 1 was unchanged, and the toolbox's default
+remained **1**. No publish/default-update operation was used.
+
+`azd ai toolbox show hotel_foundry_toolbox --version 2` returned version
+ID `toolbox_66f676194a6f14a5071d7e7f6bab361b6f705f85:2` and this
+immutable endpoint:
+
+```text
+https://mcasalainas-4iqs-zmansoor-resource.services.ai.azure.com/api/projects/mcasalainas-4iqs-zmansoor/toolboxes/hotel_foundry_toolbox/versions/2/mcp?api-version=v1
+```
+
+Metadata-only MCP initialization and `tools/list` verified the same four
+IQ labels, eight exact names, input schemas, annotations, descriptions,
+and remaining metadata as live version 1. The **only** metadata changes
+were the five Work IQ readers' approval values. The service preserves
+the selector **object** shown above in every reader's
+`_meta.tool_configuration.require_approval`; it does not normalize the
+value to the string `never`. Selector names are the unprefixed native
+names, while public discovery names retain `hotel-work-iq___`.
+
+Other IQ approvals were unchanged in both immutable versions:
+
+| Published source/tool | Actual approval value |
+| --- | --- |
+| Foundry IQ | `"always"` |
+| Fabric DataAgent | `{"never":{"tool_names":["DataAgent_HotelOperationsAgent"]}}` |
+| `hotel-web-iq___web` | `"never"` |
+
+The [hosted-toolbox guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/use-toolbox-hosted-agent)
+requires the consuming application to enforce approval. An `always`
+call needs the exact tool/arguments shown to the user and a real
+approval/rejection before execution; the pinned SDK retains metadata
+but does not supply enforcement or the missing nested approval/resume
+flow. Version 2 addresses only the explicitly approved five-reader
+selector. A consumer must resolve the documented selector against the
+correct source/native name and deny missing, unmatched, conflicting,
+or unknown approval values. Do not coerce an arbitrary object to
+`never`, or bypass Foundry IQ's unchanged `always` policy.
+
+Version 2 remains a **nondefault, read-only candidate**, not runtime,
+mail-action, weather, or channel acceptance. Consumers must retain the
+governed current-request, caller-OID, entity-path, and default-agent
+guards and hide raw readers from the model. It contains no `do_action`,
+`ask`, `call_function`, or write curation. Tenant mutation/trust policy,
+scopes, OAuth, credentials, runtime bindings, and version 1/default 1
+were not changed. Validation used only initialization and `tools/list`:
+**zero `tools/call` operations and no private or weather content**.
+Do not run the weather-calling verifier as a substitute for this
+metadata-only candidate check.
+
+The existing three-source Fabric DataAgent endpoint/tool remains
+unchanged; ontology context is optional and its separate artifact/MCP
+is not a fifth toolbox label or hosted dependency.
 
 ## Web content handling
 

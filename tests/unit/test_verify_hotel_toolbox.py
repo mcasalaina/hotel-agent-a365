@@ -1,6 +1,7 @@
 import io
 import json
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from verify_hotel_toolbox import (
@@ -31,6 +32,28 @@ def web_schema() -> dict[str, object]:
 
 
 class VerifyHotelToolboxTests(unittest.TestCase):
+    def test_read_candidate_changes_only_the_five_workiq_approval_rules(self) -> None:
+        config = Path(__file__).resolve().parents[2] / "config"
+        original = json.loads((config / "hotel_foundry_toolbox.json").read_text(encoding="utf-8"))
+        candidate = json.loads(
+            (config / "hotel_foundry_toolbox_read_candidate.json").read_text(encoding="utf-8")
+        )
+        readers = ["fetch", "fetch_blob", "get_schema", "search_paths", "list_agents"]
+        self.assertEqual(len(candidate["tools"]), 4)
+        self.assertEqual(
+            {tool["server_label"] for tool in candidate["tools"]},
+            {"hotel-foundry-iq", "hotel-fabric-iq", "hotel-work-iq", "hotel-web-iq"},
+        )
+        work = next(tool for tool in candidate["tools"] if tool["server_label"] == "hotel-work-iq")
+        self.assertEqual(work["allowed_tools"], readers)
+        self.assertEqual(work["require_approval"], {"never": {"tool_names": readers}})
+        original_work = next(
+            tool for tool in original["tools"] if tool["server_label"] == "hotel-work-iq"
+        )
+        self.assertEqual(original_work["require_approval"], "always")
+        work["require_approval"] = "always"
+        self.assertEqual(candidate, original)
+
     def test_sse_skips_notifications_and_matches_response_id(self) -> None:
         stream = io.BytesIO(
             b'data: {"jsonrpc":"2.0","method":"notifications/progress"}\n\n'
