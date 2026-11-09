@@ -330,6 +330,28 @@ def test_native_readiness_requires_bound_external_evidence() -> None:
             require(json.dumps(changed), definition, "workspace", "agent", sources)
 
 
+def test_working_data_agent_does_not_require_optional_ontology_or_model_prep() -> None:
+    definition, sources, evidence = native_readiness_fixture()
+    del evidence["ontologyContext"]
+    del evidence["modelPrepForAI"]
+    del sources["HotelOperationsOntology"]
+    for topic in evidence["sqlTopics"].values():
+        topic["verificationMethod"] = "native-sdk-readback"
+    assert runtime_helpers().require_native_readiness(
+        json.dumps(evidence), definition, "workspace", "agent", sources
+    ) == evidence
+
+
+def test_optional_ontology_receipt_still_requires_an_actual_artifact_binding() -> None:
+    definition, sources, evidence = native_readiness_fixture()
+    del sources["HotelOperationsOntology"]
+    evidence["ontologyContext"]["artifactId"] = None
+    with pytest.raises(RuntimeError, match="incorrect artifact binding"):
+        runtime_helpers().require_native_readiness(
+            json.dumps(evidence), definition, "workspace", "agent", sources
+        )
+
+
 @pytest.mark.parametrize("count", [0, 9, True, "11", None])
 def test_stored_model_guidance_cannot_satisfy_native_example_readiness(count: object) -> None:
     definition, sources, evidence = native_readiness_fixture()
@@ -380,7 +402,12 @@ class NativeSource(ExampleSource):
             []
             if model
             else [
-                {"id": str(index), "question": f"Native SQL question {index}", "query": "SELECT 1;"}
+                {
+                    "id": str(index),
+                    "question": f"Native SQL question {index}",
+                    "query": "SELECT 1;",
+                    "validationStatus": {"value": "Valid"},
+                }
                 for index in range(10)
             ]
         )
@@ -395,17 +422,19 @@ class NativeSource(ExampleSource):
                 "description": "Authoritative hotel property business record details",
             }
         ]
+        self.selection_state = "Selected"
+        self.instructions = "" if model else "Complete data dictionary for the business schema."
 
     def get_configuration(self, stage: str) -> dict:
         self.stage_reads.append(stage)
         return {
             "displayName": self.name,
-            "selectionState": "Selected",
+            "selectionState": self.selection_state,
             "description": (
                 "Authoritative hotel source for complete operational records "
                 "and governed business facts"
             ),
-            "instructions": "Complete data dictionary for the connected business schema.",
+            "instructions": self.instructions,
         }
 
     def get_elements(
@@ -438,7 +467,9 @@ def test_existing_source_verification_preserves_native_configuration(
     assert set(source.stage_reads) == {stage}
 
 
-@pytest.mark.parametrize("problem", ["unselected", "unavailable", "description", "fewshots", "sql"])
+@pytest.mark.parametrize(
+    "problem", ["unselected", "unavailable", "description", "fewshots", "sql", "invalid-example"]
+)
 def test_existing_source_verification_rejects_native_gaps(problem: str) -> None:
     source = NativeSource()
     if problem == "unselected":
@@ -449,13 +480,26 @@ def test_existing_source_verification_rejects_native_gaps(problem: str) -> None:
         source.elements[0]["description"] = ""
     elif problem == "fewshots":
         source.rows.pop()
-    else:
+    elif problem == "sql":
         source.rows[0]["query"] = "SELECT * FROM properties LIMIT 1;"
+    else:
+        source.rows[0]["validationStatus"] = {"value": "Invalid"}
     with pytest.raises(RuntimeError):
         runtime_helpers().verify_existing_source(
             source, source.name, {"artifact_type": "Lakehouse", "tables": ["properties"]}
         )
     assert source.writes == []
+
+
+def test_source_partial_selection_still_requires_all_business_elements() -> None:
+    source = NativeSource()
+    source.selection_state = "Partial"
+    verify = runtime_helpers().verify_existing_source
+    config = {"artifact_type": "Lakehouse", "tables": ["properties"]}
+    assert verify(source, source.name, config)["table_count"] == 1
+    source.elements[0]["isSelected"] = False
+    with pytest.raises(RuntimeError, match="unavailable or unselected"):
+        verify(source, source.name, config)
 
 
 def test_source_fingerprint_detects_changes_without_relying_on_counts() -> None:
@@ -580,10 +624,11 @@ def test_agent_routing_and_iso_date_contract_are_consistent() -> None:
         )
     )
     for text in (stage["aiInstructions"], instructions, ast.literal_eval(assignment.value)):
-        assert "semantic context" in text
+        assert "Ontology context is optional" in text
+        assert "not mounted" in text
         assert "authoritative lakehouse SQL sources" in text
-        assert "not a query execution endpoint" in text
-        assert "Do not claim GQL or GraphModel execution" in text
+        assert "Do not claim named ontology relationships" in text
+        assert "GQL, or GraphModel execution" in text
         assert "ISO 8601 dates" in text
         assert "YYYY-MM-DD" in text
         assert "Preserve the exact source dates." in text
@@ -617,3 +662,5 @@ def test_isolation_contract_matches_notebook_and_requests_asserted_identifiers()
     assert "official property name" in future["question"]
     assert "internal property identifier" in future["question"]
     assert "Hotel Scottsdale Sonoran Resort" in future["expectedTerms"]
+    assert "ontology-guest-reservation-relationship" not in expected
+    assert expected["family-reservation-room-count"]["source"] == "HotelGuestServices"

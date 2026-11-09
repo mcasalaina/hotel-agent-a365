@@ -355,12 +355,13 @@ def _validate_data_agent(artifact: ArtifactSpec) -> list[str]:
     if not (config_root / "draft" / "stage_config.json").is_file():
         problems.append("Data Agent must contain Files/Config/draft/stage_config.json.")
     datasource_files = sorted(config_root.glob("draft/*/datasource.json"))
-    if len(datasource_files) < 4:
+    if len(datasource_files) < 3:
         problems.append(
-            "Data Agent must define draft datasources for both lakehouses, the "
-            "semantic model, and the ontology."
+            "Data Agent must define draft datasources for both lakehouses and the "
+            "semantic model; ontology context is optional."
         )
     source_names: set[str] = set()
+    query_source_names: set[str] = set()
     for datasource_file in datasource_files:
         fewshots = datasource_file.parent / "fewshots.json"
         if not fewshots.is_file():
@@ -371,6 +372,8 @@ def _validate_data_agent(artifact: ArtifactSpec) -> list[str]:
             problems.append(f"{datasource_file} must declare a non-empty displayName.")
         else:
             source_names.add(source_name)
+            if datasource.get("type") != "graph":
+                query_source_names.add(source_name)
         description = datasource.get("userDescription") if isinstance(datasource, dict) else None
         problems.extend(
             _validate_presentation_text(
@@ -415,7 +418,11 @@ def _validate_data_agent(artifact: ArtifactSpec) -> list[str]:
                     )
         if fewshots.is_file():
             problems.extend(_validate_fewshots(fewshots))
-    problems.extend(_validate_data_agent_quality_gates(artifact, config_root, source_names))
+    problems.extend(
+        _validate_data_agent_quality_gates(
+            artifact, config_root, source_names, query_source_names
+        )
+    )
     return problems
 
 
@@ -459,6 +466,7 @@ def _validate_data_agent_quality_gates(
     artifact: ArtifactSpec,
     config_root: Path,
     source_names: set[str],
+    query_source_names: set[str],
 ) -> list[str]:
     quality_path = artifact.definition_root / "quality-gates.json"
     if not quality_path.is_file():
@@ -489,7 +497,7 @@ def _validate_data_agent_quality_gates(
         _validate_presentation_text(global_instructions, "Data Agent global instructions")
     )
     instruction_lines = global_instructions.splitlines()
-    for source_name in sorted(source_names):
+    for source_name in sorted(query_source_names):
         routing_lines = [
             line
             for line in instruction_lines

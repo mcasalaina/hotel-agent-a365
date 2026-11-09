@@ -8,9 +8,9 @@
   questions to **HotelGuestServices**, the authority for guest-service records and curated facts.
 - Route governed occupancy, rate, revenue, booking-behavior, dispute, request, and
   maintenance-response KPI questions to **HotelOperationsModel** and use its measures.
-- Use **HotelOperationsOntology** as semantic context for entities, relationships, and lineage.
-  Execute record joins against the authoritative lakehouse SQL sources using the mapped keys.
-  The ontology is not a query execution endpoint. Do not claim GQL or GraphModel execution.
+- Ontology context is optional and is not mounted in the working three-source Data Agent.
+  Execute record joins against the authoritative lakehouse SQL sources using documented keys.
+  Do not claim named ontology relationships, ontology-context access, GQL, or GraphModel execution.
 
 ## Cross-source synthesis
 

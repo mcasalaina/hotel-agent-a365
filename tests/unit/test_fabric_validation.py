@@ -23,6 +23,26 @@ def test_repository_fabric_topology_is_valid() -> None:
     assert validate_topology(topology, contracts) == []
 
 
+def test_data_agent_allows_three_query_sources_without_optional_ontology(
+    tmp_path: Path,
+) -> None:
+    topology = FabricTopology.from_file(
+        REPOSITORY_ROOT / "fabric" / "topology.json",
+        REPOSITORY_ROOT,
+    )
+    agent = topology.blueprints["dataAgent"]
+    definition_root = tmp_path / "data-agent"
+    shutil.copytree(
+        agent.definition_root,
+        definition_root,
+        ignore=shutil.ignore_patterns("graph-HotelOperationsOntology"),
+    )
+
+    assert validate_artifact_spec(
+        "dataAgent", replace(agent, definition_root=definition_root)
+    ) == []
+
+
 def test_repository_notebook_code_cells_compile() -> None:
     notebook_dir = REPOSITORY_ROOT / "fabric" / "notebooks"
     for notebook_path in notebook_dir.glob("*.ipynb"):

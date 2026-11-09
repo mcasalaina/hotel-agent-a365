@@ -61,10 +61,10 @@
       "expectedTerms": ["117,539"]
     },
     {
-      "name": "ontology-guest-reservation-relationship",
-      "source": "HotelOperationsOntology",
-      "question": "Using HotelOperationsOntology, which relationship connects a Guest to a Reservation?",
-      "expectedTerms": ["GuestBookedReservation"]
+      "name": "family-reservation-room-count",
+      "source": "HotelGuestServices",
+      "question": "For exact guest GST-000001 and reservation RES-FAMILY-2026, return the recorded room_count, official hotel name, check-in and check-out dates. Do not infer the room count from guests or assignments.",
+      "expectedTerms": ["RES-FAMILY-2026", "Hotel Scottsdale Sonoran Resort", "2026-11-17", "2026-11-19", "2"]
     }
   ],
   "isolationChecks": [
@@ -111,11 +111,11 @@
       "expectedTerms": ["117,539"]
     },
     {
-      "name": "ontology-guest-reservation-relationship",
+      "name": "family-reservation-room-count",
       "mode": "published-agent-direct",
-      "source": "HotelOperationsOntology",
-      "question": "Using HotelOperationsOntology, which relationship connects a Guest to a Reservation?",
-      "expectedTerms": ["GuestBookedReservation"]
+      "source": "HotelGuestServices",
+      "question": "For exact guest GST-000001 and reservation RES-FAMILY-2026, return the recorded room_count, official hotel name, check-in and check-out dates. Do not infer the room count from guests or assignments.",
+      "expectedTerms": ["RES-FAMILY-2026", "Hotel Scottsdale Sonoran Resort", "2026-11-17", "2026-11-19", "2"]
     }
   ],
   "isolationCheckRunner": "fabric/notebooks/data_agent_runtime_publish.ipynb"

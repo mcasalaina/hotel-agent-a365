@@ -83,7 +83,12 @@ The CLI never publishes the Data Agent runtime. After a successful apply, run th
 `HotelDataAgentRuntimePublish` notebook explicitly. The notebook requires independently reviewed
 native-readiness evidence bound to the exact draft, then verifies existing source bindings,
 governed tables, descriptions, and examples with `fabric-data-agent-sdk`. It never adds, removes,
-or rewrites native sources or model-owned Prep for AI. After publication it compares the published
+or rewrites native sources or model-owned Prep for AI. Both SQL sources require genuine retained
+Topics readback evidence from the native UI or SDK. Ontology context and model-owned Prep for AI
+are optional enhancements, not prerequisites for a working Operations/Guest Services/model
+Data Agent. Omit their evidence when they are not configured; if supplied, it must still pass
+its artifact, hash, and native-verification checks. Never invent a receipt or claim that optional
+configuration is present. After publication it compares the published
 configuration with staging and calls the published Data Agent MCP endpoint directly, failing
 unless every isolation fixture passes. Prepared Topics and ontology context are not acceptance
 evidence.
