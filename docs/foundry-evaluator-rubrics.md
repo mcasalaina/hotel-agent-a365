@@ -70,6 +70,29 @@ cached under the ignored
 No evaluation was created or run, and the English default evaluator and existing
 run metadata were not changed.
 
+### Korean translation
+
+`Hotel Servicing Rubric Korean` is published as the separate catalog resource
+`hotel-agent-rubric-korean`, reviewed version **2**, in the same Foundry project.
+Its definition is `evaluation/hotel-servicing-rubric-korean.json`, translated
+directly from the published English `hotel-agent-rubric` version 9.
+
+All 20 dimension IDs and their order, applicability flags, weights, positive 1-5
+scoring, hard-gate requirements, regulatory references, and the 0.90 aggregate
+threshold are preserved. Only the resource/display names and human-readable
+descriptions differ. The original jurisdictions remain unchanged; this is not
+an adaptation to Korean law. Language continuity still requires responding in
+the user's established language, not necessarily Korean.
+
+As with the Chinese translation, a rubric-generation job established the
+catalog-visible parent before the exact reviewed translation was saved as
+version 2. Catalog and version-listing checks confirmed the saved definition,
+and the English and Chinese rubrics were left unchanged. Publication verification
+is cached under the ignored
+`src/hotel-servicing-agent/.foundry/evaluators/hotel-agent-rubric-korean/`.
+No evaluation was created or run. Existing default evaluator bindings and
+evaluation-run metadata were not changed.
+
 ### Hard gates and evidence
 
 The service's aggregate threshold alone is not a security release gate. The runner separately
