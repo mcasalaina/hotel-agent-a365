@@ -752,6 +752,24 @@ managed identity read access to those secrets. Verify credential validity before
 deployment and plan renewal before expiry. Generated CLI configuration containing
 credentials stays private and out of Git.
 
+### Private environment recovery
+
+An environment's ARM `Succeeded` state does not establish container readiness.
+If initial network provisioning failed, inspect the managed infrastructure
+resource group and activity log. A null static IP and empty infrastructure group
+must not be treated as a working data plane. Confirm any required Network
+feature registration and provider refresh before a bounded reconciliation.
+
+If that existing environment remains unusable, the optional
+[`agent365-managed-environment-recovery.bicep`](../infra/agent365-managed-environment-recovery.bicep)
+creates a fresh Consumption environment on a separate delegated subnet in the
+existing VNet. Check address-space overlap and preview changes first. It does
+not replace existing environments, subnets, NSGs, vault private endpoints, DNS,
+identities or credentials. Verify an actual running container, the vault's exact
+private DNS address, certificate-validated TLS and successful execution before
+moving credential custody or bridge workloads. A probe must not create keys or
+receive Graph management permissions.
+
 ## 9. Deploy the messaging bridge
 
 Use the reviewed Container Apps implementation from section 1. Do not deploy the
