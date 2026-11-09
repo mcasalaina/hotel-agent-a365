@@ -37,7 +37,7 @@ jobs:
           python -m ruff check src web/backend scripts tests evaluation/assert/src evaluation/assert/tests
           python -m ruff format --check src web/backend scripts tests evaluation/assert/src evaluation/assert/tests
           python -m mypy src/hotel-servicing-agent/hotel_servicing_agent web/backend/hotel_voice_proxy scripts evaluation/assert/src
-          python -m pytest
+          python -m pytest --ignore=tests/unit/test_bridge_readiness.py --ignore=tests/unit/test_private_vault_bootstrap.py
           python -m pytest evaluation/assert/tests
           python scripts/validate_technical_naming.py
           python scripts/validate_configuration.py
@@ -46,3 +46,23 @@ jobs:
           npm --prefix web/frontend run lint
           npm --prefix web/frontend run typecheck
           npm --prefix web/frontend run build
+
+  agent-bridge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            agent/requirements.txt
+            agent/bootstrap/requirements.txt
+      - name: Install Agent 365 bridge dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r agent/requirements.txt -r agent/bootstrap/requirements.txt "pytest==9.1.1"
+      - name: Run Agent 365 bridge checks
+        run: |
+          python -m compileall -q agent
+          python -m pytest tests/unit/test_bridge_readiness.py tests/unit/test_private_vault_bootstrap.py
