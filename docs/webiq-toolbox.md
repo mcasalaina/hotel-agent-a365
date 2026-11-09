@@ -278,15 +278,41 @@ The native connection returned this actual `properties.redirectUrl`:
 https://global.consent.azure-apim.net/redirect/2dd23e78352a4957af57c19864da2361
 ```
 
-The Agent 365 owner registers that exact URL in the supporting app's
-Web redirects. Do not invent a callback or overwrite other redirects.
+The Agent 365 owner registered and read back that exact URL in the
+supporting app's Web redirects. Do not invent a callback or overwrite
+other redirects.
 Content-free initialization produced response
 `resp_062cc06ff9242dee016af10e60ef608195a7502be08b324053` with an
-`oauth_consent_request`, not authenticated tool execution. Complete the
-actual signed-in user's OAuth flow before claiming Work IQ tool discovery
-or access. Inspect the actual advertised read/action scopes before any
-grant expansion; don't use `Ask` as a substitute for missing `Read` or
-`Act` authorization.
+`oauth_consent_request`, not authenticated tool execution.
+
+The real target operator subsequently completed the tenant-specific
+OAuth flow; the provider displayed `Authentication successful`.
+Authenticated response
+`resp_0036ac7ef1618280016af10fc3240c819498c9b19951c12faa` advertised the
+actual tools `retrieve`, `fetch_blob`, `ask`, `list_agents`,
+`delete_entity`, `do_action`, `create_entity`, `get_schema`,
+`search_paths`, `call_function`, `fetch`, and `update_entity`.
+
+A separate, narrowly approved `fetch` invocation used exactly
+`entityUrls: ["/me?$select=id,userPrincipalName"]`. Response
+`resp_0004148ad707739a016af11042ca788196945b49c2551afdd3` contained one
+successful `mcp_call(name="fetch")`, HTTP 200, and an actual tool-result
+identity matching the approved target operator. Verification retained
+only the match result and operational IDs, not the profile values or any
+mail/file/meeting/Teams content.
+
+The discovered `fetch` schema requires `entityUrls: string[]` and
+optionally accepts nullable `agentId`. `get_schema` accepts nullable
+`path`, `operationType`, `format`, and `agentId`; `call_function`
+requires `functionUrl: string` and optionally accepts `jsonBody` and
+nullable `agentId`. Their advertised annotations are empty, so do not
+assume provider `readOnlyHint` metadata.
+
+This proves the operator's native OAuth context, not an Agent 365
+channel's agent-user identity. Inspect the actual advertised read/action
+scopes before any grant expansion; don't use `Ask` as a substitute for
+missing `Read` or `Act` authorization. No scope expansion was needed for
+the successful `/me` probe.
 
 The [Fabric IQ guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/fabric-iq)
 requires published Fabric items. A Foundry Fabric data-agent connection
