@@ -149,8 +149,10 @@ Customer Site:
 | Object/principal ID | `a0af173f-0597-49b2-8dcc-ea66c0e4d1a9` |
 | Service principal type | `ManagedIdentity` |
 
-The bound client ID was subsequently visible in Profile Management.
-No API keys were created.
+The bound client ID was subsequently visible in Profile Management after
+a fresh page load. No API key was manually created or exported. Opening
+the Web IQ Playground later generated its own default key automatically;
+that service-managed key was not used by the Foundry connection.
 
 With the isolated target azd environment selected, the following command
 created the actual Foundry connection:
@@ -174,8 +176,62 @@ The connection ARM ID is:
 /subscriptions/d0aad12c-e3db-4b57-a951-d1b179e2516b/resourceGroups/rg-mcasalainas-4iqs-zmansoor/providers/Microsoft.CognitiveServices/accounts/mcasalainas-4iqs-zmansoor-resource/projects/mcasalainas-4iqs-zmansoor/connections/hotel-web-iq
 ```
 
-This verifies the connection configuration, not a native toolbox tool
-call. Keep callable-tool validation separate from connection creation.
+### Verified callable Web IQ transport
+
+The working integration uses the documented standard MCP transport to
+the **genuine Web IQ endpoint**, not a Bing substitute. Use the full ARM
+connection ID and exact server label in the tool definition:
+
+```json
+{
+  "type": "mcp",
+  "server_label": "hotel-web-iq",
+  "server_url": "https://api.microsoft.ai/v3/mcp",
+  "project_connection_id": "/subscriptions/d0aad12c-e3db-4b57-a951-d1b179e2516b/resourceGroups/rg-mcasalainas-4iqs-zmansoor/providers/Microsoft.CognitiveServices/accounts/mcasalainas-4iqs-zmansoor-resource/projects/mcasalainas-4iqs-zmansoor/connections/hotel-web-iq",
+  "allowed_tools": ["web"],
+  "require_approval": "never"
+}
+```
+
+For the explicitly approved public-document smoke request, `tool_choice:
+"required"` produced response
+`resp_04d63f09fcbbdd7e016af10d0878d081959db5e2689d9910e2` with an actual
+`mcp_call(name="web", status="completed", error=null)`. A second successful
+protocol-shape probe returned
+`resp_0a05526b15237b37016af10dc6201481908d0c8555718a5082`.
+
+Earlier preview-wrapper and short-connection-ID/different-label probes
+returned downstream HTTP 403. Preserve the exact proven full-ID/label
+pair; those probes do not isolate which change caused the error. The
+actual project managed identity's token issuance to `MAIGroundingV3` was
+also verified in Entra managed-identity sign-in logs.
+
+The discovered `web` input schema requires `query: string` and exposes:
+
+| Optional field | Advertised type/default |
+| --- | --- |
+| `contentFormat` | string |
+| `language` | string, default `en` |
+| `location` | string |
+| `maxLength` | integer |
+| `maxResults` | integer, default `10` |
+| `region` | string, default `US` |
+| `safeSearch` | string, default `strict` |
+
+The tool's advertised `annotations` is empty. It does **not** advertise
+`readOnlyHint`; a `read_only` approval selector therefore produces an
+approval request, not execution. The exact `web` allowlist bounds the
+automatic approval shown above. Do not broaden it to other verticals
+without inspecting their schemas and semantics.
+
+There is no advertised output schema. The native Responses `mcp_call`
+output is a string containing adjacent, pretty-printed JSON objects,
+not one JSON document and not one complete JSON object per line. The
+observed first object has `webResults`, `riskLevel`, `querySignals`,
+`instrumentationCitationBase`, and `traceId`; the second has
+`structuredResponse`. Preserve the structured/citation information in
+the consuming runtime. Protocol verification retained only schemas,
+field names, counts, and IDs, never returned web content.
 
 ## Four-IQ toolbox
 
@@ -187,7 +243,7 @@ real project connections and reachable services:
 | Foundry IQ | `mcp` | Target knowledge-base MCP endpoint and its project connection; exact discovered retrieval tool names |
 | Fabric IQ | `fabric_iq_preview` | Published Fabric item endpoint, project connection, signed-in-user authentication, and exact discovered tool schemas |
 | Work IQ | `mcp` | GA `https://workiq.svc.cloud.microsoft/mcp` connection with authorized delegated authentication |
-| Web IQ | `web_iq_preview` | Actual Web IQ resource, onboarded AppID, verified native project connection, and a successful callable tool |
+| Web IQ | `mcp`, exact `web` allowlist | Actual Web IQ resource/profile, bound project identity, full `hotel-web-iq` connection ARM ID, and successful callable `web` tool |
 
 The current [Work IQ guidance](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/work-iq)
 recommends the GA MCP path for new agents and toolboxes. Do not silently use
@@ -196,6 +252,41 @@ connections as equivalent. The [GA connection quickstart](https://learn.microsof
 requires delegated OAuth, `WorkIQAgent.Ask`, admin consent, appropriate user
 licensing, and a verified redirect URI. The Agent 365 owner supplies
 approved target identity and consent configuration.
+
+The actual `hotel-work-iq` project connection was created through
+CLI-driven REST with `category: RemoteTool` and `authType: OAuth2`. It
+uses the ordinary, single-tenant OAuth supporting app
+`f2764a7c-a43e-4fe8-94fa-ce195df4863e` (object
+`108ebd85-41fe-4c02-85ef-e9a3dc895517`), not an interactive
+Agent Identity Blueprint. The exact scopes are
+`api://workiq.svc.cloud.microsoft/WorkIQAgent.Ask` and `offline_access`.
+Authorization, token, and refresh URLs use the target tenant
+`b59f9d73-de1c-42c5-829a-e19034e2bcb3`; token and refresh paths are
+`/oauth2/v2.0/token`.
+
+One owned password was generated and immediately transferred to the
+native connection credential store, solely in process memory. A
+`finally` rollback guard removes only that newly created password if
+transfer/readback fails. No secret was put in source, `.env`, command
+arguments, chat, or logs. The owned key ID is
+`0daa4c8f-785d-461c-9e02-a5979aa56f74`, expiring
+`2027-02-06T23:54:41Z`; app readback confirmed exactly one password.
+
+The native connection returned this actual `properties.redirectUrl`:
+
+```text
+https://global.consent.azure-apim.net/redirect/2dd23e78352a4957af57c19864da2361
+```
+
+The Agent 365 owner registers that exact URL in the supporting app's
+Web redirects. Do not invent a callback or overwrite other redirects.
+Content-free initialization produced response
+`resp_062cc06ff9242dee016af10e60ef608195a7502be08b324053` with an
+`oauth_consent_request`, not authenticated tool execution. Complete the
+actual signed-in user's OAuth flow before claiming Work IQ tool discovery
+or access. Inspect the actual advertised read/action scopes before any
+grant expansion; don't use `Ask` as a substitute for missing `Read` or
+`Act` authorization.
 
 The [Fabric IQ guide](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/fabric-iq)
 requires published Fabric items. A Foundry Fabric data-agent connection
